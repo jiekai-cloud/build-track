@@ -120,7 +120,8 @@ const App: React.FC = () => {
         setLastCloudSync(new Date().toLocaleTimeString());
         setCloudError(null);
       } else {
-        setCloudError('同步中斷');
+        const status = googleDriveService.getLastErrorStatus();
+        setCloudError(`同步失敗 (${status || '?'})`);
       }
     } catch (err) {
       setCloudError('連線異常');

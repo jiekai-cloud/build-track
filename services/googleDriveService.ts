@@ -12,6 +12,7 @@ class GoogleDriveService {
   private tokenClient: any = null;
   private accessToken: string | null = null;
   private isInitialized: boolean = false;
+  private lastErrorStatus: string | null = null;
 
   async init(clientId: string = DEFAULT_CLIENT_ID) {
     return new Promise<void>((resolve, reject) => {
