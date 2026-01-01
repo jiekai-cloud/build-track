@@ -4,7 +4,7 @@
  */
 
 // 已預設內建 Client ID，使用者無需手動輸入
-export const DEFAULT_CLIENT_ID = '378270508156-ugp3r5i8109op63vlas1h5ls6h1nj0q9.apps.googleusercontent.com'; 
+export const DEFAULT_CLIENT_ID = '378270508156-ugp3r5i8109op63vlas1h5ls6h1nj0q9.apps.googleusercontent.com';
 export const BACKUP_FILENAME = 'life_quality_system_data.json';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
@@ -59,10 +59,10 @@ class GoogleDriveService {
   private requestToken(prompt: string, resolve: any, reject: any) {
     this.tokenClient.callback = (response: any) => {
       if (response.error) {
-          if (prompt === 'none') {
-              return this.authenticate('consent').then(resolve).catch(reject);
-          }
-          return reject(response);
+        if (prompt === 'none') {
+          return this.authenticate('consent').then(resolve).catch(reject);
+        }
+        return reject(response);
       }
       this.accessToken = response.access_token;
       resolve(this.accessToken!);
@@ -72,9 +72,9 @@ class GoogleDriveService {
 
   private async fetchWithAuth(url: string, options: RequestInit = {}) {
     if (!this.accessToken) {
-        await this.authenticate();
+      await this.authenticate();
     }
-    
+
     let res = await fetch(url, {
       ...options,
       headers: {
@@ -84,15 +84,15 @@ class GoogleDriveService {
     });
 
     if (res.status === 401) {
-        this.accessToken = null;
-        await this.authenticate('consent');
-        res = await fetch(url, {
-          ...options,
-          headers: {
-            ...options.headers,
-            Authorization: `Bearer ${this.accessToken}`,
-          },
-        });
+      this.accessToken = null;
+      await this.authenticate('consent');
+      res = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      });
     }
     return res;
   }
@@ -112,45 +112,68 @@ class GoogleDriveService {
   async saveToCloud(data: any) {
     if (!this.isInitialized) await this.init();
     try {
-        const existingFile = await this.findBackupFile();
-        const metadata = { name: BACKUP_FILENAME, mimeType: 'application/json' };
-        const fileContent = JSON.stringify({
-            ...data,
-            cloudSyncTimestamp: new Date().toISOString()
-        });
-        
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        form.append('file', new Blob([fileContent], { type: 'application/json' }));
+      const existingFile = await this.findBackupFile();
+      const metadata = { name: BACKUP_FILENAME, mimeType: 'application/json' };
+      const fileContent = JSON.stringify({
+        ...data,
+        cloudSyncTimestamp: new Date().toISOString()
+      });
 
-        let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-        let method = 'POST';
+      // 使用 Google Drive API 標準的 multipart/related 格式
+      const boundary = '-------314159265358979323846';
+      const delimiter = "\r\n--" + boundary + "\r\n";
+      const close_delim = "\r\n--" + boundary + "--";
 
-        if (existingFile) {
-          url = `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=multipart`;
-          method = 'PATCH';
+      const body =
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        fileContent +
+        close_delim;
+
+      let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+      let method = 'POST';
+
+      if (existingFile) {
+        url = `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=multipart`;
+        method = 'PATCH';
+      }
+
+      const response = await this.fetchWithAuth(url, {
+        method,
+        body,
+        headers: {
+          'Content-Type': 'multipart/related; boundary=' + boundary
         }
+      });
 
-        const response = await this.fetchWithAuth(url, { method, body: form });
-        return response.ok;
-    } catch (err) {
-        console.error('Save to Drive failed:', err);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Drive Sync Error Status:', response.status);
+        console.error('Drive Sync Error Body:', errorText);
         return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('Save to Drive failed:', err);
+      return false;
     }
   }
 
   async loadFromCloud(): Promise<any | null> {
     if (!this.isInitialized) await this.init();
     try {
-        const existingFile = await this.findBackupFile();
-        if (!existingFile) return null;
-        const url = `https://www.googleapis.com/drive/v3/files/${existingFile.id}?alt=media`;
-        const response = await this.fetchWithAuth(url);
-        if (!response.ok) return null;
-        return await response.json();
+      const existingFile = await this.findBackupFile();
+      if (!existingFile) return null;
+      const url = `https://www.googleapis.com/drive/v3/files/${existingFile.id}?alt=media`;
+      const response = await this.fetchWithAuth(url);
+      if (!response.ok) return null;
+      return await response.json();
     } catch (err) {
-        console.error('Load from Drive failed:', err);
-        return null;
+      console.error('Load from Drive failed:', err);
+      return null;
     }
   }
 }
