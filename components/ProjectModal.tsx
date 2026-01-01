@@ -115,7 +115,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">合約預算 Budget (TWD)</label>
               <div className="relative">
                 <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input type="number" required className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} />
+                <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold placeholder:text-stone-300" placeholder="尚未報價請留空" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} />
               </div>
             </div>
             <div>

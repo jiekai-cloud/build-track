@@ -387,15 +387,18 @@ const App: React.FC = () => {
           };
 
           const prefix = sourcePrefixes[data.source || 'BNI'] || 'PJ';
-          const year = new Date().getFullYear().toString().slice(-2);
+          const year = new Date().getFullYear().toString();
 
-          // 找尋當年度同來源的最末流水號
-          const samePrefixYearProjects = projects.filter(p => p.id.startsWith(`${prefix}${year}`));
+          // 找尋全系統當年度的最末流水號 (不分來源)
+          const sameYearProjects = projects.filter(p => p.id.includes(year));
           let sequence = 1;
-          if (samePrefixYearProjects.length > 0) {
-            const lastId = samePrefixYearProjects.map(p => p.id).sort().pop();
-            const lastSeq = parseInt(lastId?.replace(`${prefix}${year}`, '') || '0');
-            sequence = lastSeq + 1;
+          if (sameYearProjects.length > 0) {
+            // 從所有專案中提取最後三碼流水號
+            const sequences = sameYearProjects.map(p => {
+              const match = p.id.match(/\d{3}$/);
+              return match ? parseInt(match[0]) : 0;
+            });
+            sequence = Math.max(...sequences) + 1;
           }
 
           const newId = `${prefix}${year}${sequence.toString().padStart(3, '0')}`;
