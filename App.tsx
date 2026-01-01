@@ -375,6 +375,18 @@ const App: React.FC = () => {
         else setProjects(prev => [{ ...data, id: 'PJ' + Date.now().toString().slice(-6), status: ProjectStatus.NEGOTIATING, progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [] } as any, ...prev]);
         setIsModalOpen(false);
       }} initialData={editingProject} />}
+
+      {isCustomerModalOpen && user.role !== 'Guest' && <CustomerModal onClose={() => setIsCustomerModalOpen(false)} onConfirm={(data) => {
+        if (editingCustomer) setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data } : c));
+        else setCustomers(prev => [{ ...data, id: 'C' + Date.now().toString().slice(-6), createdDate: new Date().toISOString().split('T')[0] } as any, ...prev]);
+        setIsCustomerModalOpen(false);
+      }} initialData={editingCustomer} />}
+
+      {isTeamModalOpen && user.role !== 'Guest' && <TeamModal onClose={() => setIsTeamModalOpen(false)} onConfirm={(data) => {
+        if (editingMember) setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data } : m));
+        else setTeamMembers(prev => [{ ...data, id: 'T' + Date.now().toString().slice(-6), status: 'Available', activeProjectsCount: 0 } as any, ...prev]);
+        setIsTeamModalOpen(false);
+      }} initialData={editingMember} />}
     </div>
   );
 };
