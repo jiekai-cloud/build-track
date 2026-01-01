@@ -211,6 +211,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData }
                   <option value="DEPT-4">戰略指揮部 (Strategic)</option>
                   <option value="DEPT-5">品質訓練部 (Quality & Training)</option>
                   <option value="DEPT-6">行銷部 (Marketing)</option>
+                  <option value="DEPT-7">人事行政部 (Personnel & Administration)</option>
                 </select>
               </div>
 
@@ -233,6 +234,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData }
                     <option value="DEPT-4">戰略指揮部 (Strategic)</option>
                     <option value="DEPT-5">品質訓練部 (Quality & Training)</option>
                     <option value="DEPT-6">行銷部 (Marketing)</option>
+                    <option value="DEPT-7">人事行政部 (Personnel & Administration)</option>
                   </select>
                 </div>
                 <div>
@@ -253,6 +255,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData }
                     <option value="DEPT-4">戰略指揮部 (Strategic)</option>
                     <option value="DEPT-5">品質訓練部 (Quality & Training)</option>
                     <option value="DEPT-6">行銷部 (Marketing)</option>
+                    <option value="DEPT-7">人事行政部 (Personnel & Administration)</option>
                   </select>
                 </div>
               </div>
