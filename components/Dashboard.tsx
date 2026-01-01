@@ -157,7 +157,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
               </div>
               <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                 {riskProjects.map(p => (
-                  <button key={p.id} onClick={() => onProjectClick(p)} className="flex items-center justify-between p-4 bg-rose-50/50 rounded-2xl border border-rose-100 hover:bg-rose-50 transition-all text-left group">
+                  <button key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between p-4 bg-rose-50/50 rounded-2xl border border-rose-100 hover:bg-rose-50 transition-all text-left group">
                     <div className="space-y-1">
                       <p className="text-xs font-black text-stone-900 group-hover:text-rose-600 truncate max-w-[150px]">{p.name}</p>
                       <p className={`text-[10px] font-bold ${p.riskType === 'budget' ? 'text-orange-600' : 'text-rose-500'}`}>

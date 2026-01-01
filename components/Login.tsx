@@ -42,9 +42,17 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }
 
       // 2. 檢查團隊成員
-      const savedTeam = localStorage.getItem('bt_team');
-      const team = savedTeam ? JSON.parse(savedTeam) : [];
-      const member = team.find((m: any) => m.employeeId === cleanId.toUpperCase());
+      let team = [];
+      try {
+        const savedTeam = localStorage.getItem('bt_team');
+        team = savedTeam ? JSON.parse(savedTeam) : [];
+        if (!Array.isArray(team)) team = [];
+      } catch (e) {
+        console.error('Error parsing team during login', e);
+        team = [];
+      }
+
+      const member = team.find((m: any) => m && m.employeeId === cleanId.toUpperCase());
 
       if (member) {
         const expectedPassword = member.password || '1234';

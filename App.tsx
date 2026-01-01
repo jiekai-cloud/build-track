@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import ProjectList from './components/ProjectList';
@@ -35,34 +35,39 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Seed some mock leads if empty for demo
-    const savedLeads = JSON.parse(localStorage.getItem('bt_leads') || '[]');
-    if (savedLeads.length === 0) {
-      const mockLeads: Lead[] = [
-        {
-          id: 'L-1',
-          customerName: '張小姐',
-          phone: '0912-345-678',
-          address: '台北市士林區',
-          diagnosis: '浴室外牆產生壁癌，疑似冷熱水管滲漏導致水氣滲透。',
-          photos: ['https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800'],
-          timestamp: '2026-01-02 09:30',
-          status: 'new'
-        },
-        {
-          id: 'L-2',
-          customerName: '科技辦公室行政',
-          phone: '02-2345-6789',
-          address: '新北市中和區',
-          diagnosis: '頂樓女兒牆裂縫與防水層老化，雨後天花板有明顯滴水現象。',
-          photos: ['https://images.unsplash.com/photo-1516714435131-44d6b64dc392?auto=format&fit=crop&q=80&w=800'],
-          timestamp: '2026-01-02 10:15',
-          status: 'new'
-        }
-      ];
-      setLeads(mockLeads);
-      localStorage.setItem('bt_leads', JSON.stringify(mockLeads));
-    } else {
-      setLeads(savedLeads);
+    try {
+      const savedLeads = JSON.parse(localStorage.getItem('bt_leads') || '[]');
+      if (!Array.isArray(savedLeads) || savedLeads.length === 0) {
+        const mockLeads: Lead[] = [
+          {
+            id: 'L-1',
+            customerName: '張小姐',
+            phone: '0912-345-678',
+            address: '台北市士林區',
+            diagnosis: '浴室外牆產生壁癌，疑似冷熱水管滲漏導致水氣滲透。',
+            photos: ['https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800'],
+            timestamp: '2026-01-02 09:30',
+            status: 'new'
+          },
+          {
+            id: 'L-2',
+            customerName: '科技辦公室行政',
+            phone: '02-2345-6789',
+            address: '新北市中和區',
+            diagnosis: '頂樓女兒牆裂縫與防水層老化，雨後天花板有明顯滴水現象。',
+            photos: ['https://images.unsplash.com/photo-1516714435131-44d6b64dc392?auto=format&fit=crop&q=80&w=800'],
+            timestamp: '2026-01-02 10:15',
+            status: 'new'
+          }
+        ];
+        setLeads(mockLeads);
+        localStorage.setItem('bt_leads', JSON.stringify(mockLeads));
+      } else {
+        setLeads(savedLeads);
+      }
+    } catch (e) {
+      console.error('Leads initialization error', e);
+      setLeads([]);
     }
   }, []);
 
@@ -108,8 +113,19 @@ const App: React.FC = () => {
         }
 
         // 2. 載入本地緩存數據 (優先進入系統)
-        const savedProjects = localStorage.getItem('bt_projects');
-        const initialProjects = savedProjects ? JSON.parse(savedProjects) : MOCK_PROJECTS;
+        const parseSafely = (key: string, fallback: any) => {
+          try {
+            const data = localStorage.getItem(key);
+            if (!data) return fallback;
+            const parsed = JSON.parse(data);
+            return Array.isArray(parsed) ? parsed : fallback;
+          } catch (e) {
+            console.error(`Error parsing ${key}`, e);
+            return fallback;
+          }
+        };
+
+        const initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
         setProjects(initialProjects.map((p: Project) => ({
           ...p,
           expenses: p.expenses || [],
@@ -120,18 +136,20 @@ const App: React.FC = () => {
           checklist: p.checklist || [],
           payments: p.payments || []
         })));
-        setCustomers(JSON.parse(localStorage.getItem('bt_customers') || '[]'));
-        const savedTeam = localStorage.getItem('bt_team');
-        const initialTeam = savedTeam ? JSON.parse(savedTeam) : MOCK_TEAM_MEMBERS;
+
+        setCustomers(parseSafely('bt_customers', []));
+
+        const initialTeam = parseSafely('bt_team', MOCK_TEAM_MEMBERS);
         setTeamMembers(initialTeam.map((m: any) => ({
           ...m,
           specialty: m.specialty || [],
           certifications: m.certifications || [],
           departmentIds: m.departmentIds || [m.departmentId]
         })));
-        setVendors(JSON.parse(localStorage.getItem('bt_vendors') || '[]'));
-        setLeads(JSON.parse(localStorage.getItem('bt_leads') || '[]'));
-        setActivityLogs(JSON.parse(localStorage.getItem('bt_logs') || '[]'));
+
+        setVendors(parseSafely('bt_vendors', []));
+        setLeads(parseSafely('bt_leads', []));
+        setActivityLogs(parseSafely('bt_logs', []));
 
         // 3. 優先解鎖介面 (不等待雲端)
         setInitialSyncDone(true);
@@ -139,6 +157,7 @@ const App: React.FC = () => {
           setIsInitializing(false);
           clearTimeout(safetyTimeout);
         }, 800);
+        console.log('System initialized successfully');
 
         // 4. 背景嘗試續連雲端
         try {
@@ -335,7 +354,7 @@ const App: React.FC = () => {
     if (!lead) return;
 
     const newProject: Project = {
-      id: `AI${new Date().toISOString().slice(2, 10).replace(/-/g, '')}${Math.floor(100 + Math.random() * 900)} `,
+      id: `AI${new Date().toISOString().slice(2, 10).replace(/-/g, '')}${Math.floor(100 + Math.random() * 900)}`,
       departmentId: viewingDeptId === 'all' ? 'DEPT-1' : viewingDeptId,
       name: `${lead.customerName} - 智慧抓漏會勘件`,
       category: '室內裝修',
@@ -693,7 +712,7 @@ const App: React.FC = () => {
             sequence = Math.max(...sequences) + 1;
           }
 
-          const newId = `${prefix}${year}${sequence.toString().padStart(3, '0')} `;
+          const newId = `${prefix}${year}${sequence.toString().padStart(3, '0')}`;
           addActivityLog('建立新專案', data.name, newId, 'project');
           setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [] } as any, ...prev]);
         }
