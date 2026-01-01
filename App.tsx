@@ -234,7 +234,7 @@ const App: React.FC = () => {
   if (!user) return <Login onLoginSuccess={(u, d) => {
     const fullUser: User = { ...u, departmentId: d };
     setUser(fullUser);
-    setViewingDeptId(fullUser.role === 'SuperAdmin' || fullUser.role === 'Guest' ? 'all' : d);
+    setViewingDeptId('all'); // 全員皆可查看所有專案
     localStorage.setItem('bt_user', JSON.stringify(fullUser));
   }} />;
 
@@ -278,15 +278,13 @@ const App: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-widest">AI 智慧分析已掛載</span>
             </div>
 
-            {user.role === 'SuperAdmin' || user.role === 'Guest' ? (
-              <div className="flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
-                <Layers size={14} className="text-stone-400" />
-                <select className="bg-transparent text-[11px] font-black text-stone-900 outline-none" value={viewingDeptId} onChange={(e) => setViewingDeptId(e.target.value)}>
-                  <option value="all">全公司視野</option>
-                  {MOCK_DEPARTMENTS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-              </div>
-            ) : <span className="text-[11px] font-black text-orange-600 bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100">{MOCK_DEPARTMENTS.find(d => d.id === user.departmentId)?.name}</span>}
+            <div className="flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
+              <Layers size={14} className="text-stone-400" />
+              <select className="bg-transparent text-[11px] font-black text-stone-900 outline-none" value={viewingDeptId} onChange={(e) => setViewingDeptId(e.target.value)}>
+                <option value="all">全公司視野</option>
+                {MOCK_DEPARTMENTS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
 
             <button onClick={handleLogout} className="p-2 text-stone-400 hover:text-rose-600 transition-colors"><LogOut size={20} /></button>
           </div>
