@@ -15,7 +15,8 @@ import ProjectDetail from './components/ProjectDetail';
 import CustomerModal from './components/CustomerModal';
 import TeamModal from './components/TeamModal';
 import Login from './components/Login';
-import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert } from 'lucide-react';
+import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell } from 'lucide-react';
+import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS } from './constants';
 import { Project, ProjectStatus, Customer, TeamMember, User, Department, ProjectComment } from './types';
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
@@ -29,6 +30,7 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,6 +48,7 @@ const App: React.FC = () => {
   const [lastLocalSave, setLastLocalSave] = useState<string>(new Date().toLocaleTimeString());
   const [isInitializing, setIsInitializing] = useState(true);
   const [initialSyncDone, setInitialSyncDone] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   // 正式上線初始化邏輯
   useEffect(() => {
@@ -82,6 +85,7 @@ const App: React.FC = () => {
         })));
         setCustomers(JSON.parse(localStorage.getItem('bt_customers') || '[]'));
         setTeamMembers(JSON.parse(localStorage.getItem('bt_team') || '[]'));
+        setActivityLogs(JSON.parse(localStorage.getItem('bt_logs') || '[]'));
 
         // 3. 優先解鎖介面 (不等待雲端)
         setInitialSyncDone(true);
@@ -118,6 +122,7 @@ const App: React.FC = () => {
         if (cloudData.projects) setProjects(cloudData.projects);
         if (cloudData.customers) setCustomers(cloudData.customers);
         if (cloudData.teamMembers) setTeamMembers(cloudData.teamMembers);
+        if (cloudData.activityLogs) setActivityLogs(cloudData.activityLogs);
         setLastCloudSync(new Date().toLocaleTimeString());
       }
     } catch (e) {
@@ -126,12 +131,28 @@ const App: React.FC = () => {
   };
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
-  const dataRef = React.useRef({ projects, customers, teamMembers });
+  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs });
   const isSyncingRef = React.useRef(false);
 
   React.useEffect(() => {
-    dataRef.current = { projects, customers, teamMembers };
-  }, [projects, customers, teamMembers]);
+    dataRef.current = { projects, customers, teamMembers, activityLogs };
+  }, [projects, customers, teamMembers, activityLogs]);
+
+  const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
+    if (!user) return;
+    const newLog: ActivityLog = {
+      id: Date.now().toString(),
+      userId: user.employeeId || 'unknown',
+      userName: user.name,
+      userAvatar: user.picture,
+      action,
+      targetId,
+      targetName,
+      type,
+      timestamp: new Date().toISOString()
+    };
+    setActivityLogs(prev => [newLog, ...prev].slice(0, 50)); // 保留最近 50 筆
+  }, [user]);
 
   const handleCloudSync = useCallback(async () => {
     if (!isCloudConnected || isSyncingRef.current || user?.role === 'Guest') return;
@@ -173,6 +194,7 @@ const App: React.FC = () => {
         setProjects(cloudData.projects);
         setCustomers(cloudData.customers);
         setTeamMembers(cloudData.teamMembers);
+        setActivityLogs(cloudData.activityLogs || []);
         setLastCloudSync(new Date().toLocaleTimeString());
       } else {
         await handleCloudSync();
@@ -192,6 +214,7 @@ const App: React.FC = () => {
       localStorage.setItem('bt_projects', JSON.stringify(projects));
       localStorage.setItem('bt_customers', JSON.stringify(customers));
       localStorage.setItem('bt_team', JSON.stringify(teamMembers));
+      localStorage.setItem('bt_logs', JSON.stringify(activityLogs));
       setLastLocalSave(new Date().toLocaleTimeString());
     }
 
@@ -202,15 +225,20 @@ const App: React.FC = () => {
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [projects, customers, teamMembers, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role]);
+  }, [projects, customers, teamMembers, activityLogs, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role]);
 
   const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
     if (user?.role === 'Guest') return;
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      addActivityLog(`變更專案狀態：${status}`, project.name, projectId, 'project');
+    }
     setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status } : p));
   };
 
   const handleAddComment = (projectId: string, text: string) => {
     if (!user || user.role === 'Guest') return;
+    const project = projects.find(p => p.id === projectId);
     const newComment: ProjectComment = {
       id: Date.now().toString(),
       authorName: user.name,
@@ -219,6 +247,9 @@ const App: React.FC = () => {
       text,
       timestamp: new Date().toLocaleString('zh-TW', { hour12: false })
     };
+    if (project) {
+      addActivityLog(`在案件中留言`, project.name, projectId, 'project');
+    }
     setProjects(prev => prev.map(p => p.id === projectId ? { ...p, comments: [newComment, ...(p.comments || [])] } : p));
   };
 
@@ -324,6 +355,16 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsNotificationOpen(true)}
+              className="relative p-2.5 bg-white text-stone-900 rounded-2xl border border-stone-200 shadow-sm hover:ring-2 hover:ring-orange-100 hover:border-orange-200 transition-all active:scale-95 flex items-center justify-center shrink-0"
+            >
+              <Bell size={18} className="text-stone-600" />
+              {activityLogs.length > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-orange-600 rounded-full border-2 border-white animate-pulse"></span>
+              )}
+            </button>
+
             <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-2xl border border-orange-100">
               <Sparkles size={12} className="text-orange-500 animate-pulse" />
               <span className="text-[10px] font-black uppercase tracking-widest">AI 智慧分析已掛載</span>
@@ -372,7 +413,7 @@ const App: React.FC = () => {
               )}
 
               {activeTab === 'dashboard' && <Dashboard projects={filteredData.projects} onProjectClick={(p) => setSelectedProjectId(p.id)} />}
-              {activeTab === 'projects' && <ProjectList projects={filteredData.projects} user={user} onAddClick={() => { setEditingProject(null); setIsModalOpen(true); }} onEditClick={(p) => { setEditingProject(p); setIsModalOpen(true); }} onDeleteClick={(id) => { if (confirm('刪除操作不可逆，確定嗎？')) setProjects(prev => prev.filter(p => p.id !== id)); }} onDetailClick={(p) => setSelectedProjectId(p.id)} onLossClick={() => { }} />}
+              {activeTab === 'projects' && <ProjectList projects={filteredData.projects} user={user} onAddClick={() => { setEditingProject(null); setIsModalOpen(true); }} onEditClick={(p) => { setEditingProject(p); setIsModalOpen(true); }} onDeleteClick={(id) => { if (confirm('刪除操作不可逆，確定嗎？')) { const p = projects.find(x => x.id === id); if (p) addActivityLog('刪除了專案', p.name, id, 'project'); setProjects(prev => prev.filter(p => p.id !== id)); } }} onDetailClick={(p) => setSelectedProjectId(p.id)} onLossClick={() => { }} />}
               {activeTab === 'settings' && (
                 <Settings
                   user={user} projects={projects} customers={customers} teamMembers={teamMembers}
@@ -395,8 +436,8 @@ const App: React.FC = () => {
                   lastSyncTime={lastCloudSync}
                 />
               )}
-              {activeTab === 'team' && <TeamList members={filteredData.teamMembers} departments={MOCK_DEPARTMENTS} onAddClick={() => { setEditingMember(null); setIsTeamModalOpen(true); }} onEditClick={(m) => { setEditingMember(m); setIsTeamModalOpen(true); }} onDeleteClick={(id) => { if (confirm('確定移除此成員？')) setTeamMembers(prev => prev.filter(m => m.id !== id)); }} />}
-              {activeTab === 'customers' && <CustomerList customers={filteredData.customers} onAddClick={() => { setEditingCustomer(null); setIsCustomerModalOpen(true); }} onEditClick={(c) => { setEditingCustomer(c); setIsCustomerModalOpen(true); }} onDeleteClick={(id) => { if (confirm('確定移除此客戶？')) setCustomers(prev => prev.filter(c => c.id !== id)); }} />}
+              {activeTab === 'team' && <TeamList members={filteredData.teamMembers} departments={MOCK_DEPARTMENTS} onAddClick={() => { setEditingMember(null); setIsTeamModalOpen(true); }} onEditClick={(m) => { setEditingMember(m); setIsTeamModalOpen(true); }} onDeleteClick={(id) => { if (confirm('確定移除此成員？')) { const m = teamMembers.find(x => x.id === id); if (m) addActivityLog('移除了成員', m.name, id, 'team'); setTeamMembers(prev => prev.filter(m => m.id !== id)); } }} />}
+              {activeTab === 'customers' && <CustomerList customers={filteredData.customers} onAddClick={() => { setEditingCustomer(null); setIsCustomerModalOpen(true); }} onEditClick={(c) => { setEditingCustomer(c); setIsCustomerModalOpen(true); }} onDeleteClick={(id) => { if (confirm('確定移除此客戶？')) { const c = customers.find(x => x.id === id); if (c) addActivityLog('移除了客戶', c.name, id, 'customer'); setCustomers(prev => prev.filter(c => c.id !== id)); } }} />}
               {activeTab === 'dispatch' && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])] } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid) } : p))} />}
               {activeTab === 'analytics' && <Analytics projects={filteredData.projects} />}
               {activeTab === 'help' && <HelpCenter />}
@@ -437,6 +478,7 @@ const App: React.FC = () => {
         };
 
         if (editingProject) {
+          addActivityLog('更新了專案資訊', data.name, editingProject.id, 'project');
           setProjects(prev => prev.map(p => {
             if (p.id === editingProject.id) {
               let updatedId = p.id;
@@ -468,23 +510,56 @@ const App: React.FC = () => {
           }
 
           const newId = `${prefix}${year}${sequence.toString().padStart(3, '0')}`;
-
+          addActivityLog('建立新專案', data.name, newId, 'project');
           setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [] } as any, ...prev]);
         }
         setIsModalOpen(false);
       }} initialData={editingProject} teamMembers={teamMembers} />}
 
       {isCustomerModalOpen && user.role !== 'Guest' && <CustomerModal onClose={() => setIsCustomerModalOpen(false)} onConfirm={(data) => {
-        if (editingCustomer) setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data } : c));
-        else setCustomers(prev => [{ ...data, id: 'C' + Date.now().toString().slice(-6), createdDate: new Date().toISOString().split('T')[0] } as any, ...prev]);
+        if (editingCustomer) {
+          addActivityLog('更新客戶資料', data.name, editingCustomer.id, 'customer');
+          setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data } : c));
+        } else {
+          const newId = 'C' + Date.now().toString().slice(-6);
+          addActivityLog('新增客戶', data.name, newId, 'customer');
+          setCustomers(prev => [{ ...data, id: newId, createdDate: new Date().toISOString().split('T')[0] } as any, ...prev]);
+        }
         setIsCustomerModalOpen(false);
       }} initialData={editingCustomer} />}
 
       {isTeamModalOpen && user.role !== 'Guest' && <TeamModal onClose={() => setIsTeamModalOpen(false)} onConfirm={(data) => {
-        if (editingMember) setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data } : m));
-        else setTeamMembers(prev => [{ ...data, id: 'T' + Date.now().toString().slice(-6), status: 'Available', activeProjectsCount: 0, systemRole: data.systemRole || 'Staff', departmentId: data.departmentId || 'DEPT-1' } as any, ...prev]);
+        if (editingMember) {
+          addActivityLog('更新成員資料', data.name, editingMember.id, 'team');
+          setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data } : m));
+        } else {
+          const newId = 'T' + Date.now().toString().slice(-6);
+          addActivityLog('新增團隊成員', data.name, newId, 'team');
+          setTeamMembers(prev => [{ ...data, id: newId, status: 'Available', activeProjectsCount: 0, systemRole: data.systemRole || 'Staff', departmentId: data.departmentId || 'DEPT-1' } as any, ...prev]);
+        }
         setIsTeamModalOpen(false);
       }} initialData={editingMember} />}
+
+      {/* Activity Log Side Panel Overlay */}
+      {isNotificationOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-stone-900/20 backdrop-blur-sm z-[110] animate-in fade-in duration-300"
+            onClick={() => setIsNotificationOpen(false)}
+          />
+          <div className="fixed top-0 right-0 bottom-0 w-full max-w-[400px] z-[120] shadow-2xl">
+            <NotificationPanel
+              logs={activityLogs}
+              onClose={() => setIsNotificationOpen(false)}
+              onProjectClick={(id) => {
+                setSelectedProjectId(id);
+                setIsNotificationOpen(false);
+                setActiveTab('projects');
+              }}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };

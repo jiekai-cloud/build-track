@@ -88,6 +88,18 @@ export interface ProjectComment {
   timestamp: string;
 }
 
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  action: string;
+  targetId: string;
+  targetName: string;
+  timestamp: string;
+  type: 'project' | 'customer' | 'team' | 'system';
+}
+
 export interface ProjectFile {
   id: string;
   url: string;
