@@ -202,7 +202,7 @@ const App: React.FC = () => {
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [projects, customers, teamMembers, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user.role]);
+  }, [projects, customers, teamMembers, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role]);
 
   const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
     if (user?.role === 'Guest') return;
