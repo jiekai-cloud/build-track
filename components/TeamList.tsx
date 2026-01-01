@@ -23,6 +23,10 @@ const TeamList: React.FC<TeamListProps> = ({ members, onAddClick, onEditClick, o
     m.specialty.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const sortedMembers = [...filteredMembers].sort((a, b) => {
+    return a.employeeId.localeCompare(b.employeeId, undefined, { numeric: true, sensitivity: 'base' });
+  });
+
   const getStatusBadge = (status: TeamMember['status']) => {
     switch (status) {
       case 'Available': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
@@ -86,7 +90,7 @@ const TeamList: React.FC<TeamListProps> = ({ members, onAddClick, onEditClick, o
         </div>
 
         <div className="divide-y divide-slate-100">
-          {filteredMembers.map((member) => (
+          {sortedMembers.map((member) => (
             <div key={member.id} className="group hover:bg-slate-50/50 transition-colors">
               <div className="p-6 lg:px-8 lg:py-5 lg:grid lg:grid-cols-12 lg:items-center gap-4">
                 {/* 基本資訊 */}
