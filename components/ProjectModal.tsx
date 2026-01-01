@@ -52,11 +52,11 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.budget) return;
-    
+
     // 模擬地址轉經緯度 (正式版會串接 Geocoding API)
     const mockLocation: ProjectLocation = {
       address: formData.address,
-      lat: 25.0330, 
+      lat: 25.0330,
       lng: 121.5654
     };
 
@@ -83,29 +83,76 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[80vh] overflow-y-auto no-scrollbar">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件名稱 *</label>
-            <input required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <input required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案場詳細地址</label>
             <div className="relative">
-               <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-               <input className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold" placeholder="例如：台北市信義區信義路五段7號" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+              <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold" placeholder="例如：台北市信義區信義路五段7號" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
             </div>
           </div>
 
-          {/* 其他欄位 (與之前相同) 略... */}
           <div className="grid grid-cols-2 gap-4">
-             <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">預算 (TWD)</label>
-                <input type="number" required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold" value={formData.budget} onChange={e => setFormData({...formData, budget: e.target.value})} />
-             </div>
-             <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件類別</label>
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value as any})}>
-                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">業主名稱 Client</label>
+              <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold placeholder:text-slate-300" placeholder="" value={formData.client} onChange={e => setFormData({ ...formData, client: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件來源 Source</label>
+              <div className="relative">
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold appearance-none" value={formData.source} onChange={e => setFormData({ ...formData, source: e.target.value as any })}>
+                  {sources.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
-             </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">合約預算 Budget (TWD)</label>
+              <div className="relative">
+                <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input type="number" required className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">施工進度 Progress (%)</label>
+              <div className="relative">
+                <Activity size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input type="number" min="0" max="100" className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold" value={formData.progress} onChange={e => setFormData({ ...formData, progress: e.target.value })} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">預計開工日 Start Date</label>
+              <div className="relative">
+                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">預計完工日 End Date</label>
+              <div className="relative">
+                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件類別 Category</label>
+            <div className="grid grid-cols-3 gap-2">
+              {categories.map(c => (
+                <button type="button" key={c} onClick={() => setFormData({ ...formData, category: c })} className={`py-2 rounded-xl text-xs font-bold transition-all border ${formData.category === c ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="pt-6 flex gap-4">

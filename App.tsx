@@ -24,12 +24,12 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [viewingDeptId, setViewingDeptId] = useState<string>('all'); 
-  
+  const [viewingDeptId, setViewingDeptId] = useState<string>('all');
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  
+
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -37,7 +37,7 @@ const App: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
-  
+
   // 系統狀態
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -53,29 +53,29 @@ const App: React.FC = () => {
       // 1. 恢復本地會話
       const savedUser = localStorage.getItem('bt_user');
       if (savedUser) {
-         const parsedUser = JSON.parse(savedUser);
-         setUser(parsedUser);
-         setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+        setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
       }
-      
+
       // 2. 載入本地緩存數據 (作為雲端未就緒前的備援)
       const savedProjects = localStorage.getItem('bt_projects');
       const initialProjects = savedProjects ? JSON.parse(savedProjects) : MOCK_PROJECTS;
-      setProjects(initialProjects.map((p: Project) => ({ 
-        ...p, 
-        expenses: p.expenses || [], 
+      setProjects(initialProjects.map((p: Project) => ({
+        ...p,
+        expenses: p.expenses || [],
         workAssignments: p.workAssignments || [],
         files: p.files || [],
         phases: p.phases || []
       })));
       setCustomers(JSON.parse(localStorage.getItem('bt_customers') || '[]'));
       setTeamMembers(JSON.parse(localStorage.getItem('bt_team') || '[]'));
-      
+
       // 3. 嘗試自動續連雲端
       try {
         await googleDriveService.init(DEFAULT_CLIENT_ID);
         if (localStorage.getItem('bt_cloud_connected') === 'true' && user?.role !== 'Guest') {
-            await autoConnectCloud();
+          await autoConnectCloud();
         }
       } catch (e) {
         console.warn('Google SDK 初始化延遲');
@@ -92,13 +92,13 @@ const App: React.FC = () => {
       await googleDriveService.authenticate('none');
       setIsCloudConnected(true);
       setCloudError(null);
-      
+
       const cloudData = await googleDriveService.loadFromCloud();
       if (cloudData) {
-          if (cloudData.projects) setProjects(cloudData.projects);
-          if (cloudData.customers) setCustomers(cloudData.customers);
-          if (cloudData.teamMembers) setTeamMembers(cloudData.teamMembers);
-          setLastCloudSync(new Date().toLocaleTimeString());
+        if (cloudData.projects) setProjects(cloudData.projects);
+        if (cloudData.customers) setCustomers(cloudData.customers);
+        if (cloudData.teamMembers) setTeamMembers(cloudData.teamMembers);
+        setLastCloudSync(new Date().toLocaleTimeString());
       }
     } catch (e) {
       setCloudError('會話已過期');
@@ -117,10 +117,10 @@ const App: React.FC = () => {
         userEmail: user?.email
       });
       if (success) {
-          setLastCloudSync(new Date().toLocaleTimeString());
-          setCloudError(null);
+        setLastCloudSync(new Date().toLocaleTimeString());
+        setCloudError(null);
       } else {
-          setCloudError('同步中斷');
+        setCloudError('同步中斷');
       }
     } catch (err) {
       setCloudError('連線異常');
@@ -137,26 +137,26 @@ const App: React.FC = () => {
       await googleDriveService.authenticate('consent');
       localStorage.setItem('bt_cloud_connected', 'true');
       setIsCloudConnected(true);
-      
+
       const cloudData = await googleDriveService.loadFromCloud();
       if (cloudData && cloudData.projects && confirm('雲端發現現有數據，是否要切換為雲端版本？')) {
-          setProjects(cloudData.projects);
-          setCustomers(cloudData.customers);
-          setTeamMembers(cloudData.teamMembers);
-          setLastCloudSync(new Date().toLocaleTimeString());
+        setProjects(cloudData.projects);
+        setCustomers(cloudData.customers);
+        setTeamMembers(cloudData.teamMembers);
+        setLastCloudSync(new Date().toLocaleTimeString());
       } else {
-          await handleCloudSync();
+        await handleCloudSync();
       }
     } catch (err: any) {
       setCloudError('驗證失敗');
     } finally {
-        setIsSyncing(false);
+      setIsSyncing(false);
     }
   };
 
   useEffect(() => {
     if (!initialSyncDone || !user) return;
-    
+
     // 定期本地保存 (訪客不保存)
     if (user.role !== 'Guest') {
       localStorage.setItem('bt_projects', JSON.stringify(projects));
@@ -168,7 +168,7 @@ const App: React.FC = () => {
     // 智慧雲端增量同步
     if (isCloudConnected && !cloudError && user.role !== 'Guest') {
       const timer = setTimeout(() => {
-          handleCloudSync();
+        handleCloudSync();
       }, 5000);
       return () => clearTimeout(timer);
     }
@@ -243,18 +243,18 @@ const App: React.FC = () => {
       <div className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static transition-transform duration-500 z-[101] w-64 h-full shrink-0`}>
         <Sidebar activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} user={user} />
       </div>
-      
+
       <main className="flex-1 flex flex-col h-full w-full min-0 relative">
         <header className="h-16 shrink-0 bg-white/80 backdrop-blur-xl border-b border-stone-200 px-4 lg:px-8 flex items-center justify-between no-print z-40">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-stone-600 hover:bg-stone-100 rounded-lg"><Menu size={24} /></button>
-            
+
             <div className="flex items-center gap-3">
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl shadow-lg ${user.role === 'Guest' ? 'bg-stone-900 text-orange-400' : 'bg-stone-900 text-white'}`}>
                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${user.role === 'Guest' ? 'bg-orange-500' : 'bg-emerald-400'}`}></div>
                 <span className="text-[10px] font-black uppercase tracking-widest">{user.role === 'Guest' ? '訪客唯讀模式' : '生產環境 已上線'}</span>
               </div>
-              
+
               {user.role !== 'Guest' && (
                 <div className="flex items-center">
                   {cloudError ? (
@@ -271,11 +271,11 @@ const App: React.FC = () => {
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-2xl border border-orange-100">
-               <Sparkles size={12} className="text-orange-500 animate-pulse" />
-               <span className="text-[10px] font-black uppercase tracking-widest">AI 智慧分析已掛載</span>
+              <Sparkles size={12} className="text-orange-500 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-widest">AI 智慧分析已掛載</span>
             </div>
 
             {user.role === 'SuperAdmin' || user.role === 'Guest' ? (
@@ -287,21 +287,25 @@ const App: React.FC = () => {
                 </select>
               </div>
             ) : <span className="text-[11px] font-black text-orange-600 bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100">{MOCK_DEPARTMENTS.find(d => d.id === user.departmentId)?.name}</span>}
-            
+
             <button onClick={handleLogout} className="p-2 text-stone-400 hover:text-rose-600 transition-colors"><LogOut size={20} /></button>
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto touch-scroll">
           {selectedProject ? (
-            <ProjectDetail 
+            <ProjectDetail
               project={selectedProject} user={user} teamMembers={teamMembers}
-              onBack={() => setSelectedProjectId(null)} 
+              onBack={() => setSelectedProjectId(null)}
               onEdit={(p) => { setEditingProject(p); setIsModalOpen(true); }}
-              onDelete={(id) => { if(confirm('確定要刪除嗎？')) { setProjects(prev => prev.filter(p => p.id !== id)); setSelectedProjectId(null); } }}
+              onDelete={(id) => { if (confirm('確定要刪除嗎？')) { setProjects(prev => prev.filter(p => p.id !== id)); setSelectedProjectId(null); } }}
               onUpdateStatus={(status) => handleUpdateStatus(selectedProject.id, status)}
               onAddComment={(text) => handleAddComment(selectedProject.id, text)}
-              onUpdateTasks={() => {}} onUpdateProgress={() => {}} onUpdateExpenses={() => {}} onUpdateWorkAssignments={() => {}} onLossClick={() => {}}
+              onUpdateTasks={(tasks) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, tasks } : p))}
+              onUpdateProgress={(progress) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, progress } : p))}
+              onUpdateExpenses={(expenses) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, expenses } : p))}
+              onUpdateWorkAssignments={(assignments) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, workAssignments: assignments } : p))}
+              onLossClick={() => handleUpdateStatus(selectedProject.id, ProjectStatus.LOST)}
             />
           ) : (
             <div className="pb-32">
@@ -317,29 +321,37 @@ const App: React.FC = () => {
                   <button onClick={handleConnectCloud} className="bg-white text-orange-600 px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-stone-50 transition-all flex items-center gap-3"><Zap size={16} fill="currentColor" /> 立即連結雲端</button>
                 </div>
               )}
-              
+
               {activeTab === 'dashboard' && <Dashboard projects={filteredData.projects} onProjectClick={(p) => setSelectedProjectId(p.id)} />}
-              {activeTab === 'projects' && <ProjectList projects={filteredData.projects} user={user} onAddClick={() => { setEditingProject(null); setIsModalOpen(true); }} onEditClick={(p) => { setEditingProject(p); setIsModalOpen(true); }} onDeleteClick={(id) => { if(confirm('刪除操作不可逆，確定嗎？')) setProjects(prev => prev.filter(p => p.id !== id)); }} onDetailClick={(p) => setSelectedProjectId(p.id)} onLossClick={() => {}} />}
+              {activeTab === 'projects' && <ProjectList projects={filteredData.projects} user={user} onAddClick={() => { setEditingProject(null); setIsModalOpen(true); }} onEditClick={(p) => { setEditingProject(p); setIsModalOpen(true); }} onDeleteClick={(id) => { if (confirm('刪除操作不可逆，確定嗎？')) setProjects(prev => prev.filter(p => p.id !== id)); }} onDetailClick={(p) => setSelectedProjectId(p.id)} onLossClick={() => { }} />}
               {activeTab === 'settings' && (
-                <Settings 
-                  user={user} projects={projects} customers={customers} teamMembers={teamMembers} 
-                  onResetData={() => { if(confirm('注意：這將清除所有數據，確定嗎？')) { localStorage.clear(); window.location.reload(); } }} 
-                  onImportData={() => {}} 
+                <Settings
+                  user={user} projects={projects} customers={customers} teamMembers={teamMembers}
+                  onResetData={() => { if (confirm('注意：這將清除所有數據，確定嗎？')) { localStorage.clear(); window.location.reload(); } }}
+                  onImportData={(data) => {
+                    try {
+                      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+                      if (parsed.projects) setProjects(parsed.projects);
+                      if (parsed.customers) setCustomers(parsed.customers);
+                      if (parsed.teamMembers) setTeamMembers(parsed.teamMembers);
+                      alert('資料匯入成功！');
+                    } catch (e) { alert('匯入失敗：格式錯誤'); }
+                  }}
                   isCloudConnected={isCloudConnected}
                   onConnectCloud={handleConnectCloud}
                   onDisconnectCloud={() => { setIsCloudConnected(false); localStorage.removeItem('bt_cloud_connected'); }}
                   lastSyncTime={lastCloudSync}
                 />
               )}
-              {activeTab === 'team' && <TeamList members={filteredData.teamMembers} onAddClick={() => setIsTeamModalOpen(true)} onEditClick={setEditingMember} onDeleteClick={() => {}} />}
-              {activeTab === 'customers' && <CustomerList customers={filteredData.customers} onAddClick={() => setIsCustomerModalOpen(true)} onEditClick={setEditingCustomer} onDeleteClick={() => {}} />}
+              {activeTab === 'team' && <TeamList members={filteredData.teamMembers} onAddClick={() => setIsTeamModalOpen(true)} onEditClick={setEditingMember} onDeleteClick={(id) => { if (confirm('確定移除此成員？')) setTeamMembers(prev => prev.filter(m => m.id !== id)); }} />}
+              {activeTab === 'customers' && <CustomerList customers={filteredData.customers} onAddClick={() => setIsCustomerModalOpen(true)} onEditClick={setEditingCustomer} onDeleteClick={(id) => { if (confirm('確定移除此客戶？')) setCustomers(prev => prev.filter(c => c.id !== id)); }} />}
               {activeTab === 'dispatch' && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])] } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid) } : p))} />}
               {activeTab === 'analytics' && <Analytics projects={filteredData.projects} />}
               {activeTab === 'help' && <HelpCenter />}
             </div>
           )}
         </div>
-        
+
         {!selectedProjectId && (
           <div className="fixed bottom-8 right-8 z-[45] flex flex-col items-end gap-3 no-print">
             <div className="bg-white/90 backdrop-blur-2xl border border-stone-200 p-4 rounded-[2rem] shadow-2xl flex items-center gap-6 animate-in slide-in-from-right-12">
