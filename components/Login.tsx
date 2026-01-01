@@ -26,8 +26,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
     // 模擬驗證流程
     setTimeout(() => {
+      const cleanId = employeeId.trim();
+      const cleanPassword = password.trim();
+
       // 1. 檢查管理員
-      if (employeeId.toLowerCase() === 'admin' && password === '1234') {
+      if (cleanId.toLowerCase() === 'admin' && cleanPassword === '1234') {
         onLoginSuccess({
           id: 'ADMIN-ROOT',
           name: "管理總監",
@@ -41,12 +44,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       // 2. 檢查團隊成員
       const savedTeam = localStorage.getItem('bt_team');
       const team = savedTeam ? JSON.parse(savedTeam) : [];
-      const member = team.find((m: any) => m.employeeId === employeeId.toUpperCase());
+      const member = team.find((m: any) => m.employeeId === cleanId.toUpperCase());
 
       if (member) {
         const expectedPassword = member.password || '1234';
-        if (password === expectedPassword) {
-          // 強制使用該員工設定的部門和權限，忽略下拉選單的選擇 (除非是 SuperAdmin)
+        if (cleanPassword === expectedPassword) {
+          // 強制使用該員工設定的部門和權限
           const finalRole = member.systemRole || (member.role === '工務主管' || member.role === '專案經理' ? 'DeptAdmin' : 'Staff');
           const finalDept = finalRole === 'SuperAdmin' ? 'all' : (member.departmentId || 'DEPT-1');
 
@@ -62,7 +65,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           setIsLoading(false);
         }
       } else {
-        setError('找不到該員工編號');
+        setError('找不到該員工編號 (新設備請先以 admin 登入)');
         setIsLoading(false);
       }
     }, 1000);
@@ -153,7 +156,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <div className="group relative">
                   <input
                     type="text"
-                    placeholder="例如: ADMIN"
+                    placeholder="輸入員工編號"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    autoComplete="username"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-orange-600/50 focus:border-orange-600/50 transition-all placeholder:text-stone-700 uppercase"
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
@@ -167,6 +174,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <input
                   type="password"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-orange-600/50 focus:border-orange-600/50 transition-all placeholder:text-stone-700"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
