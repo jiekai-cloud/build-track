@@ -1,4 +1,4 @@
-
+```
 import React from 'react';
 import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X } from 'lucide-react';
 
@@ -6,9 +6,10 @@ interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   user: any;
+  onMenuClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenuClose }) => {
   const menuItems = [
     { id: 'dashboard', label: '總覽面板', icon: LayoutDashboard },
     { id: 'projects', label: '專案管理', icon: FolderKanban },
@@ -42,11 +43,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user }) => {
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${
-              activeTab === item.id 
-                ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40' 
-                : 'text-stone-400 hover:bg-stone-800 hover:text-white'
-            }`}
+            className={`w - full flex items - center gap - 3 px - 4 py - 3.5 rounded - 2xl transition - all duration - 200 ${
+  activeTab === item.id
+    ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40'
+    : 'text-stone-400 hover:bg-stone-800 hover:text-white'
+} `}
           >
             <item.icon size={18} />
             <span className="font-bold text-xs">{item.label}</span>
@@ -59,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user }) => {
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-stone-800 hover:text-white transition-colors ${activeTab === item.id ? 'text-white' : ''}`}
+            className={`w - full flex items - center gap - 3 px - 4 py - 3 rounded - lg text - stone - 500 hover: bg - stone - 800 hover: text - white transition - colors ${ activeTab === item.id ? 'text-white' : '' } `}
           >
             <item.icon size={18} />
             <span className="font-bold text-xs">{item.label}</span>
