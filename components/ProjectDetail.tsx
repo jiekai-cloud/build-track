@@ -25,13 +25,15 @@ interface ProjectDetailProps {
   onUpdateFiles?: (files: ProjectFile[]) => void;
   onUpdatePhases?: (phases: ProjectPhase[]) => void;
   onAddDailyLog: (log: { content: string, photoUrls: string[] }) => void;
+  onUpdateChecklist: (checklist: ChecklistTask[]) => void;
+  onUpdatePayments: (payments: PaymentStage[]) => void;
 }
 
 const ProjectDetail: React.FC<ProjectDetailProps> = ({
   project, user, teamMembers, onBack, onEdit, onDelete, onLossClick,
   onUpdateTasks, onUpdateProgress, onUpdateStatus, onAddComment,
   onUpdateExpenses, onUpdateWorkAssignments, onUpdateFiles, onUpdatePhases,
-  onAddDailyLog
+  onAddDailyLog, onUpdateChecklist, onUpdatePayments
 }) => {
   const [newComment, setNewComment] = useState('');
   const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map'>('logs');
@@ -122,12 +124,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
       <div className="px-4 py-3 bg-white border-b border-stone-100 shrink-0 no-print">
         <div className="flex gap-2 overflow-x-auto no-scrollbar touch-scroll pb-1">
           {[
-            { id: 'logs', label: '處理紀錄', icon: MessageSquare },
+            { id: 'logs', label: '施工日誌', icon: Activity },
+            { id: 'tasks', label: '待辦任務', icon: CheckCircle2 },
             { id: 'schedule', label: '施工排程', icon: CalendarDays },
-            { id: 'financials', label: '財務分析', icon: DollarSign },
+            { id: 'financials', label: '帳務管理', icon: DollarSign },
             { id: 'map', label: '案場定位', icon: Navigation },
-            { id: 'photos', label: '照片庫', icon: ImageIcon },
-            { id: 'tasks', label: '任務追蹤', icon: CheckCircle2 }
+            { id: 'photos', label: '照片庫', icon: ImageIcon }
           ].map(item => (
             <button
               key={item.id}
@@ -291,7 +293,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
         {activeView !== 'logs' && (
           <div className="flex-1 overflow-y-auto touch-scroll space-y-4 pr-1 no-scrollbar">
             {activeView === 'financials' && (
-              <div className="space-y-4 animate-in fade-in">
+              <div className="space-y-6 animate-in fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-sm relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -302,31 +304,20 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <div className="w-full bg-stone-100 h-1.5 rounded-full mt-3 overflow-hidden">
                       <div
                         className={`h-full transition-all duration-1000 ${(currentSpent / project.budget) > 1 ? 'bg-rose-500' :
-                          (currentSpent / project.budget) > 0.8 ? 'bg-amber-500' : 'bg-blue-600'
+                            (currentSpent / project.budget) > 0.8 ? 'bg-amber-500' : 'bg-blue-600'
                           }`}
                         style={{ width: `${Math.min((currentSpent / project.budget) * 100, 100)}%` }}
                       ></div>
                     </div>
-                    {(currentSpent / project.budget) > 0.8 && (
-                      <p className={`text-[9px] font-bold mt-2 flex items-center gap-1 ${(currentSpent / project.budget) > 1 ? 'text-rose-600' : 'text-amber-600'
-                        }`}>
-                        <ShieldAlert size={10} /> {(currentSpent / project.budget) > 1 ? '預算已超支，請立即檢視支出元件' : '預算接近上限 (80%+)'}
-                      </p>
-                    )}
                   </div>
 
                   <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-sm relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                       <DollarSign size={48} className="text-emerald-900" />
                     </div>
-                    <p className="text-[9px] font-black text-stone-400 uppercase mb-2 tracking-widest">預估淨利 (毛利)</p>
-                    <p className={`text-2xl font-black ${margin >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      NT$ {margin.toLocaleString()}
-                    </p>
-                    <p className="text-[9px] font-bold text-stone-400 mt-2">
-                      毛利率: <span className={margin >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                        {((margin / project.budget) * 100).toFixed(1)}%
-                      </span>
+                    <p className="text-[9px] font-black text-stone-400 uppercase mb-2 tracking-widest">目前待收帳款</p>
+                    <p className="text-2xl font-black text-emerald-600">
+                      NT$ {(project.budget - (project.payments?.filter(p => p.status === 'paid').reduce((acc, curr) => acc + curr.amount, 0) || 0)).toLocaleString()}
                     </p>
                   </div>
 
@@ -336,16 +327,85 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     </div>
                     <p className="text-[9px] font-black text-stone-400 uppercase mb-2 tracking-widest">目前累計支出</p>
                     <p className="text-2xl font-black text-stone-900">NT$ {currentSpent.toLocaleString()}</p>
-                    <div className="mt-3 flex gap-4">
-                      <div>
-                        <p className="text-[8px] font-black text-stone-400 uppercase">工資</p>
-                        <p className="text-xs font-bold text-stone-600">{((totalLaborCost / currentSpent) * 100 || 0).toFixed(1)}%</p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] font-black text-stone-400 uppercase">雜支/建材</p>
-                        <p className="text-xs font-bold text-stone-600">{((totalExpenseCost / currentSpent) * 100 || 0).toFixed(1)}%</p>
-                      </div>
-                    </div>
+                  </div>
+                </div>
+
+                {/* 收款階段管理 */}
+                <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden min-h-[300px]">
+                  <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                    <h4 className="text-[10px] font-black text-stone-900 uppercase tracking-widest flex items-center gap-2">
+                      <DollarSign size={14} className="text-emerald-600" /> 應收款與收款階段
+                    </h4>
+                    {!isReadOnly && (
+                      <button
+                        onClick={() => {
+                          const label = prompt('階段名稱 (例如：訂金、期中款)');
+                          const amountStr = prompt('金額 (數字)');
+                          if (label && amountStr) {
+                            const newPayment: PaymentStage = {
+                              id: Date.now().toString(),
+                              label,
+                              amount: parseInt(amountStr),
+                              status: 'pending',
+                              date: new Date().toISOString().split('T')[0],
+                              notes: ''
+                            };
+                            onUpdatePayments([...(project.payments || []), newPayment]);
+                          }
+                        }}
+                        className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-emerald-700 transition-all active:scale-95"
+                      >
+                        + 新增收款階段
+                      </button>
+                    )}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-stone-50/50">
+                          <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">階段名稱</th>
+                          <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">預計收款日</th>
+                          <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-right">金額</th>
+                          <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">狀態</th>
+                          {!isReadOnly && <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">操作</th>}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-50">
+                        {(project.payments || []).length > 0 ? (project.payments || []).map((p) => (
+                          <tr key={p.id} className="hover:bg-stone-50/30 transition-colors">
+                            <td className="px-6 py-4 text-xs font-black text-stone-900">{p.label}</td>
+                            <td className="px-6 py-4 text-xs font-bold text-stone-500">{p.date}</td>
+                            <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {p.amount.toLocaleString()}</td>
+                            <td className="px-6 py-4">
+                              <button
+                                disabled={isReadOnly}
+                                onClick={() => {
+                                  const nextStatus = p.status === 'paid' ? 'pending' : 'paid';
+                                  onUpdatePayments((project.payments || []).map(pay => pay.id === p.id ? { ...pay, status: nextStatus } : pay));
+                                }}
+                                className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border transition-all ${p.status === 'paid'
+                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    : 'bg-amber-50 text-amber-600 border-amber-100'
+                                  }`}
+                              >
+                                {p.status === 'paid' ? '已收訖' : '待收款'}
+                              </button>
+                            </td>
+                            {!isReadOnly && (
+                              <td className="px-6 py-4 text-center">
+                                <button onClick={() => onUpdatePayments((project.payments || []).filter(pay => pay.id !== p.id))} className="text-stone-300 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+                              </td>
+                            )}
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan={5} className="px-6 py-20 text-center text-stone-300">
+                              <p className="text-[10px] font-black uppercase tracking-widest">目前尚未設定收款階段</p>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>

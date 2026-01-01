@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -16,6 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     { id: 'dispatch', label: '派工紀錄', icon: ClipboardSignature },
     { id: 'customers', label: '客戶資料', icon: Contact2 },
     { id: 'team', label: '團隊成員', icon: Users },
+    { id: 'vendors', label: '廠商管理', icon: ShoppingBag },
     { id: 'analytics', label: '數據分析', icon: BarChart3 },
   ];
 
@@ -52,8 +53,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
             key={item.id}
             onClick={() => setActiveTab(item.id)}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${activeTab === item.id
-                ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40'
-                : 'text-stone-400 hover:bg-stone-800 hover:text-white'
+              ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40'
+              : 'text-stone-400 hover:bg-stone-800 hover:text-white'
               }`}
           >
             <item.icon size={18} />

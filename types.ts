@@ -100,6 +100,32 @@ export interface ActivityLog {
   type: 'project' | 'customer' | 'team' | 'system';
 }
 
+export interface ChecklistTask {
+  id: string;
+  title: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  dueDate?: string;
+  isDone: boolean;
+}
+
+export interface PaymentStage {
+  id: string;
+  label: string;
+  amount: number;
+  date: string;
+  notes: string;
+  vendorId?: string;
+}
+
+export interface Vendor {
+  id: string;
+  name: string;
+  type: string;
+  contact: string;
+  rating: number;
+}
+
 export interface DailyLogEntry {
   id: string;
   date: string;
@@ -145,6 +171,8 @@ export interface Project {
   tasks: Task[];
   phases: ProjectPhase[];
   dailyLogs?: DailyLogEntry[];
+  checklist?: ChecklistTask[];
+  payments?: PaymentStage[];
   financials: ProjectFinancials;
   location?: ProjectLocation;
   lossReason?: string;

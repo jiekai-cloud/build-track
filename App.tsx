@@ -31,6 +31,7 @@ const App: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,10 +83,13 @@ const App: React.FC = () => {
           workAssignments: p.workAssignments || [],
           files: p.files || [],
           phases: p.phases || [],
-          dailyLogs: p.dailyLogs || []
+          dailyLogs: p.dailyLogs || [],
+          checklist: p.checklist || [],
+          payments: p.payments || []
         })));
         setCustomers(JSON.parse(localStorage.getItem('bt_customers') || '[]'));
         setTeamMembers(JSON.parse(localStorage.getItem('bt_team') || '[]'));
+        setVendors(JSON.parse(localStorage.getItem('bt_vendors') || '[]'));
         setActivityLogs(JSON.parse(localStorage.getItem('bt_logs') || '[]'));
 
         // 3. 優先解鎖介面 (不等待雲端)
@@ -124,6 +128,7 @@ const App: React.FC = () => {
         if (cloudData.customers) setCustomers(cloudData.customers);
         if (cloudData.teamMembers) setTeamMembers(cloudData.teamMembers);
         if (cloudData.activityLogs) setActivityLogs(cloudData.activityLogs);
+        if (cloudData.vendors) setVendors(cloudData.vendors);
         setLastCloudSync(new Date().toLocaleTimeString());
       }
     } catch (e) {
@@ -132,12 +137,12 @@ const App: React.FC = () => {
   };
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
-  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs });
+  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors });
   const isSyncingRef = React.useRef(false);
 
   React.useEffect(() => {
-    dataRef.current = { projects, customers, teamMembers, activityLogs };
-  }, [projects, customers, teamMembers, activityLogs]);
+    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors };
+  }, [projects, customers, teamMembers, activityLogs, vendors]);
 
   const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
     if (!user) return;
@@ -196,6 +201,7 @@ const App: React.FC = () => {
         setCustomers(cloudData.customers);
         setTeamMembers(cloudData.teamMembers);
         setActivityLogs(cloudData.activityLogs || []);
+        setVendors(cloudData.vendors || []);
         setLastCloudSync(new Date().toLocaleTimeString());
       } else {
         await handleCloudSync();
@@ -216,6 +222,7 @@ const App: React.FC = () => {
       localStorage.setItem('bt_customers', JSON.stringify(customers));
       localStorage.setItem('bt_team', JSON.stringify(teamMembers));
       localStorage.setItem('bt_logs', JSON.stringify(activityLogs));
+      localStorage.setItem('bt_vendors', JSON.stringify(vendors));
       setLastLocalSave(new Date().toLocaleTimeString());
     }
 
@@ -226,7 +233,7 @@ const App: React.FC = () => {
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [projects, customers, teamMembers, activityLogs, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role]);
 
   const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
     if (user?.role === 'Guest') return;
@@ -266,15 +273,18 @@ const App: React.FC = () => {
       authorName: user.name,
       authorAvatar: user.picture
     };
-
-    if (project) {
-      addActivityLog(`撰寫了施工日誌`, project.name, projectId, 'project');
-    }
-
     setProjects(prev => prev.map(p => p.id === projectId ? {
       ...p,
       dailyLogs: [newLog, ...(p.dailyLogs || [])]
     } : p));
+  };
+
+  const handleUpdateChecklist = (projectId: string, checklist: ChecklistTask[]) => {
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, checklist } : p));
+  };
+
+  const handleUpdatePayments = (projectId: string, payments: PaymentStage[]) => {
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, payments } : p));
   };
 
   const handleLogout = () => {
@@ -299,9 +309,10 @@ const App: React.FC = () => {
     return {
       projects: projects.filter(filterByDept),
       customers: customers.filter(filterByDept),
-      teamMembers: teamMembers.filter(filterByDept)
+      teamMembers: teamMembers.filter(filterByDept),
+      vendors: vendors.filter(filterByDept)
     };
-  }, [projects, customers, teamMembers, viewingDeptId]);
+  }, [projects, customers, teamMembers, vendors, viewingDeptId]);
 
   if (isInitializing) {
     return (
@@ -418,6 +429,8 @@ const App: React.FC = () => {
               onUpdateFiles={(files) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, files } : p))}
               onUpdatePhases={(phases) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, phases } : p))}
               onAddDailyLog={(log) => handleAddDailyLog(selectedProjectId, log)}
+              onUpdateChecklist={(checklist) => handleUpdateChecklist(selectedProjectId, checklist)}
+              onUpdatePayments={(payments) => handleUpdatePayments(selectedProjectId, payments)}
               onUpdateTasks={(tasks) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, tasks } : p))}
               onUpdateProgress={(progress) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, progress } : p))}
               onUpdateExpenses={(expenses) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, expenses } : p))}
@@ -451,13 +464,14 @@ const App: React.FC = () => {
                       if (parsed.projects) setProjects(parsed.projects);
                       if (parsed.customers) setCustomers(parsed.customers);
                       if (parsed.teamMembers) setTeamMembers(parsed.teamMembers);
+                      if (parsed.vendors) setVendors(parsed.vendors);
                       alert('資料匯入成功！');
                     } catch (e) { alert('匯入失敗：格式錯誤'); }
                   }}
                   isCloudConnected={isCloudConnected}
                   onConnectCloud={handleConnectCloud}
                   onDownloadBackup={() => {
-                    googleDriveService.exportAsFile({ projects, customers, teamMembers });
+                    googleDriveService.exportAsFile({ projects, customers, teamMembers, vendors });
                   }}
                   onDisconnectCloud={() => { setIsCloudConnected(false); localStorage.removeItem('bt_cloud_connected'); }}
                   lastSyncTime={lastCloudSync}
@@ -467,6 +481,60 @@ const App: React.FC = () => {
               {activeTab === 'customers' && <CustomerList customers={filteredData.customers} onAddClick={() => { setEditingCustomer(null); setIsCustomerModalOpen(true); }} onEditClick={(c) => { setEditingCustomer(c); setIsCustomerModalOpen(true); }} onDeleteClick={(id) => { if (confirm('確定移除此客戶？')) { const c = customers.find(x => x.id === id); if (c) addActivityLog('移除了客戶', c.name, id, 'customer'); setCustomers(prev => prev.filter(c => c.id !== id)); } }} />}
               {activeTab === 'dispatch' && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])] } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid) } : p))} />}
               {activeTab === 'analytics' && <Analytics projects={filteredData.projects} />}
+
+              {activeTab === 'vendors' && (
+                <div className="p-4 lg:p-8 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-black text-stone-900 tracking-tight">廠商與工班管理</h2>
+                    <button
+                      onClick={() => {
+                        const name = prompt('廠商名稱');
+                        if (name) {
+                          const newVendor: Vendor = {
+                            id: 'V-' + Date.now().toString().slice(-6),
+                            name,
+                            type: prompt('廠商類型 (例如：水電、建材)') || '未分類',
+                            contact: prompt('聯絡電話') || '',
+                            rating: 5
+                          };
+                          setVendors([...vendors, newVendor]);
+                        }
+                      }}
+                      className="bg-stone-900 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-stone-200 active:scale-95 transition-all"
+                    >
+                      + 新增廠商
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {vendors.map(v => (
+                      <div key={v.id} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm hover:shadow-md transition-all group">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="bg-stone-100 px-2 py-0.5 rounded text-[8px] font-black text-stone-500 uppercase">{v.id}</div>
+                          <button onClick={() => setVendors(vendors.filter(vend => vend.id !== v.id))} className="text-stone-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                        </div>
+                        <h3 className="text-lg font-black text-stone-900 mb-1">{v.name}</h3>
+                        <p className="text-[10px] font-black text-blue-600 uppercase mb-4 tracking-widest">{v.type}</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-xs font-medium text-stone-500">
+                            <User size={14} /> {v.contact}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Sparkles key={i} size={10} className={i < v.rating ? 'text-amber-400' : 'text-stone-200'} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {vendors.length === 0 && (
+                      <div className="col-span-full py-20 bg-stone-50 rounded-[2.5rem] border-2 border-dashed border-stone-100 flex flex-col items-center justify-center text-stone-300 gap-4">
+                        <ShoppingBag size={48} />
+                        <p className="text-[10px] font-black uppercase tracking-widest">尚無廠商資料</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               {activeTab === 'help' && <HelpCenter />}
             </div>
           )}
