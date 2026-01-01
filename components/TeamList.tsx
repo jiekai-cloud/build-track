@@ -16,13 +16,19 @@ interface TeamListProps {
 
 const TeamList: React.FC<TeamListProps> = ({ members, departments, onAddClick, onEditClick, onDeleteClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDept, setSelectedDept] = useState('all');
 
-  const filteredMembers = members.filter(m =>
-    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.specialty.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredMembers = members.filter(m => {
+    const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.specialty.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const memberDepts = m.departmentIds || [m.departmentId];
+    const matchesDept = selectedDept === 'all' || memberDepts.includes(selectedDept);
+
+    return matchesSearch && matchesDept;
+  });
 
   const sortedMembers = [...filteredMembers].sort((a, b) => {
     return a.employeeId.localeCompare(b.employeeId, undefined, { numeric: true, sensitivity: 'base' });
@@ -66,6 +72,27 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, onAddClick, o
             新增成員
           </button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setSelectedDept('all')}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${selectedDept === 'all' ? 'bg-stone-900 text-white shadow-lg' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
+        >
+          全部成員 ({members.length})
+        </button>
+        {departments.map(dept => {
+          const count = members.filter(m => (m.departmentIds || [m.departmentId]).includes(dept.id)).length;
+          return (
+            <button
+              key={dept.id}
+              onClick={() => setSelectedDept(dept.id)}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${selectedDept === dept.id ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
+            >
+              {dept.name} ({count})
+            </button>
+          );
+        })}
       </div>
 
       <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
