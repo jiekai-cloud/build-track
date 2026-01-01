@@ -406,7 +406,7 @@ const App: React.FC = () => {
           setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [] } as any, ...prev]);
         }
         setIsModalOpen(false);
-      }} initialData={editingProject} />}
+      }} initialData={editingProject} teamMembers={teamMembers} />}
 
       {isCustomerModalOpen && user.role !== 'Guest' && <CustomerModal onClose={() => setIsCustomerModalOpen(false)} onConfirm={(data) => {
         if (editingCustomer) setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data } : c));

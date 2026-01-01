@@ -7,9 +7,10 @@ interface ProjectModalProps {
   onClose: () => void;
   onConfirm: (data: Partial<Project>) => void;
   initialData?: Project | null;
+  teamMembers: TeamMember[];
 }
 
-const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initialData }) => {
+const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initialData, teamMembers }) => {
   const categories: ProjectCategory[] = ['室內裝修', '建築營造', '水電機電', '景觀工程', '設計規劃', '其他'];
   const sources: ProjectSource[] = ['BNI', '台塑集團', '士林電機', '信義居家', '企業', '新建工程', '網路客', '住宅', '台灣美光晶圓', 'JW'];
   const statuses = Object.values(ProjectStatus);
@@ -96,19 +97,26 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
 
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件負責人 Manager</label>
+              <div className="relative">
+                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold appearance-none" value={formData.manager} onChange={e => setFormData({ ...formData, manager: e.target.value })}>
+                  <option value="">請選擇負責人</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.name}>{m.name} ({m.role})</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+            <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">業主名稱 Client</label>
               <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold placeholder:text-slate-300" placeholder="" value={formData.client} onChange={e => setFormData({ ...formData, client: e.target.value })} />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件來源 Source</label>
-              <div className="relative">
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold appearance-none" value={formData.source} onChange={e => setFormData({ ...formData, source: e.target.value as any })}>
-                  {sources.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
+          </select>
+      </div>
+    </div>
+          </div >
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -159,9 +167,9 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
             <button type="button" onClick={onClose} className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl">取消</button>
             <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all active:scale-95">確認儲存</button>
           </div>
-        </form>
-      </div>
-    </div>
+        </form >
+      </div >
+    </div >
   );
 };
 
