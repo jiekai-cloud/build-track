@@ -50,38 +50,58 @@ const App: React.FC = () => {
   // 正式上線初始化邏輯
   useEffect(() => {
     const startup = async () => {
-      // 1. 恢復本地會話
-      const savedUser = localStorage.getItem('bt_user');
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-        setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
-      }
+      // 0. 設定安全超時 (避免任何異常導致永久卡死)
+      const safetyTimeout = setTimeout(() => {
+        setIsInitializing(false);
+        console.warn('啟動超時：進入自動跳過模式');
+      }, 5000);
 
-      // 2. 載入本地緩存數據 (作為雲端未就緒前的備援)
-      const savedProjects = localStorage.getItem('bt_projects');
-      const initialProjects = savedProjects ? JSON.parse(savedProjects) : MOCK_PROJECTS;
-      setProjects(initialProjects.map((p: Project) => ({
-        ...p,
-        expenses: p.expenses || [],
-        workAssignments: p.workAssignments || [],
-        files: p.files || [],
-        phases: p.phases || []
-      })));
-      setCustomers(JSON.parse(localStorage.getItem('bt_customers') || '[]'));
-      setTeamMembers(JSON.parse(localStorage.getItem('bt_team') || '[]'));
-
-      // 3. 嘗試自動續連雲端
       try {
-        await googleDriveService.init(DEFAULT_CLIENT_ID);
-        if (localStorage.getItem('bt_cloud_connected') === 'true' && user?.role !== 'Guest') {
-          await autoConnectCloud();
+        // 1. 恢復本地會話
+        const savedUser = localStorage.getItem('bt_user');
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+            setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
+          } catch (e) {
+            console.error('使用者會話格式錯誤');
+            localStorage.removeItem('bt_user');
+          }
         }
-      } catch (e) {
-        console.warn('Google SDK 初始化延遲');
-      } finally {
+
+        // 2. 載入本地緩存數據 (優先進入系統)
+        const savedProjects = localStorage.getItem('bt_projects');
+        const initialProjects = savedProjects ? JSON.parse(savedProjects) : MOCK_PROJECTS;
+        setProjects(initialProjects.map((p: Project) => ({
+          ...p,
+          expenses: p.expenses || [],
+          workAssignments: p.workAssignments || [],
+          files: p.files || [],
+          phases: p.phases || []
+        })));
+        setCustomers(JSON.parse(localStorage.getItem('bt_customers') || '[]'));
+        setTeamMembers(JSON.parse(localStorage.getItem('bt_team') || '[]'));
+
+        // 3. 優先解鎖介面 (不等待雲端)
         setInitialSyncDone(true);
-        setTimeout(() => setIsInitializing(false), 1200);
+        setTimeout(() => {
+          setIsInitializing(false);
+          clearTimeout(safetyTimeout);
+        }, 800);
+
+        // 4. 背景嘗試續連雲端
+        try {
+          await googleDriveService.init(DEFAULT_CLIENT_ID);
+          if (localStorage.getItem('bt_cloud_connected') === 'true' && user?.role !== 'Guest') {
+            await autoConnectCloud();
+          }
+        } catch (e) {
+          console.warn('Google SDK 初始化背景執行中');
+        }
+      } catch (err) {
+        console.error('啟動流程發生嚴重異常', err);
+        setIsInitializing(false);
       }
     };
     startup();
@@ -234,6 +254,12 @@ const App: React.FC = () => {
             <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-bounce"></span>
             <p className="text-stone-500 text-[10px] font-black uppercase tracking-[0.2em]">正在啟動智慧營造生產環境</p>
           </div>
+          <button
+            onClick={() => setIsInitializing(false)}
+            className="mt-4 text-stone-600 text-[10px] font-bold underline underline-offset-4 hover:text-orange-500 opacity-50 hover:opacity-100 transition-all"
+          >
+            直接進入系統 (跳過等待)
+          </button>
         </div>
       </div>
     );
