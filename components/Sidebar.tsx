@@ -1,4 +1,4 @@
-```
+
 import React from 'react';
 import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X } from 'lucide-react';
 
@@ -36,6 +36,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
             <span className="text-[10px] font-bold text-stone-500">工程管理系統</span>
           </div>
         </div>
+        {onMenuClose && (
+          <button
+            onClick={onMenuClose}
+            className="lg:hidden p-2 text-stone-500 hover:text-white hover:bg-stone-800 rounded-xl transition-all"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
@@ -43,11 +51,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w - full flex items - center gap - 3 px - 4 py - 3.5 rounded - 2xl transition - all duration - 200 ${
-  activeTab === item.id
-    ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40'
-    : 'text-stone-400 hover:bg-stone-800 hover:text-white'
-} `}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${activeTab === item.id
+                ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40'
+                : 'text-stone-400 hover:bg-stone-800 hover:text-white'
+              }`}
           >
             <item.icon size={18} />
             <span className="font-bold text-xs">{item.label}</span>
@@ -60,18 +67,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w - full flex items - center gap - 3 px - 4 py - 3 rounded - lg text - stone - 500 hover: bg - stone - 800 hover: text - white transition - colors ${ activeTab === item.id ? 'text-white' : '' } `}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-stone-800 hover:text-white transition-colors ${activeTab === item.id ? 'text-white' : ''}`}
           >
             <item.icon size={18} />
             <span className="font-bold text-xs">{item.label}</span>
           </button>
         ))}
-        
+
         <div className="mt-4 px-4 py-3 bg-stone-800/50 border border-white/5 rounded-2xl flex items-center gap-3">
-          <img 
-            src={user.picture} 
-            alt="Avatar" 
-            className="w-8 h-8 rounded-xl border border-white/10 object-cover" 
+          <img
+            src={user.picture}
+            alt="Avatar"
+            className="w-8 h-8 rounded-xl border border-white/10 object-cover"
           />
           <div className="flex-1 overflow-hidden">
             <p className="text-xs font-black truncate">{user.name}</p>
