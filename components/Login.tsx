@@ -125,6 +125,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         <div className="lg:col-span-7 p-8 lg:p-20 flex flex-col justify-center">
           <form onSubmit={handleLogin} className="space-y-8 max-w-md mx-auto w-full">
             <div className="text-center lg:text-left space-y-2">
+              <div className="lg:hidden flex justify-center mb-6">
+                <div className="bg-orange-600 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg">
+                  <HardHat className="text-white w-6 h-6" />
+                </div>
+              </div>
+              <h1 className="lg:hidden text-2xl font-black text-white tracking-tighter mb-2">生活品質工程管理系統</h1>
               <h2 className="text-3xl font-black text-white tracking-tight">系統登入</h2>
               <p className="text-stone-500 text-sm">歡迎回來，請輸入帳號驗證您的身份。</p>
             </div>
