@@ -112,6 +112,7 @@ class GoogleDriveService {
 
   async saveToCloud(data: any) {
     if (!this.isInitialized) await this.init();
+    this.lastErrorStatus = null;
     try {
       const existingFile = await this.findBackupFile();
       const metadata = { name: BACKUP_FILENAME, mimeType: 'application/json' };
@@ -151,6 +152,7 @@ class GoogleDriveService {
       });
 
       if (!response.ok) {
+        this.lastErrorStatus = `${response.status}`;
         const errorText = await response.text();
         console.error('Drive Sync Failed:', response.status, response.statusText);
         console.error('Error Body:', errorText);
@@ -160,8 +162,13 @@ class GoogleDriveService {
       return true;
     } catch (err) {
       console.error('Save to Drive failed with exception:', err);
+      this.lastErrorStatus = 'EXC';
       return false;
     }
+  }
+
+  getLastErrorStatus() {
+    return this.lastErrorStatus;
   }
 
   async loadFromCloud(): Promise<any | null> {
