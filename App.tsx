@@ -15,10 +15,10 @@ import ProjectDetail from './components/ProjectDetail';
 import CustomerModal from './components/CustomerModal';
 import TeamModal from './components/TeamModal';
 import Login from './components/Login';
-import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell } from 'lucide-react';
+import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as UserIcon, Trash2, ShoppingBag, Receipt } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS } from './constants';
-import { Project, ProjectStatus, Customer, TeamMember, User, Department, ProjectComment } from './types';
+import { Project, ProjectStatus, Customer, TeamMember, User, Department, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry } from './types';
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 
 const App: React.FC = () => {
@@ -516,7 +516,7 @@ const App: React.FC = () => {
                         <p className="text-[10px] font-black text-blue-600 uppercase mb-4 tracking-widest">{v.type}</p>
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-xs font-medium text-stone-500">
-                            <User size={14} /> {v.contact}
+                            <UserIcon size={14} /> {v.contact}
                           </div>
                           <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, i) => (

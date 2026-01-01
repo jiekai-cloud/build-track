@@ -5,7 +5,7 @@ import {
   MessageSquare, Send, Receipt, X, ZoomIn, FileText, ImageIcon, Upload, MapPin,
   Navigation, ShoppingBag, Utensils, Building2, ExternalLink, CalendarDays, Loader2, Check, DownloadCloud, ShieldAlert
 } from 'lucide-react';
-import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User } from '../types';
+import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage } from '../types';
 import { suggestProjectSchedule, searchNearbyResources } from '../services/geminiService';
 
 interface ProjectDetailProps {
@@ -304,7 +304,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <div className="w-full bg-stone-100 h-1.5 rounded-full mt-3 overflow-hidden">
                       <div
                         className={`h-full transition-all duration-1000 ${(currentSpent / project.budget) > 1 ? 'bg-rose-500' :
-                            (currentSpent / project.budget) > 0.8 ? 'bg-amber-500' : 'bg-blue-600'
+                          (currentSpent / project.budget) > 0.8 ? 'bg-amber-500' : 'bg-blue-600'
                           }`}
                         style={{ width: `${Math.min((currentSpent / project.budget) * 100, 100)}%` }}
                       ></div>
@@ -384,8 +384,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                   onUpdatePayments((project.payments || []).map(pay => pay.id === p.id ? { ...pay, status: nextStatus } : pay));
                                 }}
                                 className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border transition-all ${p.status === 'paid'
-                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                    : 'bg-amber-50 text-amber-600 border-amber-100'
+                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                  : 'bg-amber-50 text-amber-600 border-amber-100'
                                   }`}
                               >
                                 {p.status === 'paid' ? '已收訖' : '待收款'}

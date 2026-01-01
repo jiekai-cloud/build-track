@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Briefcase, Calendar, DollarSign, User, Tag, UserPlus, Save, Activity, Globe, ChevronDown, MapPin } from 'lucide-react';
-import { Project, ProjectCategory, ProjectStatus, ProjectSource, ProjectLocation } from '../types';
+import { X, Briefcase, Calendar, DollarSign, User as UserIcon, Tag, UserPlus, Save, Activity, Globe, ChevronDown, MapPin } from 'lucide-react';
+import { Project, ProjectCategory, ProjectStatus, ProjectSource, ProjectLocation, TeamMember } from '../types';
 
 interface ProjectModalProps {
   onClose: () => void;
@@ -99,7 +99,9 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件負責人 Manager</label>
               <div className="relative">
-                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <UserIcon size={16} />
+                </div>
                 <select className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold appearance-none" value={formData.manager} onChange={e => setFormData({ ...formData, manager: e.target.value })}>
                   <option value="">請選擇負責人</option>
                   {teamMembers.map(m => (

@@ -1,7 +1,7 @@
 
-import React from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+import React, { useMemo } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area, Cell, PieChart, Pie
 } from 'recharts';
 import { TrendingUp, Coins, Users, Target, ArrowUpRight, ArrowDownRight, Sparkles } from 'lucide-react';
@@ -12,12 +12,22 @@ interface AnalyticsProps {
 }
 
 const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
-  const sourceData = [
-    { name: 'BNI', value: projects.filter(p => p.source === 'BNI').length },
-    { name: '台塑', value: projects.filter(p => p.source === '台塑集團').length },
-    { name: '網路', value: projects.filter(p => p.source === '網路客').length },
-    { name: '舊客', value: projects.filter(p => p.source === '住宅').length },
-  ].filter(d => d.value > 0);
+  const sourceStats = useMemo(() => {
+    const sources = Array.from(new Set(projects.map(p => p.source))).filter(Boolean);
+    const stats = sources.map(source => {
+      const sourceProjects = projects.filter(p => p.source === source);
+      const total = sourceProjects.length;
+      const won = sourceProjects.filter(p =>
+        p.status === '施工中' || p.status === '已完工'
+      ).length;
+      const rate = total > 0 ? (won / total) * 100 : 0;
+      return { name: source, total, won, rate };
+    }).sort((a, b) => b.rate - a.rate);
+    return stats;
+  }, [projects]);
+
+  const globalWon = projects.filter(p => p.status === '施工中' || p.status === '已完工').length;
+  const globalRate = projects.length > 0 ? (globalWon / projects.length) * 100 : 0;
 
   const profitData = projects.slice(0, 6).map(p => ({
     name: p.name.substring(0, 4),
@@ -57,8 +67,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={profitData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10}} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
                 <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
                 <Bar dataKey="預算" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
                 <Bar dataKey="毛利" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} />
@@ -67,35 +77,47 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
           </div>
         </div>
 
-        {/* 案源轉換分析 */}
-        <div className="bg-white p-6 lg:p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-900 mb-8 flex items-center gap-2">
-            <Target size={20} className="text-indigo-600" /> 案源管道分佈
-          </h3>
-          <div className="h-64 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={sourceData} innerRadius={60} outerRadius={85} paddingAngle={8} dataKey="value">
-                  {sourceData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-black text-slate-900">{projects.length}</span>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">總案數</span>
-            </div>
+        {/* 案源成交率排行榜 */}
+        <div className="bg-white p-6 lg:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+              <Target size={20} className="text-indigo-600" /> 來源成交率排行
+            </h3>
+            <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg">LEADERBOARD</span>
           </div>
-          <div className="mt-6 space-y-2">
-            {sourceData.map((d, i) => (
-              <div key={d.name} className="flex justify-between items-center text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                  <span className="font-bold text-slate-600">{d.name}</span>
+
+          <div className="flex-1 space-y-5">
+            {sourceStats.map((stat, i) => (
+              <div key={stat.name} className="space-y-2">
+                <div className="flex justify-between items-end">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-5 h-5 flex items-center justify-center rounded-md text-[10px] font-black ${i === 0 ? 'bg-amber-400 text-white' :
+                        i === 1 ? 'bg-slate-300 text-white' :
+                          i === 2 ? 'bg-orange-300 text-white' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                      {i + 1}
+                    </span>
+                    <span className="text-xs font-bold text-slate-700">{stat.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-black text-slate-900">{stat.rate.toFixed(1)}%</span>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">成交 {stat.won} / 總額 {stat.total}</p>
+                  </div>
                 </div>
-                <span className="font-black text-slate-900">{Math.round((d.value/projects.length)*100)}%</span>
+                <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden border border-slate-100/50">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-1000"
+                    style={{ width: `${stat.rate}%` }}
+                  ></div>
+                </div>
               </div>
             ))}
+            {sourceStats.length === 0 && (
+              <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-2 opacity-50">
+                <Target size={40} />
+                <p className="text-[10px] font-black uppercase tracking-widest">目前尚無分析數據</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -103,8 +125,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
       {/* 下方趨勢分析 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: '人均產值', value: '$2.8M', trend: '+12.5%', isUp: true, icon: Users },
-          { label: '平均毛利', value: '32.4%', trend: '-2.1%', isUp: false, icon: TrendingUp },
+          { label: '人均產值', value: `$2.8M`, trend: '+12.5%', isUp: true, icon: Users },
+          { label: '案件總成交率', value: `${globalRate.toFixed(1)}%`, trend: globalRate > 50 ? '高於業界平均' : '尚有優化空間', isUp: globalRate > 50, icon: Target },
           { label: '材料成本比', value: '45.8%', trend: '+4.3%', isUp: false, icon: Coins },
           { label: '進度準時率', value: '88%', trend: '+5.0%', isUp: true, icon: Target },
         ].map((item, i) => (
