@@ -125,14 +125,22 @@ const App: React.FC = () => {
     }
   };
 
+  // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
+  const dataRef = React.useRef({ projects, customers, teamMembers });
+  const isSyncingRef = React.useRef(false);
+
+  React.useEffect(() => {
+    dataRef.current = { projects, customers, teamMembers };
+  }, [projects, customers, teamMembers]);
+
   const handleCloudSync = useCallback(async () => {
-    if (!isCloudConnected || isSyncing || user?.role === 'Guest') return;
+    if (!isCloudConnected || isSyncingRef.current || user?.role === 'Guest') return;
+
+    isSyncingRef.current = true;
     setIsSyncing(true);
     try {
       const success = await googleDriveService.saveToCloud({
-        projects,
-        customers,
-        teamMembers,
+        ...dataRef.current,
         lastUpdated: new Date().toISOString(),
         userEmail: user?.email
       });
@@ -146,9 +154,10 @@ const App: React.FC = () => {
     } catch (err) {
       setCloudError('連線異常');
     } finally {
+      isSyncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [projects, customers, teamMembers, isCloudConnected, isSyncing, user]);
+  }, [isCloudConnected, user?.email, user?.role]);
 
   const handleConnectCloud = async () => {
     if (user?.role === 'Guest') return;
@@ -186,14 +195,14 @@ const App: React.FC = () => {
       setLastLocalSave(new Date().toLocaleTimeString());
     }
 
-    // 智慧雲端增量同步
+    // 智慧雲端增量同步 (當資料變更後 10 秒才觸發，避免頻繁儲存)
     if (isCloudConnected && !cloudError && user.role !== 'Guest') {
       const timer = setTimeout(() => {
         handleCloudSync();
-      }, 5000);
+      }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [projects, customers, teamMembers, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user]);
+  }, [projects, customers, teamMembers, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user.role]);
 
   const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
     if (user?.role === 'Guest') return;
