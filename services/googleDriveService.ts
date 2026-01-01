@@ -119,19 +119,18 @@ class GoogleDriveService {
         cloudSyncTimestamp: new Date().toISOString()
       });
 
-      // 使用 Google Drive API 標準的 multipart/related 格式
       const boundary = '-------314159265358979323846';
-      const delimiter = "\r\n--" + boundary + "\r\n";
-      const close_delim = "\r\n--" + boundary + "--";
-
-      const body =
-        delimiter +
-        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-        JSON.stringify(metadata) +
-        delimiter +
-        'Content-Type: application/json\r\n\r\n' +
-        fileContent +
-        close_delim;
+      const body = [
+        '--' + boundary,
+        'Content-Type: application/json; charset=UTF-8',
+        '',
+        JSON.stringify(metadata),
+        '--' + boundary,
+        'Content-Type: application/json',
+        '',
+        fileContent,
+        '--' + boundary + '--'
+      ].join('\r\n');
 
       let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
       let method = 'POST';
@@ -141,6 +140,7 @@ class GoogleDriveService {
         method = 'PATCH';
       }
 
+      console.log(`Drive Sync Attempt: ${method} ${url}`);
       const response = await this.fetchWithAuth(url, {
         method,
         body,
@@ -151,13 +151,14 @@ class GoogleDriveService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Drive Sync Error Status:', response.status);
-        console.error('Drive Sync Error Body:', errorText);
+        console.error('Drive Sync Failed:', response.status, response.statusText);
+        console.error('Error Body:', errorText);
         return false;
       }
+      console.log('Drive Sync Success!');
       return true;
     } catch (err) {
-      console.error('Save to Drive failed:', err);
+      console.error('Save to Drive failed with exception:', err);
       return false;
     }
   }
