@@ -113,10 +113,16 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">業主名稱 Client</label>
               <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold placeholder:text-slate-300" placeholder="" value={formData.client} onChange={e => setFormData({ ...formData, client: e.target.value })} />
             </div>
-          </select>
-      </div>
-    </div>
-          </div >
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件來源 Source</label>
+              <div className="relative">
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold appearance-none" value={formData.source} onChange={e => setFormData({ ...formData, source: e.target.value as any })}>
+                  {sources.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
