@@ -2,7 +2,12 @@
 import { Project, ProjectStatus, Department } from './types';
 
 export const MOCK_DEPARTMENTS: Department[] = [
-  { id: 'DEPT-1', name: '第一工程部', color: '#ea580c', manager: '張部主任' }
+  { id: 'DEPT-1', name: '業務部', color: '#ea580c', manager: '經理' },
+  { id: 'DEPT-2', name: '財務部', color: '#0284c7', manager: '會計' },
+  { id: 'DEPT-3', name: '第一工程部', color: '#16a34a', manager: '工程主管' },
+  { id: 'DEPT-4', name: '戰略指揮部', color: '#6366f1', manager: '特助' },
+  { id: 'DEPT-5', name: '品質訓練部', color: '#8b5cf6', manager: '主管' },
+  { id: 'DEPT-6', name: '行銷部', color: '#ec4899', manager: '主管' }
 ];
 
 export const MOCK_PROJECTS: Project[] = [

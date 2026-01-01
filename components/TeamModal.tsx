@@ -200,9 +200,12 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData }
                 value={formData.departmentId || 'DEPT-1'}
                 onChange={e => setFormData({ ...formData, departmentId: e.target.value })}
               >
-                <option value="DEPT-1">營造一部 (Construction Dept 1)</option>
-                <option value="DEPT-2">設計二部 (Design Dept 2)</option>
-                <option value="DEPT-3">機電三部 (MEP Dept 3)</option>
+                <option value="DEPT-1">業務部 (Sales)</option>
+                <option value="DEPT-2">財務部 (Finance)</option>
+                <option value="DEPT-3">第一工程部 (Engineering 1)</option>
+                <option value="DEPT-4">戰略指揮部 (Strategic)</option>
+                <option value="DEPT-5">品質訓練部 (Quality & Training)</option>
+                <option value="DEPT-6">行銷部 (Marketing)</option>
               </select>
             </div>
 
