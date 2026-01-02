@@ -361,7 +361,7 @@ const App: React.FC = () => {
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
       syncTimeoutRef.current = setTimeout(() => {
         handleCloudSync();
-      }, 10000);
+      }, 3000);
     }
   }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads]);
 
