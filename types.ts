@@ -124,7 +124,13 @@ export interface Vendor {
   name: string;
   type: string;
   contact: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  taxId?: string;
+  specialty?: string[];
   rating: number;
+  notes?: string;
 }
 
 export interface DailyLogEntry {

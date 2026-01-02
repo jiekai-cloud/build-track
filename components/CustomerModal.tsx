@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   X, User, Phone, Mail, MapPin, Building2, Save,
   Fingerprint, Calendar, Briefcase, Share2, MessageSquare,
-  Tag, Info, Heart, Smartphone, Printer, UserCheck
+  Tag, Info, Heart, Smartphone, Printer, UserCheck, Scan
 } from 'lucide-react';
 import { Customer } from '../types';
+import BusinessCardScanner from './BusinessCardScanner';
 
 interface CustomerModalProps {
   onClose: () => void;
@@ -14,6 +15,7 @@ interface CustomerModalProps {
 
 const CustomerModal: React.FC<CustomerModalProps> = ({ onClose, onConfirm, initialData }) => {
   const [activeTab, setActiveTab] = useState<'basic' | 'contact' | 'crm'>('basic');
+  const [showScanner, setShowScanner] = useState(false);
   const [tagInput, setTagInput] = useState('');
 
   const [formData, setFormData] = useState<Partial<Customer>>({
@@ -86,9 +88,21 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ onClose, onConfirm, initi
             <User className="text-blue-400" />
             {initialData ? '修改客戶資訊' : '新增客戶資料'}
           </h2>
-          <button onClick={onClose} className="opacity-40 hover:opacity-100 transition-opacity">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowScanner(true)}
+              className="group flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all border border-blue-100 font-black text-xs"
+            >
+              <Scan size={16} className="group-hover:rotate-12 transition-transform" />
+              <span>AI 掃描名片</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -384,6 +398,30 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ onClose, onConfirm, initi
           </div>
         </form>
       </div>
+
+      {showScanner && (
+        <BusinessCardScanner
+          onClose={() => setShowScanner(false)}
+          onScan={(data) => {
+            // Merge scanned data with existing form data, prioritize non-empty scanned fields
+            setFormData(prev => ({
+              ...prev,
+              name: data.name || prev.name,
+              contactPerson: data.contactPerson || prev.contactPerson,
+              occupation: data.occupation || prev.occupation,
+              phone: data.phone || prev.phone,
+              landline: data.landline || prev.landline,
+              fax: data.fax || prev.fax,
+              email: data.email || prev.email,
+              address: data.address || prev.address,
+              lineId: data.lineId || prev.lineId,
+              taxId: data.taxId || prev.taxId,
+            }));
+            // Switch to basic tab to see the results
+            setActiveTab('basic');
+          }}
+        />
+      )}
     </div>
   );
 };

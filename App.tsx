@@ -13,8 +13,10 @@ import ProjectModal from './components/ProjectModal';
 import ProjectDetail from './components/ProjectDetail';
 import CustomerModal from './components/CustomerModal';
 import TeamModal from './components/TeamModal';
+import VendorModal from './components/VendorModal';
+import LeadToProjectModal from './components/LeadToProjectModal';
 import Login from './components/Login';
-import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as UserIcon, Trash2, ShoppingBag, Receipt } from 'lucide-react';
+import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as UserIcon, Trash2, ShoppingBag, Receipt, Pencil } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
 import { Project, ProjectStatus, Customer, TeamMember, User, Department, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead } from './types';
@@ -78,6 +80,8 @@ const App: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
 
   // 系統狀態
   const [isCloudConnected, setIsCloudConnected] = useState(false);
@@ -295,7 +299,7 @@ const App: React.FC = () => {
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads]);
 
   const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
     if (user?.role === 'Guest') return;
@@ -596,17 +600,8 @@ const App: React.FC = () => {
                     <h2 className="text-xl font-black text-stone-900 tracking-tight">廠商與工班管理</h2>
                     <button
                       onClick={() => {
-                        const name = prompt('廠商名稱');
-                        if (name) {
-                          const newVendor: Vendor = {
-                            id: 'V-' + Date.now().toString().slice(-6),
-                            name,
-                            type: prompt('廠商類型 (例如：水電、建材)') || '未分類',
-                            contact: prompt('聯絡電話') || '',
-                            rating: 5
-                          };
-                          setVendors([...vendors, newVendor]);
-                        }
+                        setEditingVendor(null);
+                        setIsVendorModalOpen(true);
                       }}
                       className="bg-stone-900 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-stone-200 active:scale-95 transition-all"
                     >
@@ -618,7 +613,27 @@ const App: React.FC = () => {
                       <div key={v.id} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm hover:shadow-md transition-all group">
                         <div className="flex justify-between items-start mb-4">
                           <div className="bg-stone-100 px-2 py-0.5 rounded text-[8px] font-black text-stone-500 uppercase">{v.id}</div>
-                          <button onClick={() => setVendors(vendors.filter(vend => vend.id !== v.id))} className="text-stone-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <button
+                              onClick={() => {
+                                setEditingVendor(v);
+                                setIsVendorModalOpen(true);
+                              }}
+                              className="text-stone-300 hover:text-blue-600 p-1"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`確定要刪除廠商 ${v.name} 嗎？`)) {
+                                  setVendors(vendors.filter(vend => vend.id !== v.id));
+                                }
+                              }}
+                              className="text-stone-300 hover:text-rose-500 p-1"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                         <h3 className="text-lg font-black text-stone-900 mb-1">{v.name}</h3>
                         <p className="text-[10px] font-black text-blue-600 uppercase mb-4 tracking-widest">{v.type}</p>
@@ -719,29 +734,56 @@ const App: React.FC = () => {
         setIsModalOpen(false);
       }} initialData={editingProject} teamMembers={teamMembers} />}
 
-      {isCustomerModalOpen && user.role !== 'Guest' && <CustomerModal onClose={() => setIsCustomerModalOpen(false)} onConfirm={(data) => {
-        if (editingCustomer) {
-          addActivityLog('更新客戶資料', data.name, editingCustomer.id, 'customer');
-          setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data } : c));
-        } else {
-          const newId = 'C' + Date.now().toString().slice(-6);
-          addActivityLog('新增客戶', data.name, newId, 'customer');
-          setCustomers(prev => [{ ...data, id: newId, createdDate: new Date().toISOString().split('T')[0] } as any, ...prev]);
-        }
-        setIsCustomerModalOpen(false);
-      }} initialData={editingCustomer} />}
+      {isCustomerModalOpen && user?.role !== 'Guest' && <CustomerModal
+        onClose={() => setIsCustomerModalOpen(false)}
+        onConfirm={(data) => {
+          if (editingCustomer) {
+            addActivityLog('更新客戶資料', data.name, editingCustomer.id, 'customer');
+            setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data } : c));
+          } else {
+            const newId = 'C' + Date.now().toString().slice(-6);
+            addActivityLog('新增客戶', data.name, newId, 'customer');
+            setCustomers(prev => [{ ...data, id: newId, createdDate: new Date().toISOString().split('T')[0] } as any, ...prev]);
+          }
+          setIsCustomerModalOpen(false);
+          setEditingCustomer(null);
+        }}
+        initialData={editingCustomer}
+      />}
 
-      {isTeamModalOpen && user.role !== 'Guest' && <TeamModal onClose={() => setIsTeamModalOpen(false)} onConfirm={(data) => {
-        if (editingMember) {
-          addActivityLog('更新成員資料', data.name, editingMember.id, 'team');
-          setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data } : m));
-        } else {
-          const newId = 'T' + Date.now().toString().slice(-6);
-          addActivityLog('新增團隊成員', data.name, newId, 'team');
-          setTeamMembers(prev => [{ ...data, id: newId, status: 'Available', activeProjectsCount: 0, systemRole: data.systemRole || 'Staff', departmentId: data.departmentId || 'DEPT-1' } as any, ...prev]);
-        }
-        setIsTeamModalOpen(false);
-      }} initialData={editingMember} />}
+      {isTeamModalOpen && user?.role !== 'Guest' && <TeamModal
+        onClose={() => { setIsTeamModalOpen(false); setEditingMember(null); }}
+        onConfirm={(data) => {
+          if (editingMember) {
+            addActivityLog('更新成員資料', data.name, editingMember.id, 'team');
+            setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data } : m));
+          } else {
+            const newId = 'T' + Date.now().toString().slice(-6);
+            addActivityLog('新增團隊成員', data.name, newId, 'team');
+            setTeamMembers(prev => [{ ...data, id: newId, status: 'Available', activeProjectsCount: 0, systemRole: data.systemRole || 'Staff', departmentId: data.departmentId || 'DEPT-1' } as any, ...prev]);
+          }
+          setIsTeamModalOpen(false);
+          setEditingMember(null);
+        }}
+        initialData={editingMember}
+      />}
+
+      <VendorModal
+        isOpen={isVendorModalOpen}
+        onClose={() => { setIsVendorModalOpen(false); setEditingVendor(null); }}
+        onSave={(data) => {
+          if (editingVendor) {
+            addActivityLog('更新廠商資料', data.name, editingVendor.id, 'vendor');
+            setVendors(prev => prev.map(v => v.id === data.id ? data : v));
+          } else {
+            addActivityLog('新增合作廠商', data.name, data.id, 'vendor');
+            setVendors(prev => [data, ...prev]);
+          }
+          setIsVendorModalOpen(false);
+          setEditingVendor(null);
+        }}
+        vendor={editingVendor}
+      />
 
       {/* Activity Log Side Panel Overlay */}
       {isNotificationOpen && (

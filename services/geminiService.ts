@@ -16,9 +16,9 @@ export const getPortfolioAnalysis = async (projects: Project[]) => {
     const criticalOnes = projects
       .filter(p => (p.status === '施工中' && p.progress < 20) || (p.status === '報價中'))
       .slice(0, 50); // 採樣前 50 個高風險案件
-      
+
     const projectSummary = criticalOnes.map(p => `- ${p.name}: 狀態 ${p.status}, 進度 ${p.progress}%, 預算 ${p.budget}`).join('\n');
-    
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `目前系統共管理 ${totalCount} 件專案，以下是經初步篩選出的 50 個潛在風險案件，請針對這些數據提供營運風險報告：\n${projectSummary}`,
@@ -75,7 +75,7 @@ export const searchEngineeringKnowledge = async (query: string) => {
         systemInstruction: "妳是營造法規與市場趨勢專家。請利用搜尋功能為使用者提供具備權威來源的解答，包含最新法規更新或建材價格行情。"
       }
     });
-    
+
     // 根據規範，必須提取 groundingChunks 中的 URL
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const links = chunks.map((chunk: any) => ({
@@ -191,5 +191,57 @@ export const parseWorkDispatchText = async (text: string) => {
   } catch (error) {
     console.error("日報解析失敗:", error);
     return [];
+  }
+};
+
+/**
+ * 智慧名片辨識 - 提取聯絡資訊
+ */
+export const scanBusinessCard = async (base64Image: string) => {
+  const ai = getAI();
+  try {
+    // 使用具備視覺能力的模型
+    const response = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: [
+        {
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: base64Image
+          }
+        },
+        "請辨識這張名片上的聯絡資訊。請盡可能精確提取公司名稱、姓名、職稱、電話、Line ID、Email 與地址。"
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            name: { type: Type.STRING, description: '公司或客戶名稱全銜' },
+            contactPerson: { type: Type.STRING, description: '聯絡人姓名' },
+            occupation: { type: Type.STRING, description: '職稱或職業' },
+            phone: { type: Type.STRING, description: '主要聯絡電話 (手機)' },
+            landline: { type: Type.STRING, description: '室內電話或分機' },
+            fax: { type: Type.STRING, description: '傳真號碼' },
+            email: { type: Type.STRING, description: '電子郵件' },
+            address: { type: Type.STRING, description: '地址' },
+            lineId: { type: Type.STRING, description: 'Line ID' },
+            taxId: { type: Type.STRING, description: '統一編號' },
+            website: { type: Type.STRING, description: '官網或社交帳號' }
+          }
+        },
+        systemInstruction: "妳是專業的商務名片數位化專家。妳能從名片照片中精準辨認各個欄位。如果某個欄位不存在或無法辨識，請回傳空字串。"
+      }
+    });
+
+    try {
+      return JSON.parse(response.text || "{}");
+    } catch (e) {
+      console.error("JSON 解析失敗，原始文字:", response.text);
+      return {};
+    }
+  } catch (error) {
+    console.error("名片掃描失敗:", error);
+    throw error;
   }
 };
