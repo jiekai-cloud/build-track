@@ -93,6 +93,51 @@ const App: React.FC = () => {
   const [initialSyncDone, setInitialSyncDone] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
+  // 同步控制與合併邏輯
+  const lastRemoteModifiedTime = React.useRef<string | null>(null);
+  const isSyncingRef = React.useRef(false);
+  const syncTimeoutRef = React.useRef<any>(null);
+
+  const mergeData = useCallback(<T extends { id: string, updatedAt?: string }>(local: T[], remote: T[]): T[] => {
+    const merged = [...local];
+    remote.forEach(remoteItem => {
+      const localIndex = merged.findIndex(item => item.id === remoteItem.id);
+      if (localIndex === -1) {
+        merged.push(remoteItem);
+      } else {
+        const localItem = merged[localIndex];
+        const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
+        const remoteTime = remoteItem.updatedAt ? new Date(remoteItem.updatedAt).getTime() : 0;
+        // 如果遠端比較新，或者是本地沒有時間戳而遠端有，則更新
+        if (remoteTime > localTime) {
+          merged[localIndex] = remoteItem;
+        }
+      }
+    });
+    return merged;
+  }, []);
+
+  const updateStateWithMerge = useCallback((cloudData: any) => {
+    if (!cloudData) return;
+
+    setProjects(prev => mergeData(prev, cloudData.projects || []));
+    setCustomers(prev => mergeData(prev, cloudData.customers || []));
+    setTeamMembers(prev => mergeData(prev, cloudData.teamMembers || []));
+    setVendors(prev => mergeData(prev, cloudData.vendors || []));
+    setLeads(prev => mergeData(prev, cloudData.leads || []));
+
+    // Activity logs 採取單純合併去重
+    setActivityLogs(prev => {
+      const combined = [...(cloudData.activityLogs || []), ...prev];
+      const seen = new Set();
+      return combined.filter(log => {
+        if (seen.has(log.id)) return false;
+        seen.add(log.id);
+        return true;
+      }).slice(0, 100);
+    });
+  }, [mergeData]);
+
   // 正式上線初始化邏輯
   useEffect(() => {
     const startup = async () => {
@@ -186,15 +231,14 @@ const App: React.FC = () => {
       setIsCloudConnected(true);
       setCloudError(null);
 
-      const cloudData = await googleDriveService.loadFromCloud();
-      if (cloudData) {
-        if (cloudData.projects) setProjects(cloudData.projects);
-        if (cloudData.customers) setCustomers(cloudData.customers);
-        if (cloudData.teamMembers) setTeamMembers(cloudData.teamMembers);
-        if (cloudData.activityLogs) setActivityLogs(cloudData.activityLogs);
-        if (cloudData.vendors) setVendors(cloudData.vendors);
-        if (cloudData.leads) setLeads(cloudData.leads);
-        setLastCloudSync(new Date().toLocaleTimeString());
+      const metadata = await googleDriveService.getFileMetadata();
+      if (metadata) {
+        lastRemoteModifiedTime.current = metadata.modifiedTime;
+        const cloudData = await googleDriveService.loadFromCloud();
+        if (cloudData) {
+          updateStateWithMerge(cloudData);
+          setLastCloudSync(new Date().toLocaleTimeString());
+        }
       }
     } catch (e) {
       setCloudError('會話已過期');
@@ -202,12 +246,11 @@ const App: React.FC = () => {
   };
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
-  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors });
-  const isSyncingRef = React.useRef(false);
+  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads });
 
   React.useEffect(() => {
-    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors };
-  }, [projects, customers, teamMembers, activityLogs, vendors]);
+    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads };
+  }, [projects, customers, teamMembers, activityLogs, vendors, leads]);
 
   const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
     if (!user) return;
@@ -231,12 +274,30 @@ const App: React.FC = () => {
     isSyncingRef.current = true;
     setIsSyncing(true);
     try {
+      // 在存檔前先檢查雲端是否有更新
+      const metadata = await googleDriveService.getFileMetadata();
+      if (metadata && lastRemoteModifiedTime.current && metadata.modifiedTime !== lastRemoteModifiedTime.current) {
+        console.log('[Sync] Detected newer cloud version, merging before save...');
+        const cloudData = await googleDriveService.loadFromCloud();
+        if (cloudData) {
+          updateStateWithMerge(cloudData);
+        }
+      }
+
       const success = await googleDriveService.saveToCloud({
-        ...dataRef.current,
+        projects,
+        customers,
+        teamMembers,
+        vendors,
+        leads,
+        activityLogs,
         lastUpdated: new Date().toISOString(),
         userEmail: user?.email
       });
+
       if (success) {
+        const newMetadata = await googleDriveService.getFileMetadata();
+        if (newMetadata) lastRemoteModifiedTime.current = newMetadata.modifiedTime;
         setLastCloudSync(new Date().toLocaleTimeString());
         setCloudError(null);
       } else {
@@ -249,7 +310,7 @@ const App: React.FC = () => {
       isSyncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [isCloudConnected, user?.email, user?.role]);
+  }, [isCloudConnected, user?.email, user?.role, projects, customers, teamMembers, vendors, leads, activityLogs, updateStateWithMerge]);
 
   const handleConnectCloud = async () => {
     if (user?.role === 'Guest') return;
@@ -292,14 +353,40 @@ const App: React.FC = () => {
       setLastLocalSave(new Date().toLocaleTimeString());
     }
 
-    // 智慧雲端增量同步 (當資料變更後 10 秒才觸發，避免頻繁儲存)
+    // 智慧雲端自動同步 (當資料變更後 10 秒才觸發)
     if (isCloudConnected && !cloudError && user.role !== 'Guest') {
-      const timer = setTimeout(() => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = setTimeout(() => {
         handleCloudSync();
       }, 10000);
-      return () => clearTimeout(timer);
     }
   }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads]);
+
+  // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
+  useEffect(() => {
+    if (!isCloudConnected || user?.role === 'Guest' || !initialSyncDone) return;
+
+    const heartbeat = setInterval(async () => {
+      if (isSyncingRef.current) return;
+
+      try {
+        const metadata = await googleDriveService.getFileMetadata();
+        if (metadata && metadata.modifiedTime !== lastRemoteModifiedTime.current) {
+          console.log('[Heartbeat] Cloud data updated by another user, syncing...');
+          const cloudData = await googleDriveService.loadFromCloud();
+          if (cloudData) {
+            updateStateWithMerge(cloudData);
+            lastRemoteModifiedTime.current = metadata.modifiedTime;
+            setLastCloudSync(new Date().toLocaleTimeString());
+          }
+        }
+      } catch (e) {
+        console.warn('Heartbeat check failed');
+      }
+    }, 45000);
+
+    return () => clearInterval(heartbeat);
+  }, [isCloudConnected, user?.role, initialSyncDone, updateStateWithMerge]);
 
   const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
     if (user?.role === 'Guest') return;
@@ -307,7 +394,7 @@ const App: React.FC = () => {
     if (project) {
       addActivityLog(`變更專案狀態：${status} `, project.name, projectId, 'project');
     }
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status } : p));
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status, updatedAt: new Date().toISOString() } : p));
   };
 
   const handleAddComment = (projectId: string, text: string) => {
@@ -324,7 +411,7 @@ const App: React.FC = () => {
     if (project) {
       addActivityLog(`在案件中留言`, project.name, projectId, 'project');
     }
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, comments: [newComment, ...(p.comments || [])] } : p));
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, comments: [newComment, ...(p.comments || [])], updatedAt: new Date().toISOString() } : p));
   };
 
   const handleAddDailyLog = (projectId: string, logData: { content: string, photoUrls: string[] }) => {
@@ -341,16 +428,17 @@ const App: React.FC = () => {
     };
     setProjects(prev => prev.map(p => p.id === projectId ? {
       ...p,
-      dailyLogs: [newLog, ...(p.dailyLogs || [])]
+      dailyLogs: [newLog, ...(p.dailyLogs || [])],
+      updatedAt: new Date().toISOString()
     } : p));
   };
 
   const handleUpdateChecklist = (projectId: string, checklist: ChecklistTask[]) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, checklist } : p));
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, checklist, updatedAt: new Date().toISOString() } : p));
   };
 
   const handleUpdatePayments = (projectId: string, payments: PaymentStage[]) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, payments } : p));
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, payments, updatedAt: new Date().toISOString() } : p));
   };
 
   const handleConvertLead = (leadId: string) => {
@@ -377,6 +465,7 @@ const App: React.FC = () => {
       phases: [],
       checklist: [],
       payments: [],
+      updatedAt: new Date().toISOString(),
       inspectionData: {
         diagnosis: lead.diagnosis,
         suggestedFix: '待現場覆核後提供完整對策',
@@ -533,15 +622,15 @@ const App: React.FC = () => {
               onDelete={(id) => { if (confirm('確定要刪除嗎？')) { setProjects(prev => prev.filter(p => p.id !== id)); setSelectedProjectId(null); } }}
               onUpdateStatus={(status) => handleUpdateStatus(selectedProject.id, status)}
               onAddComment={(text) => handleAddComment(selectedProject.id, text)}
-              onUpdateFiles={(files) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, files } : p))}
-              onUpdatePhases={(phases) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, phases } : p))}
+              onUpdateFiles={(files) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, files, updatedAt: new Date().toISOString() } : p))}
+              onUpdatePhases={(phases) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, phases, updatedAt: new Date().toISOString() } : p))}
               onAddDailyLog={(log) => handleAddDailyLog(selectedProjectId, log)}
               onUpdateChecklist={(checklist) => handleUpdateChecklist(selectedProjectId, checklist)}
               onUpdatePayments={(payments) => handleUpdatePayments(selectedProjectId, payments)}
-              onUpdateTasks={(tasks) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, tasks } : p))}
-              onUpdateProgress={(progress) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, progress } : p))}
-              onUpdateExpenses={(expenses) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, expenses } : p))}
-              onUpdateWorkAssignments={(assignments) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, workAssignments: assignments } : p))}
+              onUpdateTasks={(tasks) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, tasks, updatedAt: new Date().toISOString() } : p))}
+              onUpdateProgress={(progress) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, progress, updatedAt: new Date().toISOString() } : p))}
+              onUpdateExpenses={(expenses) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, expenses, updatedAt: new Date().toISOString() } : p))}
+              onUpdateWorkAssignments={(assignments) => setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, workAssignments: assignments, updatedAt: new Date().toISOString() } : p))}
               onLossClick={() => handleUpdateStatus(selectedProject.id, ProjectStatus.LOST)}
             />
           ) : (
@@ -591,7 +680,7 @@ const App: React.FC = () => {
               )}
               {activeTab === 'team' && <TeamList members={filteredData.teamMembers} departments={MOCK_DEPARTMENTS} onAddClick={() => { setEditingMember(null); setIsTeamModalOpen(true); }} onEditClick={(m) => { setEditingMember(m); setIsTeamModalOpen(true); }} onDeleteClick={(id) => { if (confirm('確定移除此成員？')) { const m = teamMembers.find(x => x.id === id); if (m) addActivityLog('移除了成員', m.name, id, 'team'); setTeamMembers(prev => prev.filter(m => m.id !== id)); } }} />}
               {activeTab === 'customers' && <CustomerList customers={filteredData.customers} onAddClick={() => { setEditingCustomer(null); setIsCustomerModalOpen(true); }} onEditClick={(c) => { setEditingCustomer(c); setIsCustomerModalOpen(true); }} onDeleteClick={(id) => { if (confirm('確定移除此客戶？')) { const c = customers.find(x => x.id === id); if (c) addActivityLog('移除了客戶', c.name, id, 'customer'); setCustomers(prev => prev.filter(c => c.id !== id)); } }} />}
-              {activeTab === 'dispatch' && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])] } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid) } : p))} />}
+              {activeTab === 'dispatch' && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])], updatedAt: new Date().toISOString() } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid), updatedAt: new Date().toISOString() } : p))} />}
               {activeTab === 'analytics' && <Analytics projects={filteredData.projects} />}
 
               {activeTab === 'vendors' && (
@@ -706,7 +795,7 @@ const App: React.FC = () => {
                 const newPrefix = sourcePrefixes[data.source] || 'PJ';
                 updatedId = p.id.replace(oldPrefix, newPrefix);
               }
-              return { ...p, ...data, id: updatedId };
+              return { ...p, ...data, id: updatedId, updatedAt: new Date().toISOString() };
             }
             return p;
           }));
@@ -729,7 +818,7 @@ const App: React.FC = () => {
 
           const newId = `${prefix}${year}${sequence.toString().padStart(3, '0')}`;
           addActivityLog('建立新專案', data.name, newId, 'project');
-          setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [] } as any, ...prev]);
+          setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [], updatedAt: new Date().toISOString() } as any, ...prev]);
         }
         setIsModalOpen(false);
       }} initialData={editingProject} teamMembers={teamMembers} />}
@@ -739,11 +828,11 @@ const App: React.FC = () => {
         onConfirm={(data) => {
           if (editingCustomer) {
             addActivityLog('更新客戶資料', data.name, editingCustomer.id, 'customer');
-            setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data } : c));
+            setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c));
           } else {
             const newId = 'C' + Date.now().toString().slice(-6);
             addActivityLog('新增客戶', data.name, newId, 'customer');
-            setCustomers(prev => [{ ...data, id: newId, createdDate: new Date().toISOString().split('T')[0] } as any, ...prev]);
+            setCustomers(prev => [{ ...data, id: newId, createdDate: new Date().toISOString().split('T')[0], updatedAt: new Date().toISOString() } as any, ...prev]);
           }
           setIsCustomerModalOpen(false);
           setEditingCustomer(null);
@@ -756,11 +845,11 @@ const App: React.FC = () => {
         onConfirm={(data) => {
           if (editingMember) {
             addActivityLog('更新成員資料', data.name, editingMember.id, 'team');
-            setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data } : m));
+            setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m));
           } else {
             const newId = 'T' + Date.now().toString().slice(-6);
             addActivityLog('新增團隊成員', data.name, newId, 'team');
-            setTeamMembers(prev => [{ ...data, id: newId, status: 'Available', activeProjectsCount: 0, systemRole: data.systemRole || 'Staff', departmentId: data.departmentId || 'DEPT-1' } as any, ...prev]);
+            setTeamMembers(prev => [{ ...data, id: newId, status: 'Available', activeProjectsCount: 0, systemRole: data.systemRole || 'Staff', departmentId: data.departmentId || 'DEPT-1', updatedAt: new Date().toISOString() } as any, ...prev]);
           }
           setIsTeamModalOpen(false);
           setEditingMember(null);
@@ -772,12 +861,13 @@ const App: React.FC = () => {
         isOpen={isVendorModalOpen}
         onClose={() => { setIsVendorModalOpen(false); setEditingVendor(null); }}
         onSave={(data) => {
+          const timestampedData = { ...data, updatedAt: new Date().toISOString() };
           if (editingVendor) {
             addActivityLog('更新廠商資料', data.name, editingVendor.id, 'vendor');
-            setVendors(prev => prev.map(v => v.id === data.id ? data : v));
+            setVendors(prev => prev.map(v => v.id === data.id ? timestampedData : v));
           } else {
             addActivityLog('新增合作廠商', data.name, data.id, 'vendor');
-            setVendors(prev => [data, ...prev]);
+            setVendors(prev => [timestampedData, ...prev]);
           }
           setIsVendorModalOpen(false);
           setEditingVendor(null);

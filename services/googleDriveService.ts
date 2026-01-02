@@ -110,6 +110,20 @@ class GoogleDriveService {
     }
   }
 
+  async getFileMetadata() {
+    try {
+      const existingFile = await this.findBackupFile();
+      if (!existingFile) return null;
+      const url = `https://www.googleapis.com/drive/v3/files/${existingFile.id}?fields=id,name,modifiedTime,size`;
+      const response = await this.fetchWithAuth(url);
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (e) {
+      console.error('Get Metadata Error:', e);
+      return null;
+    }
+  }
+
   async saveToCloud(data: any) {
     if (!this.isInitialized) await this.init();
     this.lastErrorStatus = null;
