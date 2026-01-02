@@ -124,7 +124,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
       <div className="px-4 py-3 bg-white border-b border-stone-100 shrink-0 no-print">
         <div className="flex gap-2 overflow-x-auto no-scrollbar touch-scroll pb-1">
           {[
-            { id: 'logs', label: '施工日誌', icon: Activity },
+            { id: 'logs', label: '討論區', icon: MessageSquare },
             { id: 'inspection', label: 'AI 會勘', icon: Sparkles },
             { id: 'tasks', label: '待辦任務', icon: CheckCircle2 },
             { id: 'schedule', label: '施工排程', icon: CalendarDays },
@@ -215,7 +215,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <Activity size={16} className="text-orange-600" />
-                  <h3 className="font-black text-xs uppercase tracking-widest">施工進度日誌</h3>
+                  <h3 className="font-black text-xs uppercase tracking-widest">專案討論區</h3>
                 </div>
                 <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{project.dailyLogs?.length || 0} 筆紀錄</span>
               </div>
@@ -260,8 +260,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div className="h-full flex flex-col items-center justify-center text-stone-300 gap-4 opacity-50 py-20">
                     <CalendarDays size={48} />
                     <div className="text-center">
-                      <p className="text-[10px] font-black uppercase tracking-widest">目前尚無施工日誌</p>
-                      <p className="text-[9px] font-bold mt-1">開始記錄現場進度以建立完整的施工履歷</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest">目前尚無討論紀錄</p>
+                      <p className="text-[9px] font-bold mt-1">開始記錄專案細節以建立完整的履歷</p>
                     </div>
                   </div>
                 )}
@@ -274,7 +274,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
               {!isReadOnly && (
                 <div className="bg-white rounded-3xl border border-stone-200 p-6 shadow-sm shrink-0">
                   <h4 className="font-black text-stone-900 uppercase text-[10px] tracking-widest mb-4 flex items-center gap-2">
-                    <Pencil size={14} className="text-blue-600" /> 填寫今日進度
+                    <Pencil size={14} className="text-blue-600" /> 發起討論 / 紀錄
                   </h4>
                   <form onSubmit={(e) => {
                     e.preventDefault();
@@ -288,7 +288,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <textarea
                       name="content"
                       required
-                      placeholder="簡述今日工作內容與進度..."
+                      placeholder="輸入討論內容或紀錄..."
                       className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-4 py-3 text-xs font-bold text-stone-900 outline-none focus:ring-2 focus:ring-blue-600/20 placeholder:text-stone-300 resize-none h-32"
                     ></textarea>
                     <div className="space-y-2">
@@ -304,7 +304,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       type="submit"
                       className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-stone-200"
                     >
-                      提交今日日誌
+                      提交內容
                     </button>
                   </form>
                 </div>
