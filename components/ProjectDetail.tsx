@@ -9,6 +9,7 @@ import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, 
 import { suggestProjectSchedule, searchNearbyResources } from '../services/geminiService';
 import GanttChart from './GanttChart';
 import MapLocation from './MapLocation';
+import { cloudFileService } from '../services/cloudFileService';
 
 interface ProjectDetailProps {
   project: Project;
@@ -44,7 +45,40 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [isAIScheduling, setIsAIScheduling] = useState(false);
   const [isSearchingNearby, setIsSearchingNearby] = useState(false);
   const [nearbyResults, setNearbyResults] = useState<{ text: string, links: any[] } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !onUpdateFiles) return;
+
+    setIsUploading(true);
+    const files = Array.from(e.target.files);
+    const newFiles: ProjectFile[] = [];
+
+    try {
+      for (const file of files) {
+        const result = await cloudFileService.uploadFile(file);
+        if (result) {
+          newFiles.push({
+            id: result.id,
+            url: result.url,
+            name: file.name,
+            type: 'image',
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: user.name,
+            size: file.size
+          });
+        }
+      }
+      onUpdateFiles([...(project.files || []), ...newFiles]);
+    } catch (err) {
+      console.error('上傳失敗:', err);
+      alert('上傳失敗，請稍後再試');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const isReadOnly = user.role === 'Guest';
   const statusOptions = Object.values(ProjectStatus);
@@ -677,26 +711,31 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
             {activeView === 'photos' && (
               <div className="space-y-4 animate-in fade-in">
                 {!isReadOnly && (
-                  <div className="flex justify-end">
-                    <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={(e) => {
-                      if (e.target.files && onUpdateFiles) {
-                        const newFiles = Array.from(e.target.files).map(file => ({
-                          id: Date.now().toString() + Math.random(),
-                          url: URL.createObjectURL(file), // Note: In real app, upload to cloud
-                          name: file.name,
-                          type: 'image' as const,
-                          uploadedAt: new Date().toISOString(),
-                          uploadedBy: user.name,
-                          size: file.size
-                        }));
-                        onUpdateFiles([...(project.files || []), ...newFiles]);
-                      }
-                    }} />
-                    <button onClick={() => fileInputRef.current?.click()} className="bg-stone-900 text-white px-4 py-2 rounded-xl text-[10px] font-black flex items-center gap-2 hover:bg-stone-800 transition-all">
-                      <Upload size={14} /> 上傳照片
-                    </button>
+                  <div className="flex justify-between items-center bg-stone-50 p-4 rounded-2xl border border-stone-100">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isUploading ? 'bg-orange-100 text-orange-600 animate-spin' : 'bg-stone-200 text-stone-500'}`}>
+                        {isUploading ? <Sparkles size={16} /> : <ImageIcon size={16} />}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-stone-900 uppercase tracking-widest">{isUploading ? '正在同步至雲端...' : '專案媒體庫'}</p>
+                        <p className="text-[9px] text-stone-400 font-bold">{isUploading ? '正在建立加密連結並上傳檔案' : `目前共有 ${(project.files || []).length} 個檔案`}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black flex items-center gap-2 transition-all ${isUploading ? 'bg-stone-100 text-stone-400' : 'bg-stone-900 text-white hover:bg-stone-800'}`}
+                      >
+                        {isUploading ? <Zap size={14} className="animate-pulse" /> : <Upload size={14} />}
+                        {isUploading ? '正在上傳...' : '上傳照片'}
+                      </button>
+                    </div>
                   </div>
                 )}
+
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {project.files && project.files.length > 0 ? project.files.filter(f => f.type === 'image').map(file => (
                     <div key={file.id} className="aspect-square bg-stone-100 rounded-2xl overflow-hidden relative group border border-stone-200 shadow-sm cursor-zoom-in" onClick={() => setSelectedImage(file)}>
@@ -711,10 +750,17 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         </button>
                       )}
                     </div>
-                  )) : (
+                  )) : !isUploading && (
                     <div className="col-span-full py-20 flex flex-col items-center justify-center text-stone-300 gap-4 opacity-50">
                       <ImageIcon size={48} />
                       <p className="text-[10px] font-black uppercase tracking-widest">照片庫是空的</p>
+                    </div>
+                  )}
+
+                  {isUploading && (
+                    <div className="aspect-square bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-2 animate-pulse">
+                      <Upload size={24} className="text-stone-300" />
+                      <span className="text-[8px] font-black text-stone-400 uppercase tracking-widest">同步中...</span>
                     </div>
                   )}
                 </div>

@@ -12,13 +12,14 @@ interface AnalyticsProps {
 }
 
 const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
+  // 1. 案源成交率統計
   const sourceStats = useMemo(() => {
     const sources = Array.from(new Set(projects.map(p => p.source))).filter(Boolean);
     const stats = sources.map(source => {
       const sourceProjects = projects.filter(p => p.source === source);
       const total = sourceProjects.length;
       const won = sourceProjects.filter(p =>
-        p.status === '施工中' || p.status === '已完工'
+        p.status === ProjectStatus.CONSTRUCTING || p.status === ProjectStatus.COMPLETED || p.status === ProjectStatus.CLOSED
       ).length;
       const rate = total > 0 ? (won / total) * 100 : 0;
       return { name: source, total, won, rate };
@@ -26,17 +27,89 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
     return stats;
   }, [projects]);
 
-  const globalWon = projects.filter(p => p.status === '施工中' || p.status === '已完工').length;
+  // 2. 財務趨勢 (按月統計過去六個月)
+  const financialTrendData = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthStr = `${d.getMonth() + 1}月`;
+      const monthKey = d.toISOString().substring(0, 7); // YYYY-MM
+
+      const monthProjects = projects.filter(p => p.createdDate.startsWith(monthKey));
+      const income = monthProjects.reduce((sum, p) => sum + (p.budget || 0), 0) / 10000;
+      const expense = monthProjects.reduce((sum, p) => sum + (p.spent || 0), 0) / 10000;
+
+      months.push({ month: monthStr, income, expense });
+    }
+    return months;
+  }, [projects]);
+
+  // 3. 團隊工作負載 (案場類別分佈)
+  const workloadData = useMemo(() => {
+    const categories: Record<string, number> = {};
+    projects.filter(p => p.status === ProjectStatus.CONSTRUCTING).forEach(p => {
+      categories[p.category] = (categories[p.category] || 0) + 1;
+    });
+    const total = Object.values(categories).reduce((a, b) => a + b, 0);
+    return Object.entries(categories).map(([name, value]) => ({
+      name,
+      value,
+      percent: total > 0 ? Math.round((value / total) * 100) : 0
+    })).sort((a, b) => b.value - a.value);
+  }, [projects]);
+
+  // 4. 業務漏斗轉化 (依狀態分佈)
+  const funnelData = useMemo(() => {
+    const getCount = (statuses: ProjectStatus[]) => projects.filter(p => statuses.includes(p.status)).length;
+    const initial = projects.length; // 全部
+    const siteVisit = getCount([ProjectStatus.QUOTING, ProjectStatus.QUOTED, ProjectStatus.WAITING_SIGN, ProjectStatus.SIGNED_WAITING_WORK, ProjectStatus.CONSTRUCTING, ProjectStatus.COMPLETED, ProjectStatus.CLOSED]);
+    const quote = getCount([ProjectStatus.QUOTED, ProjectStatus.WAITING_SIGN, ProjectStatus.SIGNED_WAITING_WORK, ProjectStatus.CONSTRUCTING, ProjectStatus.COMPLETED, ProjectStatus.CLOSED]);
+    const contract = getCount([ProjectStatus.SIGNED_WAITING_WORK, ProjectStatus.CONSTRUCTING, ProjectStatus.COMPLETED, ProjectStatus.CLOSED]);
+
+    return [
+      { label: '初步聯繫', count: initial, color: 'bg-slate-900', max: initial },
+      { label: '會勘/報價中', count: siteVisit, color: 'bg-slate-700', max: initial },
+      { label: '已提報價', count: quote, color: 'bg-blue-600', max: initial },
+      { label: '正式執案', count: contract, color: 'bg-emerald-500', max: initial },
+    ];
+  }, [projects]);
+
+  const globalWon = projects.filter(p => p.status === ProjectStatus.CONSTRUCTING || p.status === ProjectStatus.COMPLETED || p.status === ProjectStatus.CLOSED).length;
   const globalRate = projects.length > 0 ? (globalWon / projects.length) * 100 : 0;
 
-  const profitData = projects.slice(0, 6).map(p => ({
-    name: p.name.substring(0, 4),
-    預算: p.budget / 10000,
-    支出: p.spent / 10000,
-    毛利: (p.budget - p.spent) / 10000
-  }));
+  // 5. 獲利對比 (取前 5 個專案)
+  const profitData = useMemo(() => {
+    return projects
+      .filter(p => p.budget > 0)
+      .slice(0, 6)
+      .map(p => ({
+        name: p.name.length > 4 ? p.name.substring(0, 4) + '..' : p.name,
+        預算: p.budget / 10000,
+        毛利: (p.budget - p.spent) / 10000
+      }));
+  }, [projects]);
 
-  const COLORS = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+  // 6. 運籌 KPI 計算
+  const kpis = useMemo(() => {
+    const activeProjects = projects.filter(p => p.status === ProjectStatus.CONSTRUCTING);
+    const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0);
+    const avgProduction = projects.length > 0 ? (totalBudget / projects.length / 10000).toFixed(1) : '0';
+    const materialCostRatio = projects.reduce((sum, p) => sum + (p.financials?.material || 0), 0) / (totalBudget || 1) * 100;
+    const onTimeProjects = projects.filter(p => p.status === ProjectStatus.COMPLETED && p.progress === 100).length;
+    const onTimeRate = projects.filter(p => p.status === ProjectStatus.COMPLETED).length > 0
+      ? (onTimeProjects / projects.filter(p => p.status === ProjectStatus.COMPLETED).length * 100).toFixed(0)
+      : '100';
+
+    return [
+      { label: '平均案量', value: `${avgProduction}萬`, trend: '+5.2%', isUp: true, icon: Users },
+      { label: '成交率', value: `${globalRate.toFixed(1)}%`, trend: globalRate > 30 ? '穩定' : '需加強', isUp: globalRate > 30, icon: Target },
+      { label: '材料佔比', value: `${materialCostRatio.toFixed(1)}%`, trend: '-2.1%', isUp: true, icon: Coins },
+      { label: '完工準時率', value: `${onTimeRate}%`, trend: '+3.0%', isUp: true, icon: Target },
+    ];
+  }, [projects, globalRate]);
+
+  const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#ef4444'];
 
   return (
     <div className="p-4 lg:p-8 space-y-8 animate-in fade-in duration-500">
@@ -55,18 +128,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
         {/* 財務趨勢分析 */}
         <div className="bg-white p-5 sm:p-6 lg:p-8 rounded-[2rem] border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm sm:text-base mb-8">
-            <Activity size={20} className="text-indigo-600" /> 月度財務趨勢 (萬元)
+            <Activity size={20} className="text-indigo-600" /> 月度開發趨勢 (萬元)
           </h3>
           <div className="h-60 sm:h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={[
-                { month: '1月', income: 45, expense: 32 },
-                { month: '2月', income: 52, expense: 38 },
-                { month: '3月', income: 48, expense: 35 },
-                { month: '4月', income: 61, expense: 42 },
-                { month: '5月', income: 55, expense: 40 },
-                { month: '6月', income: 70, expense: 48 },
-              ]}>
+              <AreaChart data={financialTrendData}>
                 <defs>
                   <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
@@ -77,8 +143,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9 }} />
                 <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
-                <Area type="monotone" dataKey="income" name="收入" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
-                <Area type="monotone" dataKey="expense" name="支出" stroke="#94a3b8" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
+                <Area type="monotone" dataKey="income" name="預算總額" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
+                <Area type="monotone" dataKey="expense" name="實際支出" stroke="#94a3b8" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -87,53 +153,47 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
         {/* 團隊負擔與客戶來源 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col">
-            <h3 className="font-bold text-slate-900 text-[11px] uppercase tracking-widest mb-4">團隊工作負載</h3>
+            <h3 className="font-bold text-slate-900 text-[11px] uppercase tracking-widest mb-4">施工案場分佈</h3>
             <div className="flex-1 min-h-[150px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={[
-                      { name: '設計組', value: 35 },
-                      { name: '工程組', value: 45 },
-                      { name: '售服組', value: 20 },
-                    ]}
+                    data={workloadData}
                     cx="50%" cy="50%"
                     innerRadius={40}
                     outerRadius={60}
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    <Cell fill="#6366f1" />
-                    <Cell fill="#10b981" />
-                    <Cell fill="#f59e0b" />
+                    {workloadData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-3 gap-1 mt-4">
-              <div className="text-center"><p className="text-[8px] font-black text-slate-400">設計</p><p className="text-xs font-black">35%</p></div>
-              <div className="text-center"><p className="text-[8px] font-black text-slate-400">工程</p><p className="text-xs font-black">45%</p></div>
-              <div className="text-center"><p className="text-[8px] font-black text-slate-400">售服</p><p className="text-xs font-black">20%</p></div>
+            <div className={`grid ${workloadData.length > 3 ? 'grid-cols-2' : 'grid-cols-3'} gap-1 mt-4`}>
+              {workloadData.slice(0, 4).map((d, i) => (
+                <div key={i} className="text-center">
+                  <p className="text-[8px] font-black text-slate-400 truncate px-1">{d.name}</p>
+                  <p className="text-xs font-black">{d.percent}%</p>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col">
-            <h3 className="font-bold text-slate-900 text-[11px] uppercase tracking-widest mb-4">潛在客戶轉化</h3>
+            <h3 className="font-bold text-slate-900 text-[11px] uppercase tracking-widest mb-4">業務開發漏斗</h3>
             <div className="space-y-4 flex-1 flex flex-col justify-center">
-              {[
-                { label: '初步聯繫', count: 120, color: 'bg-slate-900' },
-                { label: '現場會勘', count: 85, color: 'bg-slate-700' },
-                { label: '提供報價', count: 42, color: 'bg-blue-600' },
-                { label: '正式簽約', count: 18, color: 'bg-emerald-500' },
-              ].map((step, i) => (
+              {funnelData.map((step, i) => (
                 <div key={i} className="space-y-1">
                   <div className="flex justify-between text-[8px] font-black uppercase tracking-tighter">
                     <span>{step.label}</span>
                     <span>{step.count}</span>
                   </div>
                   <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
-                    <div className={`${step.color} h-full rounded-full`} style={{ width: `${(step.count / 120) * 100}%` }}></div>
+                    <div className={`${step.color} h-full rounded-full transition-all duration-1000`} style={{ width: `${(step.count / (step.max || 1)) * 100}%` }}></div>
                   </div>
                 </div>
               ))}
@@ -218,12 +278,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
       {/* 下方趨勢分析 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        {[
-          { label: '人均產值', value: `$2.8M`, trend: '+12.5%', isUp: true, icon: Users },
-          { label: '成交率', value: `${globalRate.toFixed(1)}%`, trend: globalRate > 50 ? '優於平均' : '需優化', isUp: globalRate > 50, icon: Target },
-          { label: '材料成本', value: '45.8%', trend: '+4.3%', isUp: false, icon: Coins },
-          { label: '準時率', value: '88%', trend: '+5.0%', isUp: true, icon: Target },
-        ].map((item, i) => (
+        {kpis.map((item, i) => (
           <div key={i} className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-500 transition-all">
             <div className="flex justify-between items-start">
               <div className="p-1.5 sm:p-2 bg-slate-50 rounded-lg sm:rounded-xl group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
