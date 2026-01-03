@@ -1122,7 +1122,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                                     ctx.fillStyle = '#78716c'; // Stone-500
                                     ctx.font = '800 24px "Inter", sans-serif';
-                                    ctx.fillText('Quality of Life Development Corp.', MARGIN + 160, 180);
+                                    ctx.fillText('Quality of Life Development Corp. Taiwan', MARGIN + 160, 180);
 
                                     // 3. Draw Project Details Divider
                                     ctx.strokeStyle = '#e7e5e4'; // Stone-200
@@ -1153,7 +1153,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                                     const drawW = svgW * scale;
                                     const drawH = svgH * scale;
-                                    const xOffset = MARGIN + (availableWidth - drawW) / 2;
+                                    const xOffset = MARGIN;
 
                                     ctx.drawImage(chartImg, xOffset, chartAreaTop, drawW, drawH);
 
