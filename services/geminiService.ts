@@ -162,7 +162,7 @@ export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) =
   const ai = getAI();
   try {
     const memberSummary = members.map(m =>
-      `- ${m.name} (${m.role}): 負責 ${m.activeProjectsCount} 案, 狀態: ${m.status}, 專長: ${m.specialty?.join(',')}`
+      `- ${m.name}${m.nickname ? ` (外號: ${m.nickname})` : ''} (${m.role}): 負責 ${m.activeProjectsCount} 案, 狀態: ${m.status}, 專長: ${m.specialty?.join(',')}`
     ).join('\n');
 
     const projectSummary = projects
@@ -236,9 +236,13 @@ export const searchNearbyResources = async (address: string, lat: number, lng: n
 /**
  * 解析日報文字為結構化派工數據
  */
-export const parseWorkDispatchText = async (text: string) => {
+export const parseWorkDispatchText = async (text: string, members: any[] = []) => {
   const ai = getAI();
   try {
+    const memberContext = members.length > 0
+      ? `目前團隊成員名單 (包含外號)：\n${members.map(m => `- ${m.name}${m.nickname ? ` (外號: ${m.nickname})` : ''}`).join('\n')}\n\n`
+      : '';
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [{
@@ -248,9 +252,10 @@ export const parseWorkDispatchText = async (text: string) => {
 每一個物件必須包含:
 - projectId: 案號或案場名稱
 - date: 日期 (YYYY-MM-DD)
-- memberName: 人員姓名
+- memberName: 人員姓名 (如果日報使用外號，請對應回正式姓名)
 - description: 施作內容描述
 
+${memberContext}
 日報內容：\n\n${text}`
         }]
       }]

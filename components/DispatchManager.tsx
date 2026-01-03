@@ -46,7 +46,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
     if (!rawLog.trim()) return;
     setIsParsing(true);
     try {
-      const results = await parseWorkDispatchText(rawLog);
+      const results = await parseWorkDispatchText(rawLog, teamMembers);
 
       const mapped = (results || []).map((r: any, idx: number) => {
         // 嘗試在現有專案中尋找匹配項
@@ -57,13 +57,18 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
           p.name.includes(pid)
         );
 
+        // 嘗試匹配成員以獲取日薪
+        const matchedMember = teamMembers.find(m =>
+          m.name === r.memberName || m.nickname === r.memberName
+        );
+
         return {
           id: `pending-${idx}-${Date.now()}`,
           projectId: pid,
           matchedProjectId: matched?.id || '',
           date: r.date || new Date().toISOString().split('T')[0],
           memberName: r.memberName || '未知成員',
-          wagePerDay: '2500',
+          wagePerDay: matchedMember?.dailyRate?.toString() || '2500',
           days: '1',
           description: r.description || ''
         };

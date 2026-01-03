@@ -162,9 +162,15 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">真實姓名 *</label>
-                  <input required disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                <div className="col-span-2 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">真實姓名 *</label>
+                    <input required disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">外號 / 暱稱 (用於 AI 辨識)</label>
+                    <input disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.nickname || ''} onChange={e => setFormData({ ...formData, nickname: e.target.value })} />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">職稱角色</label>
@@ -327,6 +333,20 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                   <div className="grid grid-cols-2 gap-4">
                     <input placeholder="戶名" disabled={!canEditPayroll} className="bg-white border border-amber-100 rounded-xl px-4 py-3 text-sm font-bold" value={formData.bankInfo?.accountName || ''} onChange={e => setFormData({ ...formData, bankInfo: { ...(formData.bankInfo || { bankName: '', accountName: '', accountNumber: '' }), accountName: e.target.value } })} />
                     <input placeholder="帳號" disabled={!canEditPayroll} className="bg-white border border-amber-100 rounded-xl px-4 py-3 text-sm font-bold font-mono" value={formData.bankInfo?.accountNumber || ''} onChange={e => setFormData({ ...formData, bankInfo: { ...(formData.bankInfo || { bankName: '', accountName: '', accountNumber: '' }), accountNumber: e.target.value } })} />
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-amber-100">
+                  <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">酬勞設定 Labor Cost</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder="日薪 (例如: 3000)"
+                      disabled={!canEditPayroll}
+                      className="w-full bg-white border border-amber-100 rounded-xl pl-4 pr-12 py-3 text-sm font-bold"
+                      value={formData.dailyRate || ''}
+                      onChange={e => setFormData({ ...formData, dailyRate: Number(e.target.value) })}
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-400">TWD / 日</span>
                   </div>
                 </div>
                 <div className="bg-amber-100/30 p-4 rounded-2xl border border-dashed border-amber-200">
