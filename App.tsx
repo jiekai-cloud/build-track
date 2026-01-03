@@ -611,33 +611,34 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex flex-col h-full w-full min-0 relative">
         <header className="h-16 shrink-0 bg-white/80 backdrop-blur-xl border-b border-stone-200 px-4 lg:px-8 flex items-center justify-between no-print z-40">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-stone-600 hover:bg-stone-100 rounded-lg"><Menu size={24} /></button>
 
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl shadow-lg ${user.role === 'Guest' ? 'bg-stone-900 text-orange-400' : 'bg-stone-900 text-white'}`}>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-2xl shadow-lg ${user.role === 'Guest' ? 'bg-stone-900 text-orange-400' : 'bg-stone-900 text-white'}`}>
                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${user.role === 'Guest' ? 'bg-orange-500' : 'bg-emerald-400'}`}></div>
-                <span className="text-[10px] font-black uppercase tracking-widest">{user.role === 'Guest' ? '訪客唯讀模式' : '生產環境 已上線'}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{user.role === 'Guest' ? '訪客唯讀模式' : '生產環境 已上線'}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest sm:hidden">PROD</span>
               </div>
 
               {user.role !== 'Guest' && (
                 <div className="flex items-center">
                   {cloudError ? (
-                    <button onClick={handleConnectCloud} className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-2xl border border-rose-200 animate-pulse"><AlertCircle size={14} /><span className="text-[10px] font-black uppercase tracking-[0.1em]">{cloudError}</span></button>
+                    <button onClick={handleConnectCloud} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-rose-50 text-rose-600 rounded-2xl border border-rose-200 animate-pulse"><AlertCircle size={14} /><span className="text-[10px] font-black uppercase tracking-[0.1em] hidden sm:inline">{cloudError}</span></button>
                   ) : isCloudConnected ? (
-                    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-100 shadow-sm">
+                    <div className="flex items-center gap-1 sm:gap-2.5 px-2 sm:px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-100 shadow-sm">
                       <div className="relative"><CheckCircle size={14} className="text-emerald-500" />{isSyncing && <RefreshCw size={10} className="absolute -top-1 -right-1 text-emerald-600 animate-spin bg-white rounded-full p-0.5" />}</div>
-                      <div className="flex flex-col"><span className="text-[9px] font-black uppercase tracking-widest leading-none">{isSyncing ? '同步中...' : '雲端同步就緒'}</span></div>
+                      <div className="flex flex-col"><span className="text-[9px] font-black uppercase tracking-widest leading-none hidden sm:inline">{isSyncing ? '同步中...' : '雲端同步就緒'}</span></div>
                     </div>
                   ) : (
-                    <button onClick={handleConnectCloud} className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 text-stone-400 rounded-2xl border border-stone-200 hover:text-orange-600"><CloudOff size={14} /><span className="text-[10px] font-black uppercase tracking-widest">離線保護模式</span></button>
+                    <button onClick={handleConnectCloud} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-stone-100 text-stone-400 rounded-2xl border border-stone-200 hover:text-orange-600"><CloudOff size={14} /></button>
                   )}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setIsNotificationOpen(true)}
               className="relative p-2.5 bg-white text-stone-900 rounded-2xl border border-stone-200 shadow-sm hover:ring-2 hover:ring-orange-100 hover:border-orange-200 transition-all active:scale-95 flex items-center justify-center shrink-0"
@@ -653,7 +654,7 @@ const App: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-widest">AI 智慧分析已掛載</span>
             </div>
 
-            <div className="flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
+            <div className="hidden sm:flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
               <Layers size={14} className="text-stone-400" />
               <select className="bg-transparent text-[11px] font-black text-stone-900 outline-none" value={viewingDeptId} onChange={(e) => setViewingDeptId(e.target.value)}>
                 <option value="all">全公司視野</option>
