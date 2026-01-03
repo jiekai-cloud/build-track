@@ -950,6 +950,7 @@ const App: React.FC = () => {
           setEditingMember(null);
         }}
         initialData={editingMember}
+        currentUser={user!}
       />}
 
       <VendorModal

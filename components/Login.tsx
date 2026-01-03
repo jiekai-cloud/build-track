@@ -66,7 +66,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             name: member.name,
             email: member.email,
             picture: member.avatar,
-            role: finalRole
+            role: finalRole,
+            roleName: member.role
           }, finalDept);
         } else {
           setError('密碼輸入錯誤');

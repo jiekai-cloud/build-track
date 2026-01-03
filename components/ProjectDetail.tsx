@@ -3,13 +3,22 @@ import React, { useState, useMemo, useRef } from 'react';
 import {
   ArrowLeft, CheckCircle2, Clock, DollarSign, Pencil, Sparkles, Trash2, Activity,
   MessageSquare, Send, Receipt, X, ZoomIn, FileText, ImageIcon, Upload, MapPin,
-  Navigation, ShoppingBag, Utensils, Building2, ExternalLink, CalendarDays, Loader2, Check, DownloadCloud, ShieldAlert
+  Navigation, ShoppingBag, Utensils, Building2, ExternalLink, CalendarDays, Loader2, Check, DownloadCloud, ShieldAlert,
+  Layers, Camera, HardHat, CheckCircle, ShieldCheck
 } from 'lucide-react';
 import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage } from '../types';
 import { suggestProjectSchedule, searchNearbyResources } from '../services/geminiService';
 import GanttChart from './GanttChart';
 import MapLocation from './MapLocation';
 import { cloudFileService } from '../services/cloudFileService';
+
+const PHOTO_CATEGORIES = [
+  { id: 'all', label: '全部照片', icon: Layers },
+  { id: 'survey', label: '會勘照片及影片', icon: Camera },
+  { id: 'construction', label: '施工照片', icon: HardHat },
+  { id: 'completion', label: '完工照片', icon: CheckCircle },
+  { id: 'inspection', label: '檢驗照片', icon: ShieldCheck }
+];
 
 interface ProjectDetailProps {
   project: Project;
@@ -46,6 +55,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [isSearchingNearby, setIsSearchingNearby] = useState(false);
   const [nearbyResults, setNearbyResults] = useState<{ text: string, links: any[] } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedUploadCategory, setSelectedUploadCategory] = useState('survey');
+  const [currentPhotoFilter, setCurrentPhotoFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +74,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
             id: result.id,
             url: result.url,
             name: file.name,
-            type: 'image',
+            type: file.type.startsWith('video/') ? 'video' : 'image',
+            category: selectedUploadCategory,
             uploadedAt: new Date().toISOString(),
             uploadedBy: user.name,
             size: file.size
@@ -709,25 +721,40 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
             )}
 
             {activeView === 'photos' && (
-              <div className="space-y-4 animate-in fade-in">
+              <div className="space-y-6 animate-in fade-in">
                 {!isReadOnly && (
-                  <div className="flex justify-between items-center bg-stone-50 p-4 rounded-2xl border border-stone-100">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-stone-50 p-6 rounded-[2rem] border border-stone-100">
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isUploading ? 'bg-orange-100 text-orange-600 animate-spin' : 'bg-stone-200 text-stone-500'}`}>
-                        {isUploading ? <Sparkles size={16} /> : <ImageIcon size={16} />}
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isUploading ? 'bg-orange-100 text-orange-600 animate-spin' : 'bg-stone-200 text-stone-500 shadow-inner'}`}>
+                        {isUploading ? <Sparkles size={20} /> : <ImageIcon size={20} />}
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-stone-900 uppercase tracking-widest">{isUploading ? '正在同步至雲端...' : '專案媒體庫'}</p>
-                        <p className="text-[9px] text-stone-400 font-bold">{isUploading ? '正在建立加密連結並上傳檔案' : `目前共有 ${(project.files || []).length} 個檔案`}</p>
+                        <p className="text-[11px] font-black text-stone-900 uppercase tracking-widest leading-none mb-1">{isUploading ? '正在同步至雲端...' : '專案媒體庫'}</p>
+                        <p className="text-[10px] text-stone-400 font-bold">{isUploading ? '正在建立加密連結並上傳檔案' : `目前共有 ${(project.files || []).length} 個檔案`}</p>
                       </div>
                     </div>
 
-                    <div>
-                      <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                      <div className="relative">
+                        <select
+                          value={selectedUploadCategory}
+                          onChange={(e) => setSelectedUploadCategory(e.target.value)}
+                          className="appearance-none bg-white border border-stone-200 rounded-xl px-4 py-2 pr-10 text-[10px] font-black text-stone-700 outline-none focus:ring-2 focus:ring-orange-500/20 transition-all cursor-pointer"
+                        >
+                          {PHOTO_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.label}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
+                          <Layers size={12} />
+                        </div>
+                      </div>
+
+                      <input type="file" multiple accept="image/*,video/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
-                        className={`px-4 py-2 rounded-xl text-[10px] font-black flex items-center gap-2 transition-all ${isUploading ? 'bg-stone-100 text-stone-400' : 'bg-stone-900 text-white hover:bg-stone-800'}`}
+                        className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${isUploading ? 'bg-stone-100 text-stone-400' : 'bg-orange-600 text-white hover:bg-orange-700 shadow-orange-100'}`}
                       >
                         {isUploading ? <Zap size={14} className="animate-pulse" /> : <Upload size={14} />}
                         {isUploading ? '正在上傳...' : '上傳照片'}
@@ -736,21 +763,53 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   </div>
                 )}
 
+                {/* Photo Filter Tabs */}
+                <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2">
+                  {PHOTO_CATEGORIES.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setCurrentPhotoFilter(cat.id)}
+                      className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 border ${currentPhotoFilter === cat.id
+                        ? 'bg-stone-900 text-white border-stone-900 shadow-lg'
+                        : 'bg-white text-stone-500 border-stone-200 hover:border-stone-300'
+                        }`}
+                    >
+                      <cat.icon size={14} />
+                      {cat.label}
+                      <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[8px] ${currentPhotoFilter === cat.id ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-400'}`}>
+                        {(cat.id === 'all' ? project.files || [] : (project.files || []).filter(f => f.category === cat.id)).length}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {project.files && project.files.length > 0 ? project.files.filter(f => f.type === 'image').map(file => (
+                  {(project.files || []).filter(f => (f.type === 'image' || f.type === 'video') && (currentPhotoFilter === 'all' || f.category === currentPhotoFilter)).map(file => (
                     <div key={file.id} className="aspect-square bg-stone-100 rounded-2xl overflow-hidden relative group border border-stone-200 shadow-sm cursor-zoom-in" onClick={() => setSelectedImage(file)}>
-                      <img src={file.url} alt={file.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      {file.type === 'video' ? (
+                        <video src={file.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onMouseOver={e => (e.target as HTMLVideoElement).play()} onMouseOut={e => { (e.target as HTMLVideoElement).pause(); (e.target as HTMLVideoElement).currentTime = 0; }} muted loop />
+                      ) : (
+                        <img src={file.url} alt={file.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      )}
+
+                      {file.type === 'video' && (
+                        <div className="absolute top-2 left-2 bg-stone-900/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] text-white font-black flex items-center gap-1">
+                          <Zap size={8} /> VIDEO
+                        </div>
+                      )}
+
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <p className="text-white text-[10px] font-bold truncate">{file.name}</p>
                         <p className="text-white/60 text-[9px]">{new Date(file.uploadedAt).toLocaleDateString()}</p>
                       </div>
                       {!isReadOnly && onUpdateFiles && (
-                        <button onClick={(e) => { e.stopPropagation(); if (confirm('刪除此照片？')) onUpdateFiles(project.files!.filter(f => f.id !== file.id)); }} className="absolute top-2 right-2 p-1.5 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-rose-500 transition-colors opacity-0 group-hover:opacity-100">
+                        <button onClick={(e) => { e.stopPropagation(); if (confirm('刪除此檔案？')) onUpdateFiles(project.files!.filter(f => f.id !== file.id)); }} className="absolute top-2 right-2 p-1.5 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-rose-500 transition-colors opacity-0 group-hover:opacity-100">
                           <Trash2 size={12} />
                         </button>
                       )}
                     </div>
-                  )) : !isUploading && (
+                  ))}
+                  {!isUploading && (project.files || []).filter(f => (f.type === 'image' || f.type === 'video') && (currentPhotoFilter === 'all' || f.category === currentPhotoFilter)).length === 0 && (
                     <div className="col-span-full py-20 flex flex-col items-center justify-center text-stone-300 gap-4 opacity-50">
                       <ImageIcon size={48} />
                       <p className="text-[10px] font-black uppercase tracking-widest">照片庫是空的</p>
@@ -770,6 +829,39 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
       </div>
     </div>
+
+      {/* Lightbox / Media Preview Modal */ }
+  {
+    selectedImage && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-12 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
+        <button onClick={() => setSelectedImage(null)} className="absolute top-8 right-8 text-white/40 hover:text-white transition-colors z-[110] bg-white/10 p-3 rounded-full hover:bg-white/20">
+          <X size={32} />
+        </button>
+
+        <div className="relative w-full h-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+          <div className="flex-1 w-full flex items-center justify-center min-h-0">
+            {selectedImage.type === 'video' ? (
+              <video src={selectedImage.url} className="max-w-full max-h-full rounded-2xl shadow-2xl" controls autoPlay />
+            ) : (
+              <img src={selectedImage.url} alt={selectedImage.name} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+            )}
+          </div>
+
+          <div className="mt-8 text-center space-y-2">
+            <h3 className="text-white text-lg font-black tracking-tight">{selectedImage.name}</h3>
+            <div className="flex items-center justify-center gap-4">
+              <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{new Date(selectedImage.uploadedAt).toLocaleString()}</p>
+              <span className="w-1 h-1 bg-white/20 rounded-full" />
+              <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">上傳者: {selectedImage.uploadedBy}</p>
+              <span className="w-1 h-1 bg-white/20 rounded-full" />
+              <p className="text-orange-500 text-[10px] font-black uppercase tracking-widest">{PHOTO_CATEGORIES.find(c => c.id === selectedImage.category)?.label || '未分類'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+    </div >
   );
 };
 
