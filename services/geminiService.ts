@@ -21,7 +21,7 @@ export const getPortfolioAnalysis = async (projects: Project[]) => {
 
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-flash',
-      contents: `目前系統共管理 ${totalCount} 件專案，以下是經初步篩選出的 50 個潛在風險案件，請針對這些數據提供營運風險報告：\n${projectSummary}`,
+      contents: [{ parts: [{ text: `目前系統共管理 ${totalCount} 件專案，以下是經初步篩選出的 50 個潛在風險案件，請針對這些數據提供營運風險報告：\n${projectSummary}` }] }],
       config: {
         systemInstruction: `妳是「生活品質工程管理系統」的首席運籌官。
           妳的分析對象是擁有 50 名成員的大型工程團隊。
@@ -43,13 +43,17 @@ export const getProjectInsights = async (project: Project, question: string) => 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-flash',
-      contents: `專案詳細資料：
+      contents: [{
+        parts: [{
+          text: `專案詳細資料：
 名稱: ${project.name}
 狀態: ${project.status}
 進度: ${project.progress}%
 預算: ${project.budget}
 目前支出: ${project.spent}
-問題內容: ${question}`,
+問題內容: ${question}`
+        }]
+      }],
       config: {
         systemInstruction: "妳是專業的智慧營造顧問。請根據提供的單一專案數據，精確回答使用者的疑問並提出具體的改進或監控建議。"
       }
@@ -69,14 +73,14 @@ export const searchEngineeringKnowledge = async (query: string) => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-flash',
-      contents: query,
+      contents: [{ parts: [{ text: query }] }],
       config: {
         tools: [{ googleSearch: {} }],
-        systemInstruction: "妳是營造法規與市場趨勢專家。請利用搜尋功能為使用者提供具備權威來源的解答，包含最新法規更新或建材價格行情。"
+        systemInstruction: "妳是營造法規與市場趨勢專家。請利用搜尋功能為使用者提供具備權權威來源的解答，包含最新法規更新或建材價格行情。"
       }
     });
 
-    // 根據規範，必須提取 groundingChunks 中的 URL
+    // Extract grounding chunks for URLs
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const links = chunks.map((chunk: any) => ({
       title: chunk.web?.title || '參考連結',
@@ -99,7 +103,7 @@ export const suggestProjectSchedule = async (project: Project) => {
     // 對於複雜推理任務使用 Pro 模型
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-pro',
-      contents: `案名: ${project.name}, 類別: ${project.category}, 預計工期: ${project.startDate} ~ ${project.endDate}。請提供專業的施工進度節點規劃與各階段工期佔比建議。`,
+      contents: [{ parts: [{ text: `案名: ${project.name}, 類別: ${project.category}, 預計工期: ${project.startDate} ~ ${project.endDate}。請提供專業的施工進度節點規劃與各階段工期佔比建議。` }] }],
       config: {
         systemInstruction: "妳是具備二十年經驗的資深工務經理。妳擅長進行裝修與建築工程的排程規劃，請提供符合實務邏輯的階段劃分。"
       }
@@ -128,7 +132,7 @@ export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) =
 
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-flash',
-      contents: `成員數據：\n${memberSummary}\n\n施工中專案：\n${projectSummary}`,
+      contents: [{ parts: [{ text: `成員數據：\n${memberSummary}\n\n施工中專案：\n${projectSummary}` }] }],
       config: {
         systemInstruction: `妳是技術總監級別的 AI 管理顧問。
           妳會分析工程團隊的負載狀況。請從以下角度提供簡短精幹的分析報告：
@@ -190,7 +194,7 @@ export const parseWorkDispatchText = async (text: string) => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-flash',
-      contents: `請解析以下非結構化的施工日報內容，並提取出派工相關資訊：\n\n${text}`,
+      contents: [{ parts: [{ text: `請解析以下非結構化的施工日報內容，並提取出派工相關資訊：\n\n${text}` }] }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
