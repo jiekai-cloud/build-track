@@ -123,7 +123,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-500 overflow-hidden">
+    <div className="flex flex-col lg:h-full animate-in slide-in-from-right-4 duration-500 lg:overflow-hidden">
       {/* 固定標頭資訊 */}
       <div className="p-4 lg:p-8 space-y-4 shrink-0 bg-white/50 border-b border-stone-100">
         <div className="flex justify-between items-center no-print">
@@ -192,7 +192,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
       </div>
 
       {/* 視圖內容區 */}
-      <div className="flex-1 min-h-0 flex flex-col p-4 sm:p-6 overflow-hidden">
+      <div className="flex-1 lg:min-h-0 flex flex-col p-4 sm:p-6 lg:overflow-hidden">
         {activeView === 'inspection' && (
           <div className="space-y-6 animate-in fade-in">
             {project.inspectionData ? (
@@ -257,9 +257,9 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
         )}
         {activeView === 'logs' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full overflow-hidden animate-in fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-full lg:overflow-hidden animate-in fade-in">
             {/* 左側：施工日誌時間軸 */}
-            <div className="lg:col-span-8 flex flex-col bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+            <div className="lg:col-span-8 flex flex-col bg-white rounded-3xl border border-stone-200 shadow-sm lg:overflow-hidden">
               <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <Activity size={16} className="text-orange-600" />
@@ -268,7 +268,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{project.dailyLogs?.length || 0} 筆紀錄</span>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-8 touch-scroll no-scrollbar">
+              <div className="flex-1 lg:overflow-y-auto p-6 space-y-8 touch-scroll no-scrollbar">
                 {project.dailyLogs && project.dailyLogs.length > 0 ? (
                   project.dailyLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((log, idx) => (
                     <div key={log.id} className="relative pl-8 group">
@@ -317,7 +317,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
             </div>
 
             {/* 右側：紀錄輸入區 & 留言版摘要 */}
-            <div className="lg:col-span-4 flex flex-col gap-6 overflow-hidden">
+            <div className="lg:col-span-4 flex flex-col gap-6 lg:overflow-hidden">
               {/* 新增紀錄表單 */}
               {!isReadOnly && (
                 <div className="bg-white rounded-3xl border border-stone-200 p-6 shadow-sm shrink-0">
@@ -359,14 +359,14 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )}
 
               {/* 留言中心 */}
-              <div className="flex-1 bg-white rounded-3xl border border-stone-200 shadow-sm flex flex-col overflow-hidden">
+              <div className="flex-1 bg-white rounded-3xl border border-stone-200 shadow-sm flex flex-col lg:overflow-hidden">
                 <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-2">
                     <MessageSquare size={16} className="text-blue-600" />
                     <h3 className="font-black text-xs uppercase tracking-widest">團隊討論區</h3>
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+                <div className="flex-1 lg:overflow-y-auto p-4 space-y-4 no-scrollbar">
                   {(project.comments || []).map((comment) => (
                     <div key={comment.id} className="flex gap-2">
                       <div className="w-6 h-6 rounded-lg bg-stone-100 flex items-center justify-center font-black text-stone-400 text-[8px] shrink-0 uppercase border border-stone-200">
@@ -403,7 +403,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
         )}
 
         {activeView !== 'logs' && (
-          <div className="flex-1 overflow-y-auto touch-scroll space-y-4 pr-1 no-scrollbar">
+          <div className="flex-1 lg:overflow-y-auto touch-scroll space-y-4 pr-1 no-scrollbar">
             {activeView === 'financials' && (
               <div className="space-y-6 animate-in fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
