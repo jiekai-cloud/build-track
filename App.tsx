@@ -924,12 +924,27 @@ const App: React.FC = () => {
                           </div>
                         </div>
                         <h3 className="text-lg font-black text-stone-900 mb-1">{v.name}</h3>
-                        <p className="text-[10px] font-black text-blue-600 uppercase mb-4 tracking-widest">{v.type}</p>
+                        <div className="flex items-center justify-between mb-4">
+                          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.type}</p>
+                          {v.taxId && <span className="text-[9px] bg-slate-50 text-slate-400 font-black px-2 py-0.5 rounded border border-slate-100 uppercase tracking-tighter">統編 {v.taxId}</span>}
+                        </div>
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-xs font-medium text-stone-500">
-                            <UserIcon size={14} /> {v.contact}
+                            <UserIcon size={14} className="text-slate-400" /> {v.contact} {v.secondaryContact && <span className="text-[10px] text-slate-300">/ {v.secondaryContact}</span>}
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex flex-col gap-1.5 pt-1">
+                            {v.phone && (
+                              <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
+                                <Smartphone size={12} /> {v.phone}
+                              </div>
+                            )}
+                            {v.companyPhone && (
+                              <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
+                                <Phone size={12} /> {v.companyPhone}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 pt-2">
                             {[...Array(5)].map((_, i) => (
                               <Sparkles key={i} size={10} className={i < v.rating ? 'text-amber-400' : 'text-stone-200'} />
                             ))}

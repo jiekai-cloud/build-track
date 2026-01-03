@@ -19,8 +19,12 @@ const VendorModal: React.FC<VendorModalProps> = ({ isOpen, onClose, onSave, vend
     const [formData, setFormData] = useState<Partial<Vendor>>({
         name: '',
         contact: '',
+        secondaryContact: '',
         type: '未分類',
         phone: '',
+        companyPhone: '',
+        fax: '',
+        taxId: '',
         email: '',
         address: '',
         rating: 5,
@@ -34,8 +38,12 @@ const VendorModal: React.FC<VendorModalProps> = ({ isOpen, onClose, onSave, vend
             setFormData({
                 name: '',
                 contact: '',
+                secondaryContact: '',
                 type: '未分類',
                 phone: '',
+                companyPhone: '',
+                fax: '',
+                taxId: '',
                 email: '',
                 address: '',
                 rating: 5,
@@ -152,13 +160,61 @@ const VendorModal: React.FC<VendorModalProps> = ({ isOpen, onClose, onSave, vend
                             </div>
 
                             <div>
-                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">聯絡電話</label>
+                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">專案負責手機 (聯絡人一)</label>
                                 <div className="relative">
-                                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                    <Smartphone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                                     <input
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black font-bold"
                                         value={formData.phone}
                                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">第二聯絡人 (選填)</label>
+                                <div className="relative">
+                                    <UserCheck size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                    <input
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black font-bold"
+                                        value={formData.secondaryContact}
+                                        onChange={e => setFormData({ ...formData, secondaryContact: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">公司電話 (市話)</label>
+                                <div className="relative">
+                                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                    <input
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black font-bold"
+                                        value={formData.companyPhone}
+                                        onChange={e => setFormData({ ...formData, companyPhone: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">傳真號碼 Fax</label>
+                                <div className="relative">
+                                    <Scan size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                    <input
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black font-bold"
+                                        value={formData.fax}
+                                        onChange={e => setFormData({ ...formData, fax: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">統一編號 Tax ID</label>
+                                <div className="relative">
+                                    <FileJson size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                    <input
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black font-bold"
+                                        value={formData.taxId}
+                                        onChange={e => setFormData({ ...formData, taxId: e.target.value })}
                                     />
                                 </div>
                             </div>

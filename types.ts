@@ -125,10 +125,13 @@ export interface Vendor {
   name: string;
   type: string;
   contact: string;
-  phone?: string;
+  secondaryContact?: string; // 第一聯絡人
+  phone?: string; // 聯絡人手機
+  companyPhone?: string; // 公司電話
+  fax?: string; // 傳真
   email?: string;
   address?: string;
-  taxId?: string;
+  taxId?: string; // 統編
   specialty?: string[];
   rating: number;
   notes?: string;
