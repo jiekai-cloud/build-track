@@ -21,9 +21,9 @@ const getAI = () => {
   }
 
   // Debug log (masked)
-  console.log(`Using AI Key: ${key.substring(0, 8)}... (Safe Mode)`);
+  console.log(`Using AI Key: ${key.substring(0, 8)}... (Safe Mode + Force v1)`);
 
-  return new GoogleGenAI({ apiKey: key });
+  return new GoogleGenAI({ apiKey: key, apiVersion: 'v1' });
 };
 
 /**
