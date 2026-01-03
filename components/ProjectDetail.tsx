@@ -1116,7 +1116,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     ctx.drawImage(logoImg, MARGIN, 80, logoSize, logoSize);
 
                                     // 2. Draw Company Info
-                                    ctx.fillStyle = '#ea580c'; // Orange-600
+                                    ctx.fillStyle = '#1c1917'; // Stone-900 (Black)
                                     ctx.font = '900 48px "Inter", sans-serif';
                                     ctx.fillText('台灣生活品質發展股份有限公司', MARGIN + 160, 135);
 
