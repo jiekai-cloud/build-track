@@ -59,6 +59,16 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [currentPhotoFilter, setCurrentPhotoFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+  const [expenseFormData, setExpenseFormData] = useState<Partial<Expense>>({
+    date: new Date().toISOString().split('T')[0],
+    category: '委託工程',
+    status: '已核銷',
+    name: '',
+    amount: 0,
+    supplier: ''
+  });
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !onUpdateFiles) return;
 
@@ -522,6 +532,169 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 </div>
               </div>
             )}
+
+            {/* 支出管理 (Expenses) */}
+            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden min-h-[300px]">
+              <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                <h4 className="text-[10px] font-black text-stone-900 uppercase tracking-widest flex items-center gap-2">
+                  <Receipt size={14} className="text-rose-600" /> 專案支出明細
+                </h4>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => setIsAddingExpense(true)}
+                    className="bg-stone-900 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-stone-800 transition-all active:scale-95"
+                  >
+                    + 新增支出
+                  </button>
+                )}
+              </div>
+
+              {isAddingExpense && (
+                <div className="p-6 bg-stone-50 border-b border-stone-100 space-y-4 animate-in slide-in-from-top-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">支出類別</label>
+                      <select
+                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none cursor-pointer"
+                        value={expenseFormData.category}
+                        onChange={e => setExpenseFormData({ ...expenseFormData, category: e.target.value as any })}
+                      >
+                        <option value="委託工程">委託工程 (Subcontract)</option>
+                        <option value="零用金">零用金 (Petty Cash)</option>
+                        <option value="機具材料">機具材料 (Materials)</option>
+                        <option value="行政人事成本">行政人事成本 (Admin / HR)</option>
+                        <option value="其他">其他 (Other)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">發生日期</label>
+                      <input
+                        type="date"
+                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                        value={expenseFormData.date}
+                        onChange={e => setExpenseFormData({ ...expenseFormData, date: e.target.value })}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">支出項目名稱</label>
+                      <input
+                        type="text"
+                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                        placeholder="例如：水泥沙、工資..."
+                        value={expenseFormData.name}
+                        onChange={e => setExpenseFormData({ ...expenseFormData, name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">金額</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">$</span>
+                        <input
+                          type="number"
+                          className="w-full bg-white border border-stone-200 rounded-xl pl-6 pr-3 py-2 text-xs font-bold outline-none"
+                          value={expenseFormData.amount}
+                          onChange={e => setExpenseFormData({ ...expenseFormData, amount: Number(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">支付對象 (選填)</label>
+                      <input
+                        type="text"
+                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                        placeholder="廠商或請款人..."
+                        value={expenseFormData.supplier}
+                        onChange={e => setExpenseFormData({ ...expenseFormData, supplier: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button onClick={() => setIsAddingExpense(false)} className="px-4 py-2 rounded-xl text-xs font-bold text-stone-500 hover:bg-stone-100">取消</button>
+                    <button
+                      onClick={() => {
+                        if (!expenseFormData.name || !expenseFormData.amount) return alert('請填寫完整資訊');
+                        const newExp: Expense = {
+                          id: Date.now().toString(),
+                          ...expenseFormData as Expense
+                        };
+                        const newExpenses = [newExp, ...(project.expenses || [])];
+                        // Calculate new total spent: sum(expenses) + sum(labor assignments)
+                        const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
+                        const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
+                        onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
+
+                        setIsAddingExpense(false);
+                        setExpenseFormData({
+                          date: new Date().toISOString().split('T')[0],
+                          category: '委託工程',
+                          status: '已核銷',
+                          name: '',
+                          amount: 0,
+                          supplier: ''
+                        });
+                      }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-stone-900 text-white hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
+                    >
+                      確認新增
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-stone-50/50">
+                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">日期</th>
+                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">類別</th>
+                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">項目說明</th>
+                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-right">金額</th>
+                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">對象</th>
+                      {!isReadOnly && <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">操作</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-50">
+                    {(project.expenses || []).length > 0 ? (project.expenses || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((exp) => (
+                      <tr key={exp.id} className="hover:bg-stone-50/30 transition-colors">
+                        <td className="px-6 py-4 text-xs font-bold text-stone-500">{exp.date}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider ${exp.category === '委託工程' ? 'bg-indigo-50 text-indigo-600' :
+                              exp.category === '機具材料' ? 'bg-amber-50 text-amber-600' :
+                                exp.category === '行政人事成本' ? 'bg-purple-50 text-purple-600' :
+                                  exp.category === '零用金' ? 'bg-teal-50 text-teal-600' :
+                                    'bg-stone-100 text-stone-600'
+                            }`}>
+                            {exp.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-black text-stone-900">{exp.name}</td>
+                        <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {exp.amount.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-[10px] font-bold text-stone-500">{exp.supplier || '-'}</td>
+                        {!isReadOnly && (
+                          <td className="px-6 py-4 text-center">
+                            <button
+                              onClick={() => {
+                                if (confirm('確定刪除此筆支出？')) {
+                                  const newExpenses = (project.expenses || []).filter(e => e.id !== exp.id);
+                                  const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
+                                  const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
+                                  onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
+                                }
+                              }}
+                              className="text-stone-300 hover:text-rose-500 transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={6} className="px-6 py-12 text-center text-stone-300"><p className="text-[10px] font-black uppercase tracking-widest">尚無支出紀錄</p></td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             {activeView === 'map' && (
               <div className="bg-white rounded-3xl border border-stone-200 p-6 space-y-6 animate-in fade-in shadow-sm">

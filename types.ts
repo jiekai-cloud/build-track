@@ -32,7 +32,7 @@ export interface Expense {
   id: string;
   date: string;
   name: string;
-  category: '材料' | '人工' | '分包' | '其他';
+  category: '委託工程' | '零用金' | '機具材料' | '行政人事成本' | '其他';
   amount: number;
   status: '待審核' | '已核銷' | '已撥款';
   supplier?: string;
