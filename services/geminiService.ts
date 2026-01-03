@@ -5,13 +5,24 @@ import { Project } from "../types";
 // Always use named parameter for apiKey and fetch from process.env.API_KEY
 const getAI = () => {
   const savedKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
-  // Use provided key as the final fallback
-  const key = savedKey || process.env.API_KEY || process.env.GEMINI_API_KEY || 'AIzaSyCrx4WHs8bKX9YI_-4guWJGZJfgmJip0mQ';
+  const envKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const hardcodedKey = 'AIzaSyCrx4WHs8bKX9YI_-4guWJGZJfgmJip0mQ';
 
-  if (!key || key === 'PLACEHOLDER_API_KEY' || key === 'undefined') {
+  const isInvalid = (k: string | null | undefined) => !k || k === 'PLACEHOLDER_API_KEY' || k === 'undefined' || k === '';
+
+  // Priority: localStorage > env > hardcoded
+  let key = hardcodedKey;
+  if (!isInvalid(envKey)) key = envKey!;
+  if (!isInvalid(savedKey)) key = savedKey!;
+
+  if (isInvalid(key)) {
     console.error("Gemini API Key is missing or invalid.");
     throw new Error("Gemini API 金鑰未設定或無效。請點擊右上角「AI 服務」來配置金鑰。");
   }
+
+  // Debug log (masked)
+  console.log(`Using API Key: ${key.substring(0, 8)}...`);
+
   return new GoogleGenAI({ apiKey: key });
 };
 
