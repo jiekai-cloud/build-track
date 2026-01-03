@@ -17,6 +17,51 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Dragging Logic
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0, hasMoved: false });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragRef.current.isDragging) return;
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+
+      // Add threshold to distinguish click vs drag
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        dragRef.current.hasMoved = true;
+      }
+
+      setPosition({
+        x: dragRef.current.initialX + dx,
+        y: dragRef.current.initialY + dy
+      });
+    };
+
+    const handleMouseUp = () => {
+      dragRef.current.isDragging = false;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent text selection
+    dragRef.current = {
+      isDragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: position.x,
+      initialY: position.y,
+      hasMoved: false
+    };
+  };
+
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => {
     if (isOpen) scrollToBottom();
@@ -39,11 +84,11 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
       } else {
         result = await getProjectInsights(projects[0], messageText);
       }
-      
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: result.text || "無法獲取建議。", 
-        chunks: result.chunks 
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: result.text || "無法獲取建議。",
+        chunks: result.chunks
       }]);
     } catch (e) {
       setMessages(prev => [...prev, { role: 'assistant', content: "發生意外錯誤，請檢查您的 API 金鑰配置。" }]);
@@ -53,10 +98,16 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50">
+    <div
+      className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50 transition-transform duration-75 ease-out will-change-transform"
+      style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+    >
       {!isOpen && (
-        <button 
-          onClick={() => setIsOpen(true)} 
+        <button
+          onMouseDown={handleMouseDown}
+          onClick={() => {
+            if (!dragRef.current.hasMoved) setIsOpen(true);
+          }}
           className="w-14 h-14 bg-stone-900 text-white rounded-2xl flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95 group border-2 border-orange-600/20"
         >
           <div className="absolute inset-0 bg-orange-600 rounded-2xl animate-ping opacity-20 group-hover:opacity-40"></div>
@@ -67,7 +118,10 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
       {isOpen && (
         <div className="fixed inset-0 sm:inset-auto sm:right-6 sm:bottom-6 bg-white sm:w-[450px] sm:h-[650px] sm:rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-stone-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
           {/* Header */}
-          <div className="bg-stone-900 text-white p-5 flex items-center justify-between shrink-0">
+          <div
+            className="bg-stone-900 text-white p-5 flex items-center justify-between shrink-0 cursor-move"
+            onMouseDown={handleMouseDown}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-600 rounded-xl">
                 <Bot size={20} className="text-white" />
@@ -89,21 +143,20 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
           <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-stone-50/30 scroll-smooth">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                  msg.role === 'user' 
-                    ? 'bg-orange-600 text-white rounded-tr-none font-medium' 
-                    : 'bg-white text-stone-800 border border-stone-100 rounded-tl-none'
-                }`}>
+                <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                  ? 'bg-orange-600 text-white rounded-tr-none font-medium'
+                  : 'bg-white text-stone-800 border border-stone-100 rounded-tl-none'
+                  }`}>
                   <div className="whitespace-pre-wrap">{msg.content}</div>
-                  
+
                   {/* Render grounding links if they exist */}
                   {msg.chunks && msg.chunks.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-stone-100 flex flex-wrap gap-2">
                       {msg.chunks.map((link, i) => (
-                        <a 
-                          key={i} 
-                          href={link.uri} 
-                          target="_blank" 
+                        <a
+                          key={i}
+                          href={link.uri}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 bg-stone-50 hover:bg-stone-100 text-blue-600 text-[10px] font-bold px-2 py-1 rounded-lg border border-stone-200 transition-colors"
                         >
@@ -135,14 +188,14 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
 
           {/* Action Chips */}
           <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar border-t border-stone-100 bg-white shrink-0">
-            <button 
-              onClick={() => handleSendMessage('全案場風險報告')} 
+            <button
+              onClick={() => handleSendMessage('全案場風險報告')}
               className="flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-100 px-3 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap hover:bg-orange-100 transition-colors"
             >
               <PieChart size={12} /> 風險報告
             </button>
-            <button 
-              onClick={() => handleSendMessage('查詢最新室內裝修消防法規')} 
+            <button
+              onClick={() => handleSendMessage('查詢最新室內裝修消防法規')}
               className="flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-100 px-3 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap hover:bg-amber-100 transition-colors"
             >
               <Gavel size={12} /> 法規檢索
@@ -152,17 +205,17 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
           {/* Input Area */}
           <div className="p-5 bg-white border-t border-stone-100 flex items-center gap-3 shrink-0">
             <div className="flex-1 relative">
-              <input 
-                type="text" 
-                placeholder="輸入問題或指令..." 
+              <input
+                type="text"
+                placeholder="輸入問題或指令..."
                 className="w-full bg-stone-50 border border-stone-200 rounded-2xl pl-4 pr-12 py-3.5 text-sm font-bold text-black outline-none focus:ring-2 focus:ring-orange-500/20 transition-all placeholder:text-stone-400"
-                value={input} 
-                onChange={(e) => setInput(e.target.value)} 
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
               />
-              <button 
-                onClick={() => handleSendMessage()} 
-                disabled={isLoading || !input.trim()} 
+              <button
+                onClick={() => handleSendMessage()}
+                disabled={isLoading || !input.trim()}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 disabled:opacity-20 transition-all active:scale-90"
               >
                 <Send size={18} />
