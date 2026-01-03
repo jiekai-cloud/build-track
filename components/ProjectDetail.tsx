@@ -4,10 +4,10 @@ import {
   ArrowLeft, CheckCircle2, Clock, DollarSign, Pencil, Sparkles, Trash2, Activity,
   MessageSquare, Send, Receipt, X, ZoomIn, FileText, ImageIcon, Upload, MapPin,
   Navigation, ShoppingBag, Utensils, Building2, ExternalLink, CalendarDays, Loader2, Check, DownloadCloud, ShieldAlert,
-  Layers, Camera, HardHat, CheckCircle, ShieldCheck, Edit2
+  Layers, Camera, HardHat, CheckCircle, ShieldCheck, Edit2, Wrench, ClipboardList, Construction, FileImage
 } from 'lucide-react';
 import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage } from '../types';
-import { suggestProjectSchedule, searchNearbyResources, analyzeProjectFinancials, parseScheduleFromImage } from '../services/geminiService';
+import { suggestProjectSchedule, searchNearbyResources, analyzeProjectFinancials, parseScheduleFromImage, generatePreConstructionPrep } from '../services/geminiService';
 import GanttChart from './GanttChart';
 import MapLocation from './MapLocation';
 import { cloudFileService } from '../services/cloudFileService';
@@ -32,8 +32,9 @@ interface ProjectDetailProps {
   onUpdateProgress: (progress: number) => void;
   onUpdateStatus: (status: ProjectStatus) => void;
   onAddComment: (text: string) => void;
-  onUpdateExpenses: (expenses: Expense[], newSpent: number) => void;
-  onUpdateWorkAssignments: (assignments: WorkAssignment[], newSpent: number) => void;
+  onUpdateExpenses: (expenses: Expense[]) => void;
+  onUpdateWorkAssignments: (assignments: WorkAssignment[]) => void;
+  onUpdatePreConstruction: (prep: any) => void;
   onUpdateFiles?: (files: ProjectFile[]) => void;
   onUpdatePhases?: (phases: ProjectPhase[]) => void;
   onAddDailyLog: (log: { content: string, photoUrls: string[] }) => void;
@@ -48,7 +49,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onAddDailyLog, onUpdateChecklist, onUpdatePayments
 }) => {
   const [newComment, setNewComment] = useState('');
-  const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map'>('logs');
+  const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep'>('logs');
   const [selectedImage, setSelectedImage] = useState<ProjectFile | null>(null);
   const [isReportMode, setIsReportMode] = useState(false);
   const [isAIScheduling, setIsAIScheduling] = useState(false);
@@ -59,6 +60,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [currentPhotoFilter, setCurrentPhotoFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scheduleFileInputRef = useRef<HTMLInputElement>(null);
+  const scopeDrawingInputRef = useRef<HTMLInputElement>(null);
+  const [isGeneratingPrep, setIsGeneratingPrep] = useState(false);
 
   // Schedule Options State
   const [scheduleStartDate, setScheduleStartDate] = useState(project.startDate || new Date().toISOString().split('T')[0]);
@@ -243,6 +246,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
             { id: 'tasks', label: '待辦任務', icon: CheckCircle2 },
             { id: 'schedule', label: '施工排程', icon: CalendarDays },
             { id: 'financials', label: '帳務管理', icon: DollarSign },
+            { id: 'prep', label: '施工前準備', icon: Construction },
             { id: 'map', label: '案場定位', icon: Navigation },
             { id: 'photos', label: '照片庫', icon: ImageIcon }
           ].map(item => (
@@ -1310,6 +1314,166 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   lng={project.location?.lng}
                   projectName={project.name}
                 />
+              </div>
+            )}
+
+            {activeView === 'prep' && (
+              <div className="p-4 lg:p-8 space-y-6 animate-in fade-in lg:overflow-y-auto no-scrollbar">
+                <div className="flex justify-between items-center sm:bg-white/50 sm:p-4 sm:rounded-2xl">
+                  <div>
+                    <h2 className="text-xl font-black text-stone-900 leading-none mb-1">施工前準備事項</h2>
+                    <p className="text-[10px] text-stone-500 font-bold uppercase tracking-widest">材料核對 / 施工公告 / 範圍圖面</p>
+                  </div>
+                  {!isReadOnly && (
+                    <button
+                      onClick={async () => {
+                        setIsGeneratingPrep(true);
+                        try {
+                          const result = await generatePreConstructionPrep(project);
+                          onUpdatePreConstruction({
+                            ...project.preConstruction,
+                            ...result,
+                            updatedAt: new Date().toISOString()
+                          });
+                        } catch (e: any) {
+                          alert(`AI 產生失敗: ${e.message || '未知錯誤'}`);
+                        } finally {
+                          setIsGeneratingPrep(false);
+                        }
+                      }}
+                      disabled={isGeneratingPrep}
+                      className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all disabled:opacity-50 shadow-lg shadow-slate-100"
+                    >
+                      {isGeneratingPrep ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} className="text-amber-400" />}
+                      {isGeneratingPrep ? 'AI 規劃中...' : 'AI 輔助規劃'}
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 材料及機具 */}
+                  <div className="bg-white p-6 rounded-[2.5rem] border border-stone-100 shadow-sm space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-10 h-10 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shadow-inner">
+                        <Wrench size={18} />
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-stone-900 uppercase block">材料及機具清單</span>
+                        <span className="text-[9px] text-stone-400 font-bold">MATERIALS & TOOLS</span>
+                      </div>
+                    </div>
+                    <textarea
+                      readOnly={isReadOnly}
+                      className="w-full min-h-[250px] bg-stone-50/30 border border-stone-100 rounded-[1.5rem] p-5 text-sm font-bold text-stone-700 outline-none focus:ring-4 focus:ring-orange-500/5 transition-all no-scrollbar leading-relaxed"
+                      placeholder="請描述此案所需材料與工具，或點擊上方「AI 輔助」自動生成..."
+                      value={project.preConstruction?.materialsAndTools || ''}
+                      onChange={(e) => onUpdatePreConstruction({ ...project.preConstruction, materialsAndTools: e.target.value, updatedAt: new Date().toISOString() })}
+                    />
+                  </div>
+
+                  {/* 施工公告 */}
+                  <div className="bg-white p-6 rounded-[2.5rem] border border-stone-100 shadow-sm space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
+                        <ClipboardList size={18} />
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-stone-900 uppercase block">施工正式公告</span>
+                        <span className="text-[9px] text-stone-400 font-bold">OFFICIAL NOTICE</span>
+                      </div>
+                    </div>
+                    <textarea
+                      readOnly={isReadOnly}
+                      className="w-full min-h-[250px] bg-stone-50/30 border border-stone-100 rounded-[1.5rem] p-5 text-sm font-bold text-stone-700 outline-none focus:ring-4 focus:ring-blue-500/5 transition-all no-scrollbar leading-relaxed"
+                      placeholder="請輸入公告內容，或使用 AI 產生標準範本..."
+                      value={project.preConstruction?.notice || ''}
+                      onChange={(e) => onUpdatePreConstruction({ ...project.preConstruction, notice: e.target.value, updatedAt: new Date().toISOString() })}
+                    />
+                  </div>
+                </div>
+
+                {/* 施工範圍圖面 */}
+                <div className="bg-white p-6 rounded-[2.5rem] border border-stone-100 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner">
+                        <FileImage size={18} />
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-stone-900 uppercase block">施工範圍示意圖</span>
+                        <span className="text-[9px] text-stone-400 font-bold">SCOPE DRAWING / MAP</span>
+                      </div>
+                    </div>
+                    {!isReadOnly && (
+                      <button
+                        onClick={() => scopeDrawingInputRef.current?.click()}
+                        className="px-4 py-2 border border-emerald-100 text-emerald-600 bg-emerald-50/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all flex items-center gap-2"
+                      >
+                        <Upload size={14} /> 上傳圖面
+                      </button>
+                    )}
+                  </div>
+
+                  <input
+                    type="file"
+                    className="hidden"
+                    ref={scopeDrawingInputRef}
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        try {
+                          const url = await cloudFileService.uploadFile(file);
+                          onUpdatePreConstruction({
+                            ...project.preConstruction,
+                            scopeDrawingUrl: url,
+                            updatedAt: new Date().toISOString()
+                          });
+                        } catch (err) {
+                          alert('圖面附件上傳失敗');
+                        }
+                      }
+                    }}
+                  />
+
+                  {project.preConstruction?.scopeDrawingUrl ? (
+                    <div className="relative aspect-video max-h-[400px] rounded-[2rem] overflow-hidden border border-stone-100 group">
+                      <img
+                        src={project.preConstruction.scopeDrawingUrl}
+                        alt="施工範圍圖"
+                        className="w-full h-full object-contain bg-stone-50"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
+                        <button
+                          onClick={() => setSelectedImage({ id: 'scope', url: project.preConstruction!.scopeDrawingUrl!, name: '施工範圍圖', type: 'image', uploadedAt: new Date().toISOString(), uploadedBy: user.name })}
+                          className="w-12 h-12 rounded-full bg-white text-stone-900 flex items-center justify-center hover:scale-110 active:scale-90 transition-all"
+                        >
+                          <ZoomIn size={20} />
+                        </button>
+                        {!isReadOnly && (
+                          <button
+                            onClick={() => { if (confirm('確定要移除此圖面嗎？')) onUpdatePreConstruction({ ...project.preConstruction, scopeDrawingUrl: '', updatedAt: new Date().toISOString() }) }}
+                            className="w-12 h-12 rounded-full bg-rose-500 text-white flex items-center justify-center hover:scale-110 active:scale-90 transition-all"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="aspect-video bg-stone-50/50 rounded-[2rem] border-2 border-dashed border-stone-100 flex flex-col items-center justify-center text-stone-300 gap-4">
+                      <div className="w-16 h-16 rounded-3xl bg-white flex items-center justify-center shadow-sm">
+                        <Construction size={32} className="opacity-20" />
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">尚未上傳範圍圖面</p>
+                      {!isReadOnly && (
+                        <button onClick={() => scopeDrawingInputRef.current?.click()} className="text-[10px] font-black text-emerald-600 border-b border-emerald-600/30 pb-0.5 hover:border-emerald-600 transition-all">
+                          點擊此處立即上傳
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

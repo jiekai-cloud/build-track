@@ -391,3 +391,37 @@ export const parseScheduleFromImage = async (base64Image: string, startDate: str
     throw error;
   }
 };
+
+/**
+ * 產生施工前準備事項 (材料機具與施工公告)
+ */
+export const generatePreConstructionPrep = async (project: Project) => {
+  const ai = getAI();
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{
+        parts: [{
+          text: `妳是資深工務工地主任。請針對以下專案資訊，協助產生「施工前準備事項」。
+          
+專案名稱：${project.name}
+專案類別：${project.category}
+施工地點：${project.location?.address || '未提供'}
+施工期間：${project.startDate} ~ ${project.endDate}
+
+請產生以下內容，並以 JSON 格式回傳，不包含 Markdown 標記或 \`\`\`json 字樣：
+1. materialsAndTools: 條列出此工程所需的關鍵材料與機具清單 (繁體中文，專業精鍊)。
+2. notice: 撰寫一份適合張貼在工地現場或社區電梯的「施工公告」，格式要正式、專業且有禮貌。
+
+請直接回傳 JSON 物件，包含這兩個欄位。`
+        }]
+      }]
+    });
+
+    const jsonStr = cleanJsonString(response.text || "{}");
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error("產生施工前準備失敗:", error);
+    throw error;
+  }
+};

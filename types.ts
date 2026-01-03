@@ -156,10 +156,11 @@ export interface ProjectFile {
   category?: string;
 }
 
-export interface ProjectLocation {
-  address: string;
-  lat: number;
-  lng: number;
+export interface PreConstructionPrep {
+  materialsAndTools?: string;
+  notice?: string;
+  scopeDrawingUrl?: string;
+  updatedAt?: string;
 }
 
 export interface Project {
@@ -189,6 +190,7 @@ export interface Project {
   payments?: PaymentStage[];
   financials: ProjectFinancials;
   location?: ProjectLocation;
+  preConstruction?: PreConstructionPrep;
   inspectionData?: {
     diagnosis: string;
     suggestedFix: string;
