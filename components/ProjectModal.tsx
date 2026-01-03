@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Briefcase, Calendar, DollarSign, User as UserIcon, Tag, UserPlus, Save, Activity, Globe, ChevronDown, MapPin } from 'lucide-react';
+import { X, Briefcase, Calendar, DollarSign, User as LucideUser, Tag, UserPlus, Save, Activity, Globe, ChevronDown, MapPin } from 'lucide-react';
 import { Project, ProjectCategory, ProjectStatus, ProjectSource, ProjectLocation, TeamMember } from '../types';
 
 interface ProjectModalProps {
@@ -109,7 +109,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">報價負責人 Quotation</label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <UserIcon size={16} />
+                  <LucideUser size={16} />
                 </div>
                 <select className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold appearance-none" value={formData.quotationManager} onChange={e => setFormData({ ...formData, quotationManager: e.target.value })}>
                   <option value="">請選擇報價人</option>
@@ -124,7 +124,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">工程負責人 Engineering</label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <UserIcon size={16} />
+                  <LucideUser size={16} />
                 </div>
                 <select className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold appearance-none" value={formData.engineeringManager} onChange={e => setFormData({ ...formData, engineeringManager: e.target.value })}>
                   <option value="">請選擇負責人</option>

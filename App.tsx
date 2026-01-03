@@ -16,7 +16,7 @@ import TeamModal from './components/TeamModal';
 import VendorModal from './components/VendorModal';
 import LeadToProjectModal from './components/LeadToProjectModal';
 import Login from './components/Login';
-import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as UserIcon, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download, Smartphone, Phone } from 'lucide-react';
+import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
 import { Project, ProjectStatus, Customer, TeamMember, User, Department, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead } from './types';
@@ -506,8 +506,7 @@ const App: React.FC = () => {
       source: 'AI會勘系統',
       client: lead.customerName,
       referrer: 'Tiiny Web App',
-      quotationManager: user?.name || '',
-      engineeringManager: '',
+      manager: user?.name || '',
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
       createdDate: new Date().toISOString().split('T')[0],
@@ -924,27 +923,12 @@ const App: React.FC = () => {
                           </div>
                         </div>
                         <h3 className="text-lg font-black text-stone-900 mb-1">{v.name}</h3>
-                        <div className="flex items-center justify-between mb-4">
-                          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.type}</p>
-                          {v.taxId && <span className="text-[9px] bg-slate-50 text-slate-400 font-black px-2 py-0.5 rounded border border-slate-100 uppercase tracking-tighter">統編 {v.taxId}</span>}
-                        </div>
+                        <p className="text-[10px] font-black text-blue-600 uppercase mb-4 tracking-widest">{v.type}</p>
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-xs font-medium text-stone-500">
-                            <UserIcon size={14} className="text-slate-400" /> {v.contact} {v.secondaryContact && <span className="text-[10px] text-slate-300">/ {v.secondaryContact}</span>}
+                            <LucideUser size={14} /> {v.contact}
                           </div>
-                          <div className="flex flex-col gap-1.5 pt-1">
-                            {v.phone && (
-                              <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
-                                <Smartphone size={12} /> {v.phone}
-                              </div>
-                            )}
-                            {v.companyPhone && (
-                              <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
-                                <Phone size={12} /> {v.companyPhone}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 pt-2">
+                          <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, i) => (
                               <Sparkles key={i} size={10} className={i < v.rating ? 'text-amber-400' : 'text-stone-200'} />
                             ))}
