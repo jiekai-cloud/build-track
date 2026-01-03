@@ -83,6 +83,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
     { id: 'hr', label: '詳細人事', icon: Calendar, visible: isSuperAdmin || isDeptAdmin || isFinance },
     { id: 'pro', label: '專業資歷', icon: Award, visible: isSuperAdmin || isDeptAdmin || isFinance },
     { id: 'payroll', label: '薪資會計', icon: Landmark, visible: isSuperAdmin || isDeptAdmin || isFinance },
+    { id: 'perm', label: '權限設定', icon: Key, visible: isSuperAdmin },
   ].filter(t => t.visible);
 
   // 如果當前 tab 不可見，跳回 basic
@@ -164,18 +165,10 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">真實姓名 *</label>
                   <input required disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                 </div>
-                <div>
+                <div className="col-span-2">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">職稱角色</label>
                   <select disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as any })}>
                     {roles.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">系統權限</label>
-                  <select disabled={!isSuperAdmin} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.systemRole} onChange={e => setFormData({ ...formData, systemRole: e.target.value as any })}>
-                    <option value="Staff">一般成員</option>
-                    <option value="DeptAdmin">部門主管</option>
-                    <option value="SuperAdmin">最高權限</option>
                   </select>
                 </div>
               </div>
@@ -197,6 +190,10 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">聯絡電話</label>
                 <input disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">電子信箱</label>
+                <input type="email" disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
               </div>
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">通訊地址</label>
@@ -277,6 +274,40 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                 </div>
                 <div className="bg-amber-100/30 p-4 rounded-2xl border border-dashed border-amber-200">
                   <p className="text-[10px] text-amber-800 leading-relaxed font-black"> <AlertCircle size={10} className="inline mr-1" /> 此欄位資訊受到進階加密保護，僅限行政主管查核。</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'perm' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
+              <div className="bg-stone-50 p-6 rounded-3xl border border-stone-200 space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">所屬部門</label>
+                  <select disabled={!isSuperAdmin} className="w-full bg-white border border-stone-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.departmentId} onChange={e => setFormData({ ...formData, departmentId: e.target.value })}>
+                    <option value="DEPT-1">管理部</option>
+                    <option value="DEPT-2">工務部</option>
+                    <option value="DEPT-3">設計部</option>
+                    <option value="DEPT-4">財務部</option>
+                  </select>
+                  <p className="text-[10px] text-stone-400 mt-2 ml-1">部門主管權限將以此設定為準</p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">系統權限級別</label>
+                  <select disabled={!isSuperAdmin} className="w-full bg-white border border-stone-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.systemRole} onChange={e => setFormData({ ...formData, systemRole: e.target.value as any })}>
+                    <option value="Staff">一般成員 (僅限查看所属專案)</option>
+                    <option value="DeptAdmin">部門主管 (可查看該部門所有資料)</option>
+                    <option value="SuperAdmin">最高權限 (可存取系統所有功能)</option>
+                  </select>
+                  <div className="mt-4 p-4 bg-orange-50 rounded-2xl border border-orange-100 text-[10px] text-orange-800 leading-relaxed">
+                    <p className="font-black mb-1">權限說明：</p>
+                    <ul className="list-disc list-inside space-y-1 opacity-80">
+                      <li><b>一般成員：</b> 僅能查看及編輯指派給自己的任務與專案。</li>
+                      <li><b>部門主管：</b> 可查看並管理該部門下的所有成員與專案。</li>
+                      <li><b>最高權限：</b> 擁有系統完整控制權，包含刪除資料與指派權限。</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
