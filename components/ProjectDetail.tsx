@@ -7,7 +7,7 @@ import {
   Layers, Camera, HardHat, CheckCircle, ShieldCheck
 } from 'lucide-react';
 import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage } from '../types';
-import { suggestProjectSchedule, searchNearbyResources } from '../services/geminiService';
+import { suggestProjectSchedule, searchNearbyResources, analyzeProjectFinancials } from '../services/geminiService';
 import GanttChart from './GanttChart';
 import MapLocation from './MapLocation';
 import { cloudFileService } from '../services/cloudFileService';
@@ -58,6 +58,17 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [selectedUploadCategory, setSelectedUploadCategory] = useState('survey');
   const [currentPhotoFilter, setCurrentPhotoFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isAnalyzingFinancials, setIsAnalyzingFinancials] = useState(false);
+  const [financialAnalysis, setFinancialAnalysis] = useState<string | null>(null);
+
+  const profit = useMemo(() => {
+    // Labor cost is now derived purely from dispatch records
+    const labor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
+    const material = (project.expenses || []).reduce((acc, curr) => acc + curr.amount, 0);
+    const totalSpent = labor + material;
+    return project.budget - totalSpent;
+  }, [project.budget, project.expenses, project.workAssignments]);
 
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [expenseFormData, setExpenseFormData] = useState<Partial<Expense>>({
@@ -432,272 +443,364 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       ></div>
                     </div>
                   </div>
-
-                  <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                      <DollarSign size={48} className="text-emerald-900" />
-                    </div>
-                    <p className="text-[9px] font-black text-stone-400 uppercase mb-2 tracking-widest">目前待收帳款</p>
-                    <p className="text-2xl font-black text-emerald-600">
-                      NT$ {(project.budget - (project.payments?.filter(p => p.status === 'paid').reduce((acc, curr) => acc + curr.amount, 0) || 0)).toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                      <Receipt size={48} className="text-stone-900" />
-                    </div>
-                    <p className="text-[9px] font-black text-stone-400 uppercase mb-2 tracking-widest">目前累計支出</p>
-                    <p className="text-2xl font-black text-stone-900">NT$ {currentSpent.toLocaleString()}</p>
-                  </div>
                 </div>
 
-                {/* 收款階段管理 */}
-                <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden min-h-[300px]">
-                  <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
-                    <h4 className="text-[10px] font-black text-stone-900 uppercase tracking-widest flex items-center gap-2">
-                      <DollarSign size={14} className="text-emerald-600" /> 應收款與收款階段
-                    </h4>
-                    {!isReadOnly && (
-                      <button
-                        onClick={() => {
-                          const label = prompt('階段名稱 (例如：訂金、期中款)');
-                          const amountStr = prompt('金額 (數字)');
-                          if (label && amountStr) {
-                            const newPayment: PaymentStage = {
-                              id: Date.now().toString(),
-                              label,
-                              amount: parseInt(amountStr),
-                              status: 'pending',
-                              date: new Date().toISOString().split('T')[0],
-                              notes: ''
-                            };
-                            onUpdatePayments([...(project.payments || []), newPayment]);
-                          }
-                        }}
-                        className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-emerald-700 transition-all active:scale-95"
-                      >
-                        + 新增收款階段
-                      </button>
-                    )}
+                {/* AI Analysis & Financial Overview Section */}
+                <div className="space-y-6 mb-6">
+                  <div className="bg-stone-900 border border-stone-800 rounded-3xl p-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full filter blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                      <div>
+                        <h3 className="text-xl font-black text-white mb-2">專案財務總覽</h3>
+                        <p className="text-stone-400 text-sm font-medium">即時追蹤預算執行率與自動化成本分析。</p>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={async () => {
+                            setIsAnalyzingFinancials(true);
+                            try {
+                              const result = await analyzeProjectFinancials(project);
+                              setFinancialAnalysis(result.text || '無法生成報告');
+                            } catch (e) {
+                              alert('分析失敗，請稍後再試');
+                            } finally {
+                              setIsAnalyzingFinancials(false);
+                            }
+                          }}
+                          disabled={isAnalyzingFinancials}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-900/30 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          {isAnalyzingFinancials ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                          AI 財務診斷
+                        </button>
+                        {!isReadOnly && <button className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"><Pencil size={18} /></button>}
+                      </div>
+                    </div>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-stone-50/50">
-                          <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">階段名稱</th>
-                          <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">預計收款日</th>
-                          <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-right">金額</th>
-                          <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">狀態</th>
-                          {!isReadOnly && <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">操作</th>}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-50">
-                        {(project.payments || []).length > 0 ? (project.payments || []).map((p) => (
-                          <tr key={p.id} className="hover:bg-stone-50/30 transition-colors">
-                            <td className="px-6 py-4 text-xs font-black text-stone-900">{p.label}</td>
-                            <td className="px-6 py-4 text-xs font-bold text-stone-500">{p.date}</td>
-                            <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {p.amount.toLocaleString()}</td>
-                            <td className="px-6 py-4">
-                              <button
-                                disabled={isReadOnly}
-                                onClick={() => {
-                                  const nextStatus = p.status === 'paid' ? 'pending' : 'paid';
-                                  onUpdatePayments((project.payments || []).map(pay => pay.id === p.id ? { ...pay, status: nextStatus } : pay));
-                                }}
-                                className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border transition-all ${p.status === 'paid'
-                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                  : 'bg-amber-50 text-amber-600 border-amber-100'
-                                  }`}
-                              >
-                                {p.status === 'paid' ? '已收訖' : '待收款'}
-                              </button>
-                            </td>
-                            {!isReadOnly && (
-                              <td className="px-6 py-4 text-center">
-                                <button onClick={() => onUpdatePayments((project.payments || []).filter(pay => pay.id !== p.id))} className="text-stone-300 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+
+                  {financialAnalysis && (
+                    <div className="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-6 animate-in fade-in slide-in-from-top-4">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl shrink-0">
+                          <Activity size={24} />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-black text-indigo-900 text-sm uppercase tracking-wider mb-3">AI 財務營運預測報告</h4>
+                          <div className="prose prose-sm prose-indigo max-w-none text-slate-600 font-medium leading-relaxed whitespace-pre-wrap">
+                            {financialAnalysis}
+                          </div>
+                        </div>
+                        <button onClick={() => setFinancialAnalysis(null)} className="text-indigo-300 hover:text-indigo-500"><X size={20} /></button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><DollarSign size={20} /></div>
+                        <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">BUDGET</span>
+                      </div>
+                      <p className="text-2xl font-black text-stone-900 tracking-tight">NT$ {project.budget.toLocaleString()}</p>
+                      <p className="text-[11px] font-bold text-stone-400 mt-1">專案總預算</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><HardHat size={20} /></div>
+                        <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">LABOR COST</span>
+                      </div>
+                      <p className="text-2xl font-black text-stone-900 tracking-tight">
+                        NT$ {((project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0)).toLocaleString()}
+                      </p>
+                      <p className="text-[11px] font-bold text-stone-400 mt-1">累積施工成本 (自動計算)</p>
+                    </div>
+
+                    {[
+                      { label: '委託工程 (分包)', key: '委託工程', icon: Building2, color: 'text-purple-600', bg: 'bg-purple-50' },
+                      { label: '機具材料', key: '機具材料', icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    ].map(cat => {
+                      const amount = (project.expenses || []).filter(e => e.category === cat.key).reduce((acc, curr) => acc + curr.amount, 0);
+                      const Icon = cat.icon;
+                      return (
+                        <div key={cat.label} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 ${cat.bg} ${cat.color} rounded-2xl`}><Icon size={20} /></div>
+                            <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">EXPENSE</span>
+                          </div>
+                          <p className="text-2xl font-black text-stone-900 tracking-tight">NT$ {amount.toLocaleString()}</p>
+                          <p className="text-[11px] font-bold text-stone-400 mt-1">{cat.label}</p>
+                        </div>
+                      );
+                    })}
+
+                    <div className={`p-6 rounded-3xl border shadow-sm ${profit >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
+                      <div className="flex justify-between items-start mb-4">
+                        <div className={`p-3 rounded-2xl ${profit >= 0 ? 'bg-white text-emerald-600' : 'bg-white text-rose-600'}`}>
+                          <Activity size={20} />
+                        </div>
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${profit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>NET PROFIT</span>
+                      </div>
+                      <p className={`text-2xl font-black tracking-tight ${profit >= 0 ? 'text-emerald-900' : 'text-rose-900'}`}>
+                        NT$ {Math.abs(profit).toLocaleString()}
+                      </p>
+                      <p className={`text-[11px] font-bold mt-1 ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {profit >= 0 ? '目前預估毛利' : '目前預估虧損'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 收款階段管理 */}
+                  <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden min-h-[300px]">
+                    <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                      <h4 className="text-[10px] font-black text-stone-900 uppercase tracking-widest flex items-center gap-2">
+                        <DollarSign size={14} className="text-emerald-600" /> 應收款與收款階段
+                      </h4>
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => {
+                            const label = prompt('階段名稱 (例如：訂金、期中款)');
+                            const amountStr = prompt('金額 (數字)');
+                            if (label && amountStr) {
+                              const newPayment: PaymentStage = {
+                                id: Date.now().toString(),
+                                label,
+                                amount: parseInt(amountStr),
+                                status: 'pending',
+                                date: new Date().toISOString().split('T')[0],
+                                notes: ''
+                              };
+                              onUpdatePayments([...(project.payments || []), newPayment]);
+                            }
+                          }}
+                          className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-emerald-700 transition-all active:scale-95"
+                        >
+                          + 新增收款階段
+                        </button>
+                      )}
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-stone-50/50">
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">階段名稱</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">預計收款日</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-right">金額</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">狀態</th>
+                            {!isReadOnly && <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">操作</th>}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-50">
+                          {(project.payments || []).length > 0 ? (project.payments || []).map((p) => (
+                            <tr key={p.id} className="hover:bg-stone-50/30 transition-colors">
+                              <td className="px-6 py-4 text-xs font-black text-stone-900">{p.label}</td>
+                              <td className="px-6 py-4 text-xs font-bold text-stone-500">{p.date}</td>
+                              <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {p.amount.toLocaleString()}</td>
+                              <td className="px-6 py-4">
+                                <button
+                                  disabled={isReadOnly}
+                                  onClick={() => {
+                                    const nextStatus = p.status === 'paid' ? 'pending' : 'paid';
+                                    onUpdatePayments((project.payments || []).map(pay => pay.id === p.id ? { ...pay, status: nextStatus } : pay));
+                                  }}
+                                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border transition-all ${p.status === 'paid'
+                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    : 'bg-amber-50 text-amber-600 border-amber-100'
+                                    }`}
+                                >
+                                  {p.status === 'paid' ? '已收訖' : '待收款'}
+                                </button>
                               </td>
-                            )}
-                          </tr>
-                        )) : (
-                          <tr>
-                            <td colSpan={5} className="px-6 py-20 text-center text-stone-300">
-                              <p className="text-[10px] font-black uppercase tracking-widest">目前尚未設定收款階段</p>
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                              {!isReadOnly && (
+                                <td className="px-6 py-4 text-center">
+                                  <button onClick={() => onUpdatePayments((project.payments || []).filter(pay => pay.id !== p.id))} className="text-stone-300 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+                                </td>
+                              )}
+                            </tr>
+                          )) : (
+                            <tr>
+                              <td colSpan={5} className="px-6 py-20 text-center text-stone-300">
+                                <p className="text-[10px] font-black uppercase tracking-widest">目前尚未設定收款階段</p>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
+
+
+                  {/* 支出管理 (Expenses) */}
+                  <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden min-h-[300px]">
+                    <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+                      <h4 className="text-[10px] font-black text-stone-900 uppercase tracking-widest flex items-center gap-2">
+                        <Receipt size={14} className="text-rose-600" /> 專案支出明細
+                      </h4>
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => setIsAddingExpense(true)}
+                          className="bg-stone-900 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-stone-800 transition-all active:scale-95"
+                        >
+                          + 新增支出
+                        </button>
+                      )}
+                    </div>
+
+                    {isAddingExpense && (
+                      <div className="p-6 bg-stone-50 border-b border-stone-100 space-y-4 animate-in slide-in-from-top-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">支出類別</label>
+                            <select
+                              className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none cursor-pointer"
+                              value={expenseFormData.category}
+                              onChange={e => setExpenseFormData({ ...expenseFormData, category: e.target.value as any })}
+                            >
+                              <option value="委託工程">委託工程 (Subcontract)</option>
+                              <option value="零用金">零用金 (Petty Cash)</option>
+                              <option value="機具材料">機具材料 (Materials)</option>
+                              <option value="行政人事成本">行政人事成本 (Admin / HR)</option>
+                              <option value="其他">其他 (Other)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">發生日期</label>
+                            <input
+                              type="date"
+                              className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                              value={expenseFormData.date}
+                              onChange={e => setExpenseFormData({ ...expenseFormData, date: e.target.value })}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">支出項目名稱</label>
+                            <input
+                              type="text"
+                              className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                              placeholder="例如：水泥沙、工資..."
+                              value={expenseFormData.name}
+                              onChange={e => setExpenseFormData({ ...expenseFormData, name: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">金額</label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">$</span>
+                              <input
+                                type="number"
+                                className="w-full bg-white border border-stone-200 rounded-xl pl-6 pr-3 py-2 text-xs font-bold outline-none"
+                                value={expenseFormData.amount}
+                                onChange={e => setExpenseFormData({ ...expenseFormData, amount: Number(e.target.value) })}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">
+                              {expenseFormData.category === '委託工程' ? '承攬廠商名稱 (必填)' : '支付對象 (選填)'}
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                              placeholder={expenseFormData.category === '委託工程' ? '請輸入廠商名稱...' : '廠商或請款人...'}
+                              value={expenseFormData.supplier}
+                              onChange={e => setExpenseFormData({ ...expenseFormData, supplier: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                          <button onClick={() => setIsAddingExpense(false)} className="px-4 py-2 rounded-xl text-xs font-bold text-stone-500 hover:bg-stone-100">取消</button>
+                          <button
+                            onClick={() => {
+                              if (!expenseFormData.name || !expenseFormData.amount) return alert('請填寫完整資訊');
+                              if (expenseFormData.category === '委託工程' && !expenseFormData.supplier) return alert('委託工程必須填寫承攬廠商名稱');
+                              const newExp: Expense = {
+                                id: Date.now().toString(),
+                                ...expenseFormData as Expense
+                              };
+                              const newExpenses = [newExp, ...(project.expenses || [])];
+                              // Calculate new total spent: sum(expenses) + sum(labor assignments)
+                              const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
+                              const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
+                              onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
+
+                              setIsAddingExpense(false);
+                              setExpenseFormData({
+                                date: new Date().toISOString().split('T')[0],
+                                category: '委託工程',
+                                status: '已核銷',
+                                name: '',
+                                amount: 0,
+                                supplier: ''
+                              });
+                            }}
+                            className="px-4 py-2 rounded-xl text-xs font-bold bg-stone-900 text-white hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
+                          >
+                            確認新增
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-stone-50/50">
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">日期</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">類別</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">項目說明</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-right">金額</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">對象</th>
+                            {!isReadOnly && <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">操作</th>}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-50">
+                          {(project.expenses || []).length > 0 ? (project.expenses || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((exp) => (
+                            <tr key={exp.id} className="hover:bg-stone-50/30 transition-colors">
+                              <td className="px-6 py-4 text-xs font-bold text-stone-500">{exp.date}</td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider ${exp.category === '委託工程' ? 'bg-indigo-50 text-indigo-600' :
+                                  exp.category === '機具材料' ? 'bg-amber-50 text-amber-600' :
+                                    exp.category === '行政人事成本' ? 'bg-purple-50 text-purple-600' :
+                                      exp.category === '零用金' ? 'bg-teal-50 text-teal-600' :
+                                        'bg-stone-100 text-stone-600'
+                                  }`}>
+                                  {exp.category}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-xs font-black text-stone-900">{exp.name}</td>
+                              <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {exp.amount.toLocaleString()}</td>
+                              <td className="px-6 py-4 text-[10px] font-bold text-stone-500">{exp.supplier || '-'}</td>
+                              {!isReadOnly && (
+                                <td className="px-6 py-4 text-center">
+                                  <button
+                                    onClick={() => {
+                                      if (confirm('確定刪除此筆支出？')) {
+                                        const newExpenses = (project.expenses || []).filter(e => e.id !== exp.id);
+                                        const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
+                                        const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
+                                        onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
+                                      }
+                                    }}
+                                    className="text-stone-300 hover:text-rose-500 transition-colors"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={6} className="px-6 py-12 text-center text-stone-300"><p className="text-[10px] font-black uppercase tracking-widest">尚無支出紀錄</p></td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             )}
-
-            {/* 支出管理 (Expenses) */}
-            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden min-h-[300px]">
-              <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
-                <h4 className="text-[10px] font-black text-stone-900 uppercase tracking-widest flex items-center gap-2">
-                  <Receipt size={14} className="text-rose-600" /> 專案支出明細
-                </h4>
-                {!isReadOnly && (
-                  <button
-                    onClick={() => setIsAddingExpense(true)}
-                    className="bg-stone-900 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-stone-800 transition-all active:scale-95"
-                  >
-                    + 新增支出
-                  </button>
-                )}
-              </div>
-
-              {isAddingExpense && (
-                <div className="p-6 bg-stone-50 border-b border-stone-100 space-y-4 animate-in slide-in-from-top-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">支出類別</label>
-                      <select
-                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none cursor-pointer"
-                        value={expenseFormData.category}
-                        onChange={e => setExpenseFormData({ ...expenseFormData, category: e.target.value as any })}
-                      >
-                        <option value="委託工程">委託工程 (Subcontract)</option>
-                        <option value="零用金">零用金 (Petty Cash)</option>
-                        <option value="機具材料">機具材料 (Materials)</option>
-                        <option value="行政人事成本">行政人事成本 (Admin / HR)</option>
-                        <option value="其他">其他 (Other)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">發生日期</label>
-                      <input
-                        type="date"
-                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
-                        value={expenseFormData.date}
-                        onChange={e => setExpenseFormData({ ...expenseFormData, date: e.target.value })}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">支出項目名稱</label>
-                      <input
-                        type="text"
-                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
-                        placeholder="例如：水泥沙、工資..."
-                        value={expenseFormData.name}
-                        onChange={e => setExpenseFormData({ ...expenseFormData, name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">金額</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">$</span>
-                        <input
-                          type="number"
-                          className="w-full bg-white border border-stone-200 rounded-xl pl-6 pr-3 py-2 text-xs font-bold outline-none"
-                          value={expenseFormData.amount}
-                          onChange={e => setExpenseFormData({ ...expenseFormData, amount: Number(e.target.value) })}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-black text-stone-400 uppercase tracking-widest mb-1.5">
-                        {expenseFormData.category === '委託工程' ? '承攬廠商名稱 (必填)' : '支付對象 (選填)'}
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold outline-none"
-                        placeholder={expenseFormData.category === '委託工程' ? '請輸入廠商名稱...' : '廠商或請款人...'}
-                        value={expenseFormData.supplier}
-                        onChange={e => setExpenseFormData({ ...expenseFormData, supplier: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button onClick={() => setIsAddingExpense(false)} className="px-4 py-2 rounded-xl text-xs font-bold text-stone-500 hover:bg-stone-100">取消</button>
-                    <button
-                      onClick={() => {
-                        if (!expenseFormData.name || !expenseFormData.amount) return alert('請填寫完整資訊');
-                        if (expenseFormData.category === '委託工程' && !expenseFormData.supplier) return alert('委託工程必須填寫承攬廠商名稱');
-                        const newExp: Expense = {
-                          id: Date.now().toString(),
-                          ...expenseFormData as Expense
-                        };
-                        const newExpenses = [newExp, ...(project.expenses || [])];
-                        // Calculate new total spent: sum(expenses) + sum(labor assignments)
-                        const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
-                        const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
-                        onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
-
-                        setIsAddingExpense(false);
-                        setExpenseFormData({
-                          date: new Date().toISOString().split('T')[0],
-                          category: '委託工程',
-                          status: '已核銷',
-                          name: '',
-                          amount: 0,
-                          supplier: ''
-                        });
-                      }}
-                      className="px-4 py-2 rounded-xl text-xs font-bold bg-stone-900 text-white hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
-                    >
-                      確認新增
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-stone-50/50">
-                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">日期</th>
-                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">類別</th>
-                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">項目說明</th>
-                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-right">金額</th>
-                      <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">對象</th>
-                      {!isReadOnly && <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">操作</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-50">
-                    {(project.expenses || []).length > 0 ? (project.expenses || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((exp) => (
-                      <tr key={exp.id} className="hover:bg-stone-50/30 transition-colors">
-                        <td className="px-6 py-4 text-xs font-bold text-stone-500">{exp.date}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider ${exp.category === '委託工程' ? 'bg-indigo-50 text-indigo-600' :
-                            exp.category === '機具材料' ? 'bg-amber-50 text-amber-600' :
-                              exp.category === '行政人事成本' ? 'bg-purple-50 text-purple-600' :
-                                exp.category === '零用金' ? 'bg-teal-50 text-teal-600' :
-                                  'bg-stone-100 text-stone-600'
-                            }`}>
-                            {exp.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-xs font-black text-stone-900">{exp.name}</td>
-                        <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {exp.amount.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-[10px] font-bold text-stone-500">{exp.supplier || '-'}</td>
-                        {!isReadOnly && (
-                          <td className="px-6 py-4 text-center">
-                            <button
-                              onClick={() => {
-                                if (confirm('確定刪除此筆支出？')) {
-                                  const newExpenses = (project.expenses || []).filter(e => e.id !== exp.id);
-                                  const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
-                                  const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
-                                  onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
-                                }
-                              }}
-                              className="text-stone-300 hover:text-rose-500 transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={6} className="px-6 py-12 text-center text-stone-300"><p className="text-[10px] font-black uppercase tracking-widest">尚無支出紀錄</p></td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
             {activeView === 'map' && (
               <div className="bg-white rounded-3xl border border-stone-200 p-6 space-y-6 animate-in fade-in shadow-sm">

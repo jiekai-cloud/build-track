@@ -299,3 +299,48 @@ export const scanBusinessCard = async (base64Image: string) => {
     throw error;
   }
 };
+/**
+ * 專案財務與盈虧預測分析
+ */
+export const analyzeProjectFinancials = async (project: Project) => {
+  const ai = getAI();
+  try {
+    const laborCost = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
+    const materialCost = (project.expenses || []).filter(e => e.category === '機具材料').reduce((acc, curr) => acc + curr.amount, 0);
+    const subCost = (project.expenses || []).filter(e => e.category === '委託工程').reduce((acc, curr) => acc + curr.amount, 0);
+    const otherCost = (project.expenses || []).filter(e => !['機具材料', '委託工程'].includes(e.category)).reduce((acc, curr) => acc + curr.amount, 0);
+    const totalSpent = laborCost + materialCost + subCost + otherCost;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{
+        parts: [{
+          text: `妳是擁有30年經驗的營造業財務稽核專家。請針對以下專案數據進行嚴格的盈虧預測與成本結構分析。
+
+專案基本面：
+- 案名：${project.name}
+- 總預算：NT$ ${project.budget.toLocaleString()}
+- 目前總支出：NT$ ${totalSpent.toLocaleString()}
+- 進度：${project.progress}% (狀態：${project.status})
+
+成本細項結構：
+- 施工人力成本 (來自派工)：NT$ ${laborCost.toLocaleString()}
+- 機具材料成本：NT$ ${materialCost.toLocaleString()}
+- 委託工程 (分包)：NT$ ${subCost.toLocaleString()}
+- 其他行政與雜支：NT$ ${otherCost.toLocaleString()}
+
+請回答以下三個部分，並使用 Markdown 格式：
+1. **盈虧預測結果**：請直白預測此案最終會「獲利」還是「虧損」，並給出預估的毛利率 (Gross Margin)。
+2. **關鍵風險因子**：請指出 1-3 個可能導致賠錢或利潤被侵蝕的具體原因 (例如：施工進度僅 ${project.progress}% 但人力成本已佔預算 40%，顯示工率低落)。
+3. **具體改善建議**：針對上述風險，提供條列式且可執行的財務管控建議。
+
+語氣請專業、犀利且一針見血，不要講客套話。`
+        }]
+      }]
+    });
+    return { text: response.text };
+  } catch (error) {
+    console.error("財務分析失敗:", error);
+    throw error;
+  }
+};
