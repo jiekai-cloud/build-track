@@ -1139,13 +1139,14 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     // 4. Project metadata
                                     ctx.fillStyle = '#1c1917'; // Stone-900
                                     ctx.font = '900 36px "Inter", sans-serif';
-                                    ctx.fillText(`案件名稱：${project.name}`, MARGIN, 310);
+                                    ctx.fillText(`案件名稱：${project.name}`, MARGIN, 305);
 
-                                    ctx.font = '700 28px "Inter", sans-serif';
+                                    ctx.font = '700 24px "Inter", sans-serif';
                                     ctx.fillStyle = '#44403c'; // Stone-700
-                                    ctx.fillText(`施工地址：${project.location}`, MARGIN, 360);
+                                    ctx.fillText(`工程編號：${project.id}`, MARGIN, 345);
+                                    ctx.fillText(`施工地址：${project.location?.address || '未提供地址'}`, MARGIN, 385);
 
-                                    const chartAreaTop = 420;
+                                    const chartAreaTop = 440; // Shift down slightly
                                     const availableHeight = A4_HEIGHT - chartAreaTop - MARGIN;
                                     const availableWidth = A4_WIDTH - (MARGIN * 2);
 
