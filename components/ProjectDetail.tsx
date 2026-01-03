@@ -1087,21 +1087,21 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                 const container = document.getElementById('gantt-chart-container');
                                 const svg = container?.querySelector('svg');
                                 if (svg) {
-                                  // Get current dimensions
-                                  const { width, height } = svg.getBoundingClientRect();
-                                  const headerHeight = 160; // Extra space for branding info
+                                  // A4 Landscape dimensions at 200+ DPI
+                                  const A4_WIDTH = 2480;
+                                  const A4_HEIGHT = 1754;
+                                  const MARGIN = 80;
 
                                   const canvas = document.createElement('canvas');
                                   const ctx = canvas.getContext('2d');
                                   if (!ctx) return;
 
-                                  canvas.width = width * 2;
-                                  canvas.height = (height + headerHeight) * 2;
-                                  ctx.scale(2, 2);
+                                  canvas.width = A4_WIDTH;
+                                  canvas.height = A4_HEIGHT;
 
                                   // Background
                                   ctx.fillStyle = 'white';
-                                  ctx.fillRect(0, 0, width, height + headerHeight);
+                                  ctx.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
 
                                   const logoImg = new Image();
                                   const chartImg = new Image();
@@ -1112,49 +1112,66 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     if (loadedCount < 2) return;
 
                                     // 1. Draw Logo
-                                    const logoSize = 60;
-                                    ctx.drawImage(logoImg, 40, 25, logoSize, logoSize);
+                                    const logoSize = 120;
+                                    ctx.drawImage(logoImg, MARGIN, 80, logoSize, logoSize);
 
                                     // 2. Draw Company Info
                                     ctx.fillStyle = '#ea580c'; // Orange-600
-                                    ctx.font = '900 20px "Inter", sans-serif';
-                                    ctx.fillText('生活品質工程管理系統', 115, 52);
+                                    ctx.font = '900 48px "Inter", sans-serif';
+                                    ctx.fillText('台灣生活品質發展股份有限公司', MARGIN + 160, 135);
 
                                     ctx.fillStyle = '#78716c'; // Stone-500
-                                    ctx.font = '800 12px "Inter", sans-serif';
-                                    ctx.fillText('Quality of Life Development Corp.', 115, 75);
+                                    ctx.font = '800 24px "Inter", sans-serif';
+                                    ctx.fillText('Quality of Life Development Corp.', MARGIN + 160, 180);
 
                                     // 3. Draw Project Details Divider
                                     ctx.strokeStyle = '#e7e5e4'; // Stone-200
-                                    ctx.lineWidth = 1;
+                                    ctx.lineWidth = 2;
                                     ctx.beginPath();
-                                    ctx.moveTo(40, 105);
-                                    ctx.lineTo(width - 40, 105);
+                                    ctx.moveTo(MARGIN, 240);
+                                    ctx.lineTo(A4_WIDTH - MARGIN, 240);
                                     ctx.stroke();
 
                                     // 4. Project metadata
                                     ctx.fillStyle = '#1c1917'; // Stone-900
-                                    ctx.font = '900 15px "Inter", sans-serif';
-                                    ctx.fillText(`案件名稱：${project.name}`, 40, 132);
+                                    ctx.font = '900 36px "Inter", sans-serif';
+                                    ctx.fillText(`案件名稱：${project.name}`, MARGIN, 310);
 
-                                    ctx.font = '700 12px "Inter", sans-serif';
+                                    ctx.font = '700 28px "Inter", sans-serif';
                                     ctx.fillStyle = '#44403c'; // Stone-700
-                                    ctx.fillText(`施工地址：${project.location}`, 40, 153);
+                                    ctx.fillText(`施工地址：${project.location}`, MARGIN, 360);
 
-                                    // 5. Draw Chart
-                                    ctx.drawImage(chartImg, 0, headerHeight, width, height);
+                                    const chartAreaTop = 420;
+                                    const availableHeight = A4_HEIGHT - chartAreaTop - MARGIN;
+                                    const availableWidth = A4_WIDTH - (MARGIN * 2);
 
-                                    // 6. Download
+                                    // 5. Calculate Scale to fit A4
+                                    const { width: svgW, height: svgH } = svg.getBoundingClientRect();
+                                    const scaleX = availableWidth / svgW;
+                                    const scaleY = availableHeight / svgH;
+                                    const scale = Math.min(scaleX, scaleY, 2.5); // Cap scale to prevent blur
+
+                                    const drawW = svgW * scale;
+                                    const drawH = svgH * scale;
+                                    const xOffset = MARGIN + (availableWidth - drawW) / 2;
+
+                                    ctx.drawImage(chartImg, xOffset, chartAreaTop, drawW, drawH);
+
+                                    // 6. Footer (Page Info)
+                                    ctx.fillStyle = '#a8a29e';
+                                    ctx.font = '600 18px "Inter", sans-serif';
+                                    ctx.textAlign = 'right';
+                                    ctx.fillText(`產出日期：${new Date().toLocaleDateString()}`, A4_WIDTH - MARGIN, A4_HEIGHT - MARGIN / 2);
+
+                                    // 7. Download
                                     const a = document.createElement('a');
                                     a.download = `施工進度表-${project.name}.jpg`;
-                                    a.href = canvas.toDataURL('image/jpeg', 0.9);
+                                    a.href = canvas.toDataURL('image/jpeg', 0.95);
                                     a.click();
                                   };
 
                                   logoImg.onload = onAllLoaded;
                                   chartImg.onload = onAllLoaded;
-
-                                  // Set sources
                                   logoImg.src = './pwa-icon.png';
                                   const svgData = new XMLSerializer().serializeToString(svg);
                                   chartImg.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
