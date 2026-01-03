@@ -162,7 +162,7 @@ export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) =
   const ai = getAI();
   try {
     const memberSummary = members.map(m =>
-      `- ${m.name}${m.nickname ? ` (外號: ${m.nickname})` : ''} (${m.role}): 負責 ${m.activeProjectsCount} 案, 狀態: ${m.status}, 專長: ${m.specialty?.join(',')}`
+      `- ${m.name}${m.nicknames?.length ? ` (外號: ${m.nicknames.join(', ')})` : ''} (${m.role}): 負責 ${m.activeProjectsCount} 案, 狀態: ${m.status}, 專長: ${m.specialty?.join(',')}`
     ).join('\n');
 
     const projectSummary = projects
@@ -240,7 +240,7 @@ export const parseWorkDispatchText = async (text: string, members: any[] = []) =
   const ai = getAI();
   try {
     const memberContext = members.length > 0
-      ? `目前團隊成員名單 (包含外號)：\n${members.map(m => `- ${m.name}${m.nickname ? ` (外號: ${m.nickname})` : ''}`).join('\n')}\n\n`
+      ? `目前團隊成員名單 (包含所有外號)：\n${members.map(m => `- ${m.name}${m.nicknames?.length ? ` (外號: ${m.nicknames.join(', ')})` : ''}`).join('\n')}\n\n`
       : '';
 
     const response = await ai.models.generateContent({

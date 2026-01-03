@@ -38,7 +38,7 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
 
   const filteredMembers = members.filter(m => {
     const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.nickname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (m.nicknames || []).some(n => n.toLowerCase().includes(searchTerm.toLowerCase())) ||
       m.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (m.specialty || []).some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -176,7 +176,9 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
                         <div className="flex items-center gap-2">
                           <h3 className="text-sm font-black text-slate-900">
                             {member.name}
-                            {member.nickname && <span className="text-slate-400 font-bold ml-2">({member.nickname})</span>}
+                            {member.nicknames && member.nicknames.length > 0 && (
+                              <span className="text-slate-400 font-bold ml-2">({member.nicknames.join(', ')})</span>
+                            )}
                           </h3>
                           <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded uppercase tracking-tighter">
                             {member.employeeId}

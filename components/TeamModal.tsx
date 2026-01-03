@@ -27,6 +27,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
   const [activeTab, setActiveTab] = useState<'basic' | 'hr' | 'pro' | 'payroll'>('basic');
   const [specialtyInput, setSpecialtyInput] = useState('');
   const [certInput, setCertInput] = useState('');
+  const [nicknameInput, setNicknameInput] = useState('');
 
   const [formData, setFormData] = useState<Partial<TeamMember>>({
     employeeId: '',
@@ -168,8 +169,31 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                     <input required disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">外號 / 暱稱 (用於 AI 辨識)</label>
-                    <input disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.nickname || ''} onChange={e => setFormData({ ...formData, nickname: e.target.value })} />
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">外號 / 暱稱 (Enter 新增多個)</label>
+                    <input
+                      disabled={!isEditable}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold"
+                      value={nicknameInput}
+                      onChange={e => setNicknameInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && nicknameInput.trim()) {
+                          e.preventDefault();
+                          const currentNicknames = formData.nicknames || [];
+                          if (!currentNicknames.includes(nicknameInput.trim())) {
+                            setFormData({ ...formData, nicknames: [...currentNicknames, nicknameInput.trim()] });
+                          }
+                          setNicknameInput('');
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {formData.nicknames?.map(n => (
+                        <span key={n} className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-[10px] font-black border border-slate-200 flex items-center gap-1">
+                          {n}
+                          {isEditable && <X size={10} className="cursor-pointer hover:text-rose-500" onClick={() => setFormData({ ...formData, nicknames: formData.nicknames?.filter(x => x !== n) })} />}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div>

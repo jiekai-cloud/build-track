@@ -59,7 +59,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
 
         // 嘗試匹配成員以獲取日薪
         const matchedMember = teamMembers.find(m =>
-          m.name === r.memberName || m.nickname === r.memberName
+          m.name === r.memberName || (m.nicknames || []).includes(r.memberName)
         );
 
         return {
