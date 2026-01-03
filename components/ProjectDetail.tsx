@@ -1118,11 +1118,15 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                                     // 2. Draw Company Info
                                     ctx.fillStyle = '#1c1917'; // Stone-900 (Black)
                                     ctx.font = '900 48px "Inter", sans-serif';
-                                    ctx.fillText('台灣生活品質發展股份有限公司', MARGIN + 160, 135);
+                                    const zhName = '台灣生活品質發展股份有限公司';
+                                    ctx.fillText(zhName, MARGIN + 160, 135);
+
+                                    // Measure Chinese width to align English name
+                                    const zhWidth = ctx.measureText(zhName).width;
 
                                     ctx.fillStyle = '#78716c'; // Stone-500
-                                    ctx.font = '800 24px "Inter", sans-serif';
-                                    ctx.fillText('Quality of Life Development Corp. Taiwan', MARGIN + 160, 180);
+                                    ctx.font = '800 28px "Inter", sans-serif';
+                                    ctx.fillText('Quality of Life Development Corp. Taiwan', MARGIN + 160, 180, zhWidth);
 
                                     // 3. Draw Project Details Divider
                                     ctx.strokeStyle = '#e7e5e4'; // Stone-200
