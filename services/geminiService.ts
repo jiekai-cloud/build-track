@@ -348,9 +348,25 @@ export const analyzeProjectFinancials = async (project: Project) => {
 /**
  * 解析報價單/合約影像為施工排程
  */
-export const parseScheduleFromImage = async (base64Image: string) => {
+export const parseScheduleFromImage = async (base64Image: string, startDate: string, workOnHolidays: boolean) => {
   const ai = getAI();
   try {
+    const prompt = `妳是專業的工程排程規劃師。請讀取這張報價單或合約內容，分析出「施工項目」以及合理的「預計工期」。
+    
+    排程條件：
+    1. 專案開始日期：${startDate}
+    2. 假日施工：${workOnHolidays ? '是 (包含週末與假日)' : '否 (僅週一至週五施工，遇假日順延)'}
+    
+    請根據項目性質，自動推估合理的起訖日期。請注意，如果不可假日施工，工期計算必須跳過週末。
+    
+    請直接回傳一個 JSON 陣列，不包含 Markdown 標記，也不要包含 \`\`\`json 等字樣。
+    陣列中每個物件包含：
+    - name: 項目名稱 (例如：拆除工程)
+    - startDate: 預計開始日期 (YYYY-MM-DD)
+    - endDate: 預計結束日期 (YYYY-MM-DD)
+    - status: 固定為 'Upcoming'
+    - progress: 固定為 0`;
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [
@@ -360,7 +376,7 @@ export const parseScheduleFromImage = async (base64Image: string) => {
             data: base64Image
           }
         },
-        "妳是專業的工程排程規劃師。請讀取這張報價單或合約內容，分析出「施工項目」以及合理的「預計工期」。請根據項目性質，自動推估合理的起訖日期（假設專案從今天開始）。\n\n請直接回傳一個 JSON 陣列，不包含 Markdown 標記，也不要包含 ```json 等字樣。\n陣列中每個物件包含：\n- name: 項目名稱 (例如：拆除工程)\n- startDate: 預計開始日期 (YYYY-MM-DD)\n- endDate: 預計結束日期 (YYYY-MM-DD)\n- status: 固定為 'Upcoming'\n- progress: 固定為 0"
+        prompt
       ]
     });
 

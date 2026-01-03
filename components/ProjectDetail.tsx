@@ -60,6 +60,10 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scheduleFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Schedule Options State
+  const [scheduleStartDate, setScheduleStartDate] = useState(project.startDate || new Date().toISOString().split('T')[0]);
+  const [workOnHolidays, setWorkOnHolidays] = useState(false);
+
 
   const [isAnalyzingFinancials, setIsAnalyzingFinancials] = useState(false);
   const [financialAnalysis, setFinancialAnalysis] = useState<string | null>(null);
@@ -128,7 +132,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
         const base64Data = base64String.split(',')[1] || base64String;
 
         try {
-          const newPhases = await parseScheduleFromImage(base64Data);
+          const newPhases = await parseScheduleFromImage(base64Data, scheduleStartDate, workOnHolidays);
           if (newPhases && newPhases.length > 0) {
             const phasesWithIds = newPhases.map((p: any) => ({
               ...p,
@@ -999,7 +1003,35 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           <h3 className="font-black text-stone-900 uppercase text-xs flex items-center gap-2">
                             <CalendarDays size={16} className="text-blue-600" /> 施工進度排程
                           </h3>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap items-center gap-3">
+                            {/* Schedule Settings */}
+                            <div className="flex items-center gap-3 bg-stone-50 px-3 py-1.5 rounded-xl border border-stone-100">
+                              <div className="flex flex-col">
+                                <label className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-0.5">開始日期</label>
+                                <input
+                                  type="date"
+                                  value={scheduleStartDate}
+                                  onChange={(e) => setScheduleStartDate(e.target.value)}
+                                  className="text-[10px] font-bold bg-transparent border-none outline-none p-0 text-stone-700 w-24"
+                                />
+                              </div>
+                              <div className="w-px h-6 bg-stone-200"></div>
+                              <div className="flex items-center gap-2">
+                                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                  <div className={`w-3 h-3 rounded flex items-center justify-center border transition-all ${workOnHolidays ? 'bg-orange-600 border-orange-600' : 'bg-white border-stone-300'}`}>
+                                    {workOnHolidays && <Check size={10} className="text-white" strokeWidth={4} />}
+                                  </div>
+                                  <input
+                                    type="checkbox"
+                                    checked={workOnHolidays}
+                                    onChange={(e) => setWorkOnHolidays(e.target.checked)}
+                                    className="hidden"
+                                  />
+                                  <span className="text-[10px] font-bold text-stone-600">假日施工</span>
+                                </label>
+                              </div>
+                            </div>
+
                             <input type="file" ref={scheduleFileInputRef} className="hidden" accept="image/*" onChange={handleScheduleUpload} />
                             <button
                               onClick={() => scheduleFileInputRef.current?.click()}
