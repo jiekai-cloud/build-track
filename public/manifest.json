@@ -3,7 +3,7 @@
   "name": "生活品質智慧工程管理系統",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/4342/4342728.png",
+      "src": "./pwa-icon.png",
       "sizes": "192x192 512x512",
       "type": "image/png"
     }
