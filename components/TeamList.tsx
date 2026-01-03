@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import {
   Search, UserPlus, Phone, Mail, MoreHorizontal, Pencil,
-  Trash2, Award, Briefcase, Activity, ExternalLink, Sparkles, Hash
+  Trash2, Award, Briefcase, Activity, ExternalLink, Sparkles, Hash, Loader2, X, Layout
 } from 'lucide-react';
-import { TeamMember, Department } from '../types';
+import { TeamMember, Department, Project } from '../types';
+import { getTeamLoadAnalysis } from '../services/geminiService';
 import OrgChart from './OrgChart';
 
 interface TeamListProps {
@@ -13,12 +14,27 @@ interface TeamListProps {
   onEditClick: (member: TeamMember) => void;
   onDeleteClick: (id: string) => void;
   departments: Department[];
+  projects: Project[];
 }
 
-const TeamList: React.FC<TeamListProps> = ({ members, departments, onAddClick, onEditClick, onDeleteClick }) => {
+const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onAddClick, onEditClick, onDeleteClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('all');
   const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+
+  const handleAIAnalysis = async () => {
+    setIsAnalyzing(true);
+    try {
+      const result = await getTeamLoadAnalysis(members, projects);
+      setAnalysisResult(result.text);
+    } catch (error) {
+      alert('分析失敗，請稍後再試');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const filteredMembers = members.filter(m => {
     const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -62,9 +78,13 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, onAddClick, o
           <p className="text-slate-500 text-sm font-medium">管理內部員工與外部協力廠商的人力分佈與登入權限。</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <button className="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
-            <Sparkles size={16} className="text-orange-500" />
-            AI 負載分析
+          <button
+            disabled={isAnalyzing}
+            onClick={handleAIAnalysis}
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-50"
+          >
+            {isAnalyzing ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} className="text-orange-500" />}
+            {isAnalyzing ? '分析中...' : 'AI 負載分析'}
           </button>
           <button
             onClick={onAddClick}
@@ -234,6 +254,60 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, onAddClick, o
             </div>
           </div>
         </>
+      )}
+
+      {/* AI Analysis Modal */}
+      {analysisResult && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="px-8 py-6 bg-stone-900 flex justify-between items-center text-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500 rounded-xl">
+                  <Sparkles size={20} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg leading-tight">AI 團隊負載戰略分析</h2>
+                  <p className="text-[10px] text-orange-200 font-bold uppercase tracking-widest">Team Resource Deployment Insight</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAnalysisResult(null)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-8 overflow-y-auto no-scrollbar prose prose-slate max-w-none">
+              <div className="bg-orange-50/50 border border-orange-100 p-6 rounded-3xl mb-8">
+                <div className="flex items-center gap-2 text-orange-600 font-black text-xs uppercase tracking-widest mb-4">
+                  <Activity size={14} /> 核心診斷報告
+                </div>
+                <div className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-slate-700">
+                  {analysisResult}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <div className="shrink-0 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <Layout size={20} className="text-slate-400" />
+                </div>
+                <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
+                  本報告由 Gemini AI 結合目前全案場進度與 50 名成員之負載數據自動生成，僅供管理階層進行人力調拔參考。
+                </p>
+              </div>
+            </div>
+
+            <div className="p-8 bg-slate-50 border-t border-slate-100 shrink-0">
+              <button
+                onClick={() => setAnalysisResult(null)}
+                className="w-full bg-stone-900 text-white font-bold py-4 rounded-2xl shadow-xl hover:bg-stone-800 active:scale-[0.98] transition-all"
+              >
+                確收分析報告
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

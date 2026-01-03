@@ -754,6 +754,7 @@ const App: React.FC = () => {
               {activeTab === 'team' && <TeamList
                 members={filteredData.teamMembers}
                 departments={MOCK_DEPARTMENTS}
+                projects={filteredData.projects}
                 onAddClick={() => { setEditingMember(null); setIsTeamModalOpen(true); }}
                 onEditClick={(m) => { setEditingMember(m); setIsTeamModalOpen(true); }}
                 onDeleteClick={(id) => {

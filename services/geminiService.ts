@@ -112,6 +112,40 @@ export const suggestProjectSchedule = async (project: Project) => {
 };
 
 /**
+ * 團隊資源負載分析 - 診斷人員壓力與瓶頸
+ */
+export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) => {
+  const ai = getAI();
+  try {
+    const memberSummary = members.map(m =>
+      `- ${m.name} (${m.role}): 負責 ${m.activeProjectsCount} 案, 狀態: ${m.status}, 專長: ${m.specialty?.join(',')}`
+    ).join('\n');
+
+    const projectSummary = projects
+      .filter(p => p.status === '施工中')
+      .map(p => `- ${p.name}: 進度 ${p.progress}%, 負責人: ${p.manager}`)
+      .join('\n');
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `成員數據：\n${memberSummary}\n\n施工中專案：\n${projectSummary}`,
+      config: {
+        systemInstruction: `妳是技術總監級別的 AI 管理顧問。
+          妳會分析工程團隊的負載狀況。請從以下角度提供簡短精幹的分析報告：
+          1. 資源分配異常：是否有人的案量過高（例如超過 5 案）？
+          2. 專長匹配度：目前的施工中專案是否都有對應專長的人員在場？
+          3. 潛在風險預警：哪些人可能因為過度忙碌導致品質下降？
+          請使用條列式，並在文末給出一個「整體營運負載指數 (0-100)」。`
+      }
+    });
+    return { text: response.text };
+  } catch (error) {
+    console.error("團隊負載分析失敗:", error);
+    throw error;
+  }
+};
+
+/**
  * 搜尋案場附近資源 (使用 Google Maps)
  */
 export const searchNearbyResources = async (address: string, lat: number, lng: number, resourceType: string) => {
