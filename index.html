@@ -7,13 +7,36 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>生活品質智慧工程管理系統 - Production v2.0</title>
     <!-- 使用相對路徑以相容 GitHub Pages -->
-    <meta name="theme-color" content="#ea580c">
+    <meta name="theme-color" content="#8B5E3C">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="工程管家">
     <link rel="apple-touch-icon" href="./pwa-icon.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        orange: {
+                            50: '#FAF8F5',  // 溫暖米白背景
+                            100: '#F2E8DC', // 淺卡其
+                            200: '#E8DCC8', // 砂岩色
+                            300: '#D6C0A6', // 淺棕
+                            400: '#C19A6B', // 駱駝色
+                            500: '#A0522D', // 赭石色 (Sienna)
+                            600: '#8B5E3C', // 核心主色：大地棕
+                            700: '#6F4E37', // 深咖啡
+                            800: '#5C4033', // 濃縮咖啡
+                            900: '#4A332A', // 黑巧
+                            950: '#2D1F1A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap"
         rel="stylesheet">
