@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     X, User, Phone, Mail, MapPin, Building2, Save,
-    Target, Star, Tag, Smartphone, Scan, UserCheck
+    Target, Star, Tag, Smartphone, Scan, UserCheck, FileJson
 } from 'lucide-react';
 import { Vendor } from '../types';
 import BusinessCardScanner from './BusinessCardScanner';
