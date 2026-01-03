@@ -7,7 +7,7 @@ import {
   Layers, Camera, HardHat, CheckCircle, ShieldCheck
 } from 'lucide-react';
 import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage } from '../types';
-import { suggestProjectSchedule, searchNearbyResources, analyzeProjectFinancials } from '../services/geminiService';
+import { suggestProjectSchedule, searchNearbyResources, analyzeProjectFinancials, parseScheduleFromImage } from '../services/geminiService';
 import GanttChart from './GanttChart';
 import MapLocation from './MapLocation';
 import { cloudFileService } from '../services/cloudFileService';
@@ -58,6 +58,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [selectedUploadCategory, setSelectedUploadCategory] = useState('survey');
   const [currentPhotoFilter, setCurrentPhotoFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scheduleFileInputRef = useRef<HTMLInputElement>(null);
+
 
   const [isAnalyzingFinancials, setIsAnalyzingFinancials] = useState(false);
   const [financialAnalysis, setFinancialAnalysis] = useState<string | null>(null);
@@ -110,6 +112,45 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleScheduleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsAIScheduling(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        // Remove data URL prefix if present
+        const base64Data = base64String.split(',')[1] || base64String;
+
+        try {
+          const newPhases = await parseScheduleFromImage(base64Data);
+          if (newPhases && newPhases.length > 0) {
+            const phasesWithIds = newPhases.map((p: any) => ({
+              ...p,
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+            }));
+            onUpdatePhases([...(project.phases || []), ...phasesWithIds]);
+            alert(`已從文件中成功匯入 ${newPhases.length} 個排程項目！`);
+          } else {
+            alert('無法從文件中識別出排程項目，請確認圖片清晰度。');
+          }
+        } catch (error) {
+          console.error("Schedule parsing error:", error);
+          alert('解析失敗，請稍後再試。');
+        } finally {
+          setIsAIScheduling(false);
+          if (scheduleFileInputRef.current) scheduleFileInputRef.current.value = '';
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("File reading error:", error);
+      setIsAIScheduling(false);
     }
   };
 
@@ -954,15 +995,63 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                           <GanttChart phases={project.phases} />
                         </div>
 
-                        {/* 詳細列表 */}
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="font-black text-stone-900 uppercase text-xs flex items-center gap-2">
+                            <CalendarDays size={16} className="text-blue-600" /> 施工進度排程
+                          </h3>
+                          <div className="flex gap-2">
+                            <input type="file" ref={scheduleFileInputRef} className="hidden" accept="image/*" onChange={handleScheduleUpload} />
+                            <button
+                              onClick={() => scheduleFileInputRef.current?.click()}
+                              disabled={isAIScheduling || isReadOnly}
+                              className="bg-stone-100 text-stone-600 px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-stone-200 transition-all flex items-center gap-2"
+                            >
+                              <Upload size={12} /> 上傳合約/報價單 (AI排程)
+                            </button>
+                            <button
+                              onClick={async () => {
+                                setIsAIScheduling(true);
+                                try {
+                                  // Implementation for pure text generation exists, but here we added file upload
+                                  const result = await suggestProjectSchedule(project);
+                                  // ... handle text result if needed, or rely on file upload ...
+                                  // For now, let's keep the old button too or replace? 
+                                  // The user asked to ADD upload capability.
+                                  alert(result.text);
+                                } catch (e) { } finally { setIsAIScheduling(false); }
+                              }}
+                              disabled={isAIScheduling || isReadOnly}
+                              className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-blue-100 transition-all flex items-center gap-2"
+                            >
+                              {isAIScheduling ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                              AI 建議排程
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* List */}
                         <div className="space-y-6">
                           {project.phases.map(phase => (
-                            <div key={phase.id} className="space-y-2">
+                            <div key={phase.id} className="space-y-2 group">
                               <div className="flex justify-between items-center text-xs font-bold text-stone-700">
                                 <span>{phase.name}</span>
-                                <span className="text-stone-400 text-[10px]">{phase.startDate} - {phase.endDate}</span>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-stone-400 text-[10px]">{phase.startDate} - {phase.endDate}</span>
+                                  {!isReadOnly && (
+                                    <button
+                                      onClick={() => {
+                                        if (confirm(`確定要刪除「${phase.name}」項目嗎？`)) {
+                                          onUpdatePhases(project.phases.filter(p => p.id !== phase.id));
+                                        }
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-rose-50 text-rose-400 hover:text-rose-600 rounded-lg transition-all"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                              <div className="h-2 bg-stone-100 rounded-full overflow-hidden relative group cursor-pointer" onClick={() => {
+                              <div className="h-2 bg-stone-100 rounded-full overflow-hidden relative cursor-pointer" onClick={() => {
                                 if (!isReadOnly && onUpdatePhases) {
                                   const newProgress = prompt('輸入新進度 (0-100):', phase.progress.toString());
                                   if (newProgress !== null) {
