@@ -20,7 +20,7 @@ export const getPortfolioAnalysis = async (projects: Project[]) => {
     const projectSummary = criticalOnes.map(p => `- ${p.name}: 狀態 ${p.status}, 進度 ${p.progress}%, 預算 ${p.budget}`).join('\n');
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: `目前系統共管理 ${totalCount} 件專案，以下是經初步篩選出的 50 個潛在風險案件，請針對這些數據提供營運風險報告：\n${projectSummary}`,
       config: {
         systemInstruction: `妳是「生活品質工程管理系統」的首席運籌官。
@@ -42,7 +42,7 @@ export const getProjectInsights = async (project: Project, question: string) => 
   const ai = getAI();
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: `專案詳細資料：
 名稱: ${project.name}
 狀態: ${project.status}
@@ -68,7 +68,7 @@ export const searchEngineeringKnowledge = async (query: string) => {
   const ai = getAI();
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
@@ -98,7 +98,7 @@ export const suggestProjectSchedule = async (project: Project) => {
   try {
     // 對於複雜推理任務使用 Pro 模型
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-1.5-pro',
       contents: `案名: ${project.name}, 類別: ${project.category}, 預計工期: ${project.startDate} ~ ${project.endDate}。請提供專業的施工進度節點規劃與各階段工期佔比建議。`,
       config: {
         systemInstruction: "妳是具備二十年經驗的資深工務經理。妳擅長進行裝修與建築工程的排程規劃，請提供符合實務邏輯的階段劃分。"
@@ -127,7 +127,7 @@ export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) =
       .join('\n');
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: `成員數據：\n${memberSummary}\n\n施工中專案：\n${projectSummary}`,
       config: {
         systemInstruction: `妳是技術總監級別的 AI 管理顧問。
@@ -153,7 +153,7 @@ export const searchNearbyResources = async (address: string, lat: number, lng: n
   try {
     // 地圖服務僅支援 Gemini 2.5 系列模型
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       contents: `在 ${address} 附近搜尋 ${resourceType}。`,
       config: {
         tools: [{ googleMaps: {} }],
@@ -189,7 +189,7 @@ export const parseWorkDispatchText = async (text: string) => {
   const ai = getAI();
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: `請解析以下非結構化的施工日報內容，並提取出派工相關資訊：\n\n${text}`,
       config: {
         responseMimeType: "application/json",
