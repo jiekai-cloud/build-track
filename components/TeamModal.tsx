@@ -6,6 +6,7 @@ import {
   Heart, CreditCard, Sparkles, AlertCircle
 } from 'lucide-react';
 import { TeamMember, User as UserType } from '../types';
+import { MOCK_DEPARTMENTS } from '../constants';
 
 interface TeamModalProps {
   onClose: () => void;
@@ -172,12 +173,13 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                   </select>
                 </div>
                 <div>
+
+
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">所屬部門</label>
                   <select disabled={!isSuperAdmin} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.departmentId} onChange={e => setFormData({ ...formData, departmentId: e.target.value })}>
-                    <option value="DEPT-1">管理部</option>
-                    <option value="DEPT-2">工務部</option>
-                    <option value="DEPT-3">設計部</option>
-                    <option value="DEPT-4">財務部</option>
+                    {MOCK_DEPARTMENTS.map(dept => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>

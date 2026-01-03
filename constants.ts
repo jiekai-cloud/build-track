@@ -2,19 +2,19 @@
 import { Project, ProjectStatus, Department, TeamMember } from './types';
 
 export const MOCK_DEPARTMENTS: Department[] = [
-  { id: 'DEPT-1', name: '業務部', color: '#ea580c', manager: '經理' },
-  { id: 'DEPT-2', name: '財務部', color: '#0284c7', manager: '會計' },
-  { id: 'DEPT-3', name: '第一工程部', color: '#16a34a', manager: '工程主管' },
-  { id: 'DEPT-4', name: '戰略指揮部', color: '#6366f1', manager: '特助' },
-  { id: 'DEPT-5', name: '品質訓練部', color: '#8b5cf6', manager: '主管' },
-  { id: 'DEPT-6', name: '行銷部', color: '#ec4899', manager: '主管' },
-  { id: 'DEPT-7', name: '人事行政部', color: '#64748b', manager: '主管' }
+  { id: 'DEPT-1', name: '戰略指揮部', color: '#6366f1', manager: '總經理' },
+  { id: 'DEPT-2', name: '人事行政部', color: '#64748b', manager: '行政主管' },
+  { id: 'DEPT-3', name: '財務部', color: '#0284c7', manager: '財務主管' },
+  { id: 'DEPT-4', name: '第一工程部', color: '#16a34a', manager: '工務主管' },
+  { id: 'DEPT-5', name: '品質管理部', color: '#8b5cf6', manager: '品管主管' },
+  { id: 'DEPT-6', name: '業務部', color: '#ea580c', manager: '業務經理' },
+  { id: 'DEPT-7', name: '行銷部', color: '#ec4899', manager: '行銷經理' }
 ];
 
 export const MOCK_PROJECTS: Project[] = [
   {
     id: 'BNI202601001',
-    departmentId: 'DEPT-1',
+    departmentId: 'DEPT-6', // 業務部
     name: '台北信義室內裝修案',
     category: '室內裝修',
     source: 'BNI',
@@ -34,7 +34,7 @@ export const MOCK_PROJECTS: Project[] = [
   },
   {
     id: 'CO202603001',
-    departmentId: 'DEPT-1',
+    departmentId: 'DEPT-6', // 業務部
     name: '台中商業辦公室擴建',
     category: '室內裝修',
     source: '企業',
@@ -54,7 +54,7 @@ export const MOCK_PROJECTS: Project[] = [
   },
   {
     id: 'RE202604001',
-    departmentId: 'DEPT-1',
+    departmentId: 'DEPT-6', // 業務部
     name: '高雄住宅景觀工程',
     category: '景觀工程',
     source: '住宅',
@@ -81,8 +81,8 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     name: '李大維',
     role: '總經理',
     systemRole: 'SuperAdmin',
-    departmentId: 'DEPT-4',
-    departmentIds: ['DEPT-4', 'DEPT-1'],
+    departmentId: 'DEPT-1', // 戰略指揮部
+    departmentIds: ['DEPT-1'],
     phone: '0912-000-001',
     email: 'ceo@lifequality.ai',
     status: 'Available',
@@ -98,8 +98,8 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     name: '張家銘',
     role: '工地主任',
     systemRole: 'DeptAdmin',
-    departmentId: 'DEPT-3',
-    departmentIds: ['DEPT-3'],
+    departmentId: 'DEPT-4', // 第一工程部
+    departmentIds: ['DEPT-4'],
     phone: '0928-111-222',
     email: 'jm.chang@lifequality.ai',
     status: 'Busy',
@@ -115,8 +115,8 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     name: '陳小美',
     role: '工地助理',
     systemRole: 'Staff',
-    departmentId: 'DEPT-3',
-    departmentIds: ['DEPT-3'],
+    departmentId: 'DEPT-4', // 第一工程部
+    departmentIds: ['DEPT-4'],
     phone: '0933-444-555',
     email: 'xm.chen@lifequality.ai',
     status: 'Available',
@@ -132,8 +132,8 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     name: '王雪芬',
     role: '經理',
     systemRole: 'DeptAdmin',
-    departmentId: 'DEPT-2',
-    departmentIds: ['DEPT-2'],
+    departmentId: 'DEPT-3', // 財務部
+    departmentIds: ['DEPT-3'],
     phone: '0955-666-777',
     email: 'accounting@lifequality.ai',
     status: 'Available',
