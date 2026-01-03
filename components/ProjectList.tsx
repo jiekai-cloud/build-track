@@ -207,7 +207,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
                   </div>
                   <div className="space-y-1">
                     <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest">負責人</span>
-                    <p className="text-xs font-bold text-stone-900 truncate">{p.manager}</p>
+                    <p className="text-xs font-bold text-stone-900 truncate">{p.quotationManager || p.manager}</p>
                   </div>
                 </div>
 

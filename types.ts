@@ -170,7 +170,11 @@ export interface Project {
   source: ProjectSource;
   client: string;
   referrer: string;
-  manager: string;
+  quotationManager: string; // 報價負責人
+  engineeringManager: string; // 工程負責人
+  introducer?: string; // 介紹人
+  introducerFeeRequired?: boolean; // 是否需要介紹費
+  introducerFeeAmount?: number; // 介紹費金額
   startDate: string;
   endDate: string;
   createdDate: string;

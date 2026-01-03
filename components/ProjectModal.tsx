@@ -23,7 +23,11 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
     status: ProjectStatus.NEGOTIATING,
     client: '',
     referrer: '',
-    manager: '',
+    quotationManager: '',
+    engineeringManager: '',
+    introducer: '',
+    introducerFeeRequired: false,
+    introducerFeeAmount: '',
     budget: '',
     progress: '0',
     startDate: new Date().toISOString().split('T')[0],
@@ -40,7 +44,11 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         status: initialData.status,
         client: initialData.client,
         referrer: initialData.referrer,
-        manager: initialData.manager,
+        quotationManager: initialData.quotationManager || initialData.manager || '',
+        engineeringManager: initialData.engineeringManager || '',
+        introducer: initialData.introducer || '',
+        introducerFeeRequired: initialData.introducerFeeRequired || false,
+        introducerFeeAmount: initialData.introducerFeeAmount?.toString() || '',
         budget: initialData.budget.toString(),
         progress: initialData.progress.toString(),
         startDate: initialData.startDate,
@@ -65,6 +73,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
       ...formData,
       budget: Number(formData.budget),
       progress: Number(formData.progress),
+      introducerFeeAmount: Number(formData.introducerFeeAmount) || 0,
       location: mockLocation,
       createdDate: initialData?.createdDate || new Date().toISOString().split('T')[0]
     });
@@ -97,12 +106,27 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件負責人 Manager</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">報價負責人 Quotation</label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                   <UserIcon size={16} />
                 </div>
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold appearance-none" value={formData.manager} onChange={e => setFormData({ ...formData, manager: e.target.value })}>
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold appearance-none" value={formData.quotationManager} onChange={e => setFormData({ ...formData, quotationManager: e.target.value })}>
+                  <option value="">請選擇報價人</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.name}>{m.name} ({m.role})</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">工程負責人 Engineering</label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <UserIcon size={16} />
+                </div>
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold appearance-none" value={formData.engineeringManager} onChange={e => setFormData({ ...formData, engineeringManager: e.target.value })}>
                   <option value="">請選擇負責人</option>
                   {teamMembers.map(m => (
                     <option key={m.id} value={m.name}>{m.name} ({m.role})</option>
@@ -122,6 +146,53 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
                 <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold appearance-none" value={formData.source} onChange={e => setFormData({ ...formData, source: e.target.value as any })}>
                   {sources.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Tag size={16} className="text-blue-500" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">介紹人資訊 (選填)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">介紹人名稱</label>
+                <input
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 outline-none font-bold text-sm"
+                  placeholder="介紹人姓名"
+                  value={formData.introducer}
+                  onChange={e => setFormData({ ...formData, introducer: e.target.value })}
+                />
+              </div>
+              <div className="md:col-span-1 flex items-center gap-4">
+                <div className="flex flex-col">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">需介紹費</label>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={formData.introducerFeeRequired}
+                      onChange={e => setFormData({ ...formData, introducerFeeRequired: e.target.checked })}
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+                {formData.introducerFeeRequired && (
+                  <div className="flex-1 animate-in slide-in-from-left-2">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">介紹費金額</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                      <input
+                        type="number"
+                        className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-4 py-2 outline-none font-bold text-sm"
+                        placeholder="金額"
+                        value={formData.introducerFeeAmount}
+                        onChange={e => setFormData({ ...formData, introducerFeeAmount: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
