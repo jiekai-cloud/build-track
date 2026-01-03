@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, FileSpreadsheet, Pencil, Trash2, CalendarDays, FilterX, Activity, XCircle, ChevronLeft, ChevronRight, Hash, ShieldAlert, LayoutGrid, List } from 'lucide-react';
+import { Search, Plus, FileSpreadsheet, Pencil, Trash2, CalendarDays, FilterX, Activity, XCircle, ChevronLeft, ChevronRight, Hash, ShieldAlert, LayoutGrid, List, Zap } from 'lucide-react';
 import { Project, ProjectStatus, User } from '../types';
 import { exportProjectsToCSV } from '../utils/csvExport';
 
