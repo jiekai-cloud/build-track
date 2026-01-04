@@ -203,6 +203,7 @@ export interface Project {
   expenses?: Expense[];
   workAssignments?: WorkAssignment[];
   files?: ProjectFile[];
+  contractUrl?: string; // 合約或報價單
   updatedAt?: string;
   deletedAt?: string;
 }

@@ -40,13 +40,14 @@ interface ProjectDetailProps {
   onAddDailyLog: (log: { content: string, photoUrls: string[] }) => void;
   onUpdateChecklist: (checklist: ChecklistTask[]) => void;
   onUpdatePayments: (payments: PaymentStage[]) => void;
+  onUpdateContractUrl: (url: string) => void;
 }
 
 const ProjectDetail: React.FC<ProjectDetailProps> = ({
   project, user, teamMembers, onBack, onEdit, onDelete, onLossClick,
   onUpdateTasks, onUpdateProgress, onUpdateStatus, onAddComment,
   onUpdateExpenses, onUpdateWorkAssignments, onUpdateFiles, onUpdatePhases,
-  onAddDailyLog, onUpdateChecklist, onUpdatePayments
+  onAddDailyLog, onUpdateChecklist, onUpdatePayments, onUpdateContractUrl
 }) => {
   const [newComment, setNewComment] = useState('');
   const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep'>('logs');
@@ -64,6 +65,9 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const receiptInputRef = useRef<HTMLInputElement>(null);
   const [isGeneratingPrep, setIsGeneratingPrep] = useState(false);
   const [isScanningReceipt, setIsScanningReceipt] = useState(false);
+  const [isMandatoryUploadOpen, setIsMandatoryUploadOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<ProjectStatus | null>(null);
+  const contractFileInputRef = useRef<HTMLInputElement>(null);
 
   // Schedule Options State
   const [scheduleStartDate, setScheduleStartDate] = useState(project.startDate || new Date().toISOString().split('T')[0]);
@@ -163,6 +167,39 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }
   };
 
+  const handleAIFromContract = async () => {
+    if (!project.contractUrl) return;
+    setIsAIScheduling(true);
+    try {
+      const resp = await fetch(project.contractUrl);
+      const blob = await resp.blob();
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1];
+        try {
+          const newPhases = await parseScheduleFromImage(base64, scheduleStartDate, workOnHolidays);
+          if (newPhases && newPhases.length > 0) {
+            const phasesWithIds = newPhases.map((p: any) => ({
+              ...p,
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+            }));
+            if (onUpdatePhases) onUpdatePhases([...(project.phases || []), ...phasesWithIds]);
+            alert(`已根據合約成功產生 ${newPhases.length} 個排程項目！`);
+          }
+        } catch (err) {
+          alert('AI 解析失敗');
+        } finally {
+          setIsAIScheduling(false);
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch (e) {
+      console.error(e);
+      alert('無法讀取文件，請嘗試重新上傳或手動上傳。');
+      setIsAIScheduling(false);
+    }
+  };
+
   const isReadOnly = user.role === 'Guest';
   const statusOptions = Object.values(ProjectStatus);
   const expenses = project.expenses || [];
@@ -220,6 +257,16 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <div className="flex items-center gap-2">
             <span className="bg-slate-900 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase">{project.id}</span>
             <span className="bg-blue-50 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-100 uppercase">{project.category}</span>
+            {project.contractUrl && (
+              <a
+                href={project.contractUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-emerald-50 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase flex items-center gap-1 hover:bg-emerald-100 transition-colors"
+              >
+                <ShieldCheck size={10} /> 已簽約
+              </a>
+            )}
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">{project.name}</h1>
           <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 font-bold uppercase">
@@ -230,7 +277,15 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 disabled={isReadOnly}
                 className={`bg-transparent outline-none appearance-none text-blue-600 font-black ${isReadOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                 value={project.status}
-                onChange={(e) => onUpdateStatus(e.target.value as ProjectStatus)}
+                onChange={(e) => {
+                  const newStatus = e.target.value as ProjectStatus;
+                  if (newStatus === ProjectStatus.SIGNED_WAITING_WORK && !project.contractUrl) {
+                    setPendingStatus(newStatus);
+                    setIsMandatoryUploadOpen(true);
+                  } else {
+                    onUpdateStatus(newStatus);
+                  }
+                }}
               >
                 {statusOptions.map(opt => <option key={opt} value={opt} className="text-black font-bold">{opt}</option>)}
               </select>
@@ -1107,13 +1162,24 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                             </div>
 
                             <input type="file" ref={scheduleFileInputRef} className="hidden" accept="image/*" onChange={handleScheduleUpload} />
-                            <button
-                              onClick={() => scheduleFileInputRef.current?.click()}
-                              disabled={isAIScheduling || isReadOnly}
-                              className="bg-stone-100 text-stone-600 px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-stone-200 transition-all flex items-center gap-2"
-                            >
-                              <Upload size={12} /> 上傳合約/報價單 (AI排程)
-                            </button>
+                            {project.contractUrl ? (
+                              <button
+                                onClick={handleAIFromContract}
+                                disabled={isAIScheduling}
+                                className="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-100"
+                              >
+                                {isAIScheduling ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                使用已上傳合約 (AI排程)
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => scheduleFileInputRef.current?.click()}
+                                disabled={isAIScheduling || isReadOnly}
+                                className="bg-stone-100 text-stone-600 px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-stone-200 transition-all flex items-center gap-2"
+                              >
+                                <Upload size={12} /> 上傳合約/報價單 (AI排程)
+                              </button>
+                            )}
                             <button
                               onClick={async () => {
                                 setIsAIScheduling(true);
@@ -1368,7 +1434,14 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 <div className="flex justify-between items-center sm:bg-white/50 sm:p-4 sm:rounded-2xl">
                   <div>
                     <h2 className="text-xl font-black text-stone-900 leading-none mb-1">施工前準備事項</h2>
-                    <p className="text-[10px] text-stone-500 font-bold uppercase tracking-widest">材料核對 / 施工公告 / 範圍圖面</p>
+                    <div className="flex items-center gap-3">
+                      <p className="text-[10px] text-stone-500 font-bold uppercase tracking-widest">材料核對 / 施工公告 / 範圍圖面</p>
+                      {project.contractUrl && (
+                        <a href={project.contractUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-black flex items-center gap-1 border border-blue-100 animate-pulse">
+                          <ExternalLink size={10} /> 參考合約已就緒
+                        </a>
+                      )}
+                    </div>
                   </div>
                   {!isReadOnly && (
                     <button
@@ -1663,6 +1736,74 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
         )
       }
+      {/* Mandatory Contract Upload Modal */}
+      {isMandatoryUploadOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 space-y-6">
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+                <Upload size={32} />
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-black text-slate-900">上傳報價單或合約</h3>
+                <p className="text-sm text-slate-500 font-bold leading-relaxed">
+                  將案件狀態更改為「{pendingStatus}」前，<br />
+                  需先上傳正式報價單或合約文件作為後續參考。
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  className="hidden"
+                  ref={contractFileInputRef}
+                  accept="image/*,.pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      try {
+                        setIsUploading(true);
+                        const url = await cloudFileService.uploadFile(file);
+                        onUpdateContractUrl(url);
+                        if (pendingStatus) onUpdateStatus(pendingStatus);
+                        setIsMandatoryUploadOpen(false);
+                      } catch (err) {
+                        alert('上傳失敗，請再試一次');
+                      } finally {
+                        setIsUploading(false);
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => contractFileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-blue-100 flex items-center justify-center gap-3 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                  {isUploading ? '正在上傳文件...' : '選擇檔案並上傳'}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMandatoryUploadOpen(false);
+                    setPendingStatus(null);
+                  }}
+                  disabled={isUploading}
+                  className="w-full py-4 text-slate-400 font-bold text-sm hover:text-slate-600 transition-all"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+            <div className="bg-stone-50 px-8 py-4 text-center">
+              <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest">
+                此文件將作為 AI 排程與施工前準備的關鍵依據
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 };
