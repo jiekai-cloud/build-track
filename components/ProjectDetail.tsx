@@ -47,7 +47,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
   const {
     project, user, teamMembers, onBack, onEdit, onDelete, onLossClick,
     onUpdateTasks, onUpdateProgress, onUpdateStatus, onAddComment,
-    onUpdateExpenses, onUpdateWorkAssignments, onUpdatePreConstruction, onUpdateFiles, onUpdatePhases,
+    onUpdateExpenses, onUpdateWorkAssignments, onUpdateFiles, onUpdatePhases,
     onAddDailyLog, onUpdateChecklist, onUpdatePayments, onUpdateContractUrl
   } = props;
   const [newComment, setNewComment] = useState('');
