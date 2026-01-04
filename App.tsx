@@ -447,7 +447,7 @@ const App: React.FC = () => {
     if (project) {
       addActivityLog(`變更專案狀態：${status} `, project.name, projectId, 'project');
     }
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status, updatedAt: new Date().toISOString() } : p));
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status, statusChangedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : p));
   };
 
   const handleAddComment = (projectId: string, text: string) => {
@@ -1083,7 +1083,8 @@ const App: React.FC = () => {
                 const newPrefix = sourcePrefixes[data.source] || 'PJ';
                 updatedId = p.id.replace(oldPrefix, newPrefix);
               }
-              return { ...p, ...data, id: updatedId, updatedAt: new Date().toISOString() };
+              const statusChangedAt = data.status !== p.status ? new Date().toISOString() : (p.statusChangedAt || p.updatedAt || p.createdDate);
+              return { ...p, ...data, id: updatedId, statusChangedAt, updatedAt: new Date().toISOString() };
             }
             return p;
           }));
@@ -1106,7 +1107,7 @@ const App: React.FC = () => {
 
           const newId = `${prefix}${year}${sequence.toString().padStart(3, '0')}`;
           addActivityLog('建立新專案', data.name, newId, 'project');
-          setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [], updatedAt: new Date().toISOString() } as any, ...prev]);
+          setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, statusChangedAt: new Date().toISOString(), progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [], updatedAt: new Date().toISOString() } as any, ...prev]);
         }
         setIsModalOpen(false);
       }} initialData={editingProject} teamMembers={teamMembers} />}

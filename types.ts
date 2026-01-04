@@ -204,6 +204,7 @@ export interface Project {
   workAssignments?: WorkAssignment[];
   files?: ProjectFile[];
   contractUrl?: string; // 合約或報價單
+  statusChangedAt?: string; // 狀態變更時間 (用於逾期計算)
   updatedAt?: string;
   deletedAt?: string;
 }

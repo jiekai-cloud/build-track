@@ -71,9 +71,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
     const now = new Date();
 
     const timeRisks = filteredProjects
-      .filter(p => p.createdDate && (p.status === ProjectStatus.NEGOTIATING || p.status === ProjectStatus.QUOTING))
+      .filter(p => (p.statusChangedAt || p.createdDate) && (p.status === ProjectStatus.NEGOTIATING || p.status === ProjectStatus.QUOTING))
       .map(p => {
-        const diff = now.getTime() - new Date(p.createdDate!).getTime();
+        const statusTime = p.statusChangedAt || p.createdDate;
+        const diff = now.getTime() - new Date(statusTime!).getTime();
         return { ...p, riskType: 'delay', riskValue: Math.floor(diff / (1000 * 60 * 60 * 24)) };
       })
       .filter(p => p.riskValue >= 5);
@@ -94,7 +95,13 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
 
   const statsCards = [
     { label: '案件總量', value: filteredProjects.length, icon: Layers, color: 'text-slate-600', bg: 'bg-slate-50' },
-    { label: '報價滯留', value: (stats.counts[ProjectStatus.NEGOTIATING] || 0) + (stats.counts[ProjectStatus.QUOTING] || 0), icon: FileWarning, color: 'text-amber-600', bg: 'bg-amber-50' },
+    {
+      label: '報價逾期',
+      value: riskProjects.filter(r => r.riskType === 'delay').length,
+      icon: FileWarning,
+      color: 'text-rose-600',
+      bg: 'bg-rose-50'
+    },
     { label: '施工進行中', value: stats.counts[ProjectStatus.CONSTRUCTING] || 0, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: '執行週轉率', value: `${filteredProjects.length > 0 ? Math.round(((stats.counts[ProjectStatus.COMPLETED] || 0) / filteredProjects.length) * 100) : 0}%`, icon: Target, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
@@ -162,8 +169,8 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
                   <button key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between p-3 sm:p-4 bg-rose-50/50 rounded-2xl border border-rose-100 hover:bg-rose-50 active:scale-[0.98] transition-all text-left group min-h-[60px] touch-manipulation">
                     <div className="space-y-1 flex-1 min-w-0 pr-2">
                       <p className="text-xs font-black text-stone-900 group-hover:text-rose-600 truncate">{p.name}</p>
-                      <p className={`text-[10px] font-bold ${p.riskType === 'budget' ? 'text-orange-600' : 'text-rose-500'} leading-tight`}>
-                        {p.riskType === 'budget' ? `預算執行率已達 ${p.riskValue}%` : `報價已滯留 ${p.riskValue} 天`}
+                      <p className={`text-[10px] font-bold ${p.riskType === 'budget' ? 'text-orange-600' : 'text-rose-600'} leading-tight animate-pulse`}>
+                        {p.riskType === 'budget' ? `預算執行率已達 ${p.riskValue}%` : `⚠️ 報價已逾期 ${p.riskValue} 天`}
                       </p>
                     </div>
                     <ArrowRight size={16} className="text-rose-300 group-hover:text-rose-500 shrink-0" />
