@@ -89,9 +89,20 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
       .filter(p => p.riskValue >= 80);
 
     return [...timeRisks, ...financialRisks]
-      .sort((a, b) => b.riskValue - a.riskValue)
-      .slice(0, 6);
+      .sort((a, b) => b.riskValue - a.riskValue);
   }, [filteredProjects]);
+
+  const overdueByManager = useMemo(() => {
+    const overdueOnes = riskProjects.filter(r => r.riskType === 'delay');
+    const counts: Record<string, number> = {};
+    overdueOnes.forEach(p => {
+      const manager = p.quotationManager || '未指定';
+      counts[manager] = (counts[manager] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [riskProjects]);
 
   const statsCards = [
     { label: '案件總量', value: filteredProjects.length, icon: Layers, color: 'text-slate-600', bg: 'bg-slate-50' },
@@ -156,29 +167,76 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-6">
-          {riskProjects.length > 0 && (
-            <div className="bg-white rounded-[2.5rem] border-2 border-rose-100 shadow-xl shadow-rose-50 overflow-hidden">
-              <div className="bg-rose-500 px-8 py-4 flex items-center justify-between text-white">
-                <div className="flex items-center gap-3">
-                  <AlertTriangle size={20} className="animate-pulse" />
-                  <h3 className="font-black text-sm uppercase tracking-widest">營運與財務預警中心</h3>
+
+          {/* 報價逾期績效報告 (New Section) */}
+          <div className="bg-white rounded-[2rem] lg:rounded-[2.5rem] border border-stone-100 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
+            <div className="px-8 py-6 border-b border-stone-50 flex items-center justify-between bg-stone-50/30">
+              <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest flex items-center gap-2">
+                <FileWarning size={18} className="text-rose-600" /> 報價逾期追蹤與人員績效
+              </h3>
+              <span className="text-[10px] font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-full border border-rose-100 uppercase">
+                當前共 {riskProjects.filter(r => r.riskType === 'delay').length} 案逾期
+              </span>
+            </div>
+
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Overdue List */}
+              <div className="lg:col-span-2 space-y-4">
+                <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2">逾期案件清單</h4>
+                <div className="space-y-2">
+                  {riskProjects.filter(r => r.riskType === 'delay').map(p => (
+                    <div key={p.id} className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-100 hover:bg-stone-100/50 transition-all group">
+                      <div className="space-y-1">
+                        <p className="text-xs font-black text-stone-900">{p.name}</p>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[9px] font-bold text-stone-400 uppercase">ID: {p.id}</span>
+                          <span className="text-[9px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase flex items-center gap-1">
+                            逾期 {p.riskValue} 天
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right flex items-center gap-4">
+                        <div className="hidden sm:block">
+                          <p className="text-[9px] font-black text-stone-400 uppercase tracking-tighter mb-0.5">負責人</p>
+                          <p className="text-[10px] font-black text-stone-700">{p.quotationManager || '未指定'}</p>
+                        </div>
+                        <button onClick={() => onProjectClick(p.id)} className="w-8 h-8 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-900 hover:border-stone-400 transition-all shadow-sm">
+                          <ArrowRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {riskProjects.filter(r => r.riskType === 'delay').length === 0 && (
+                    <div className="py-12 border-2 border-dashed border-stone-100 rounded-[2rem] flex flex-col items-center justify-center text-stone-300 gap-3">
+                      <CheckCircle2 size={32} />
+                      <p className="text-[10px] font-black uppercase tracking-widest">目前暫無逾期報價</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
-                {riskProjects.map(p => (
-                  <button key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between p-3 sm:p-4 bg-rose-50/50 rounded-2xl border border-rose-100 hover:bg-rose-50 active:scale-[0.98] transition-all text-left group min-h-[60px] touch-manipulation">
-                    <div className="space-y-1 flex-1 min-w-0 pr-2">
-                      <p className="text-xs font-black text-stone-900 group-hover:text-rose-600 truncate">{p.name}</p>
-                      <p className={`text-[10px] font-bold ${p.riskType === 'budget' ? 'text-orange-600' : 'text-rose-600'} leading-tight animate-pulse`}>
-                        {p.riskType === 'budget' ? `預算執行率已達 ${p.riskValue}%` : `⚠️ 報價已逾期 ${p.riskValue} 天`}
-                      </p>
+
+              {/* Manager Ranking */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2">負責人逾期統計</h4>
+                <div className="bg-stone-900 rounded-3xl p-6 text-white space-y-4">
+                  {overdueByManager.map((m, i) => (
+                    <div key={m.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black ${i === 0 ? 'bg-rose-500 text-white' : 'bg-white/10 text-stone-400'}`}>
+                          {i + 1}
+                        </span>
+                        <span className="text-[11px] font-black">{m.name}</span>
+                      </div>
+                      <span className="text-[11px] font-black text-rose-400">{m.count} 案</span>
                     </div>
-                    <ArrowRight size={16} className="text-rose-300 group-hover:text-rose-500 shrink-0" />
-                  </button>
-                ))}
+                  ))}
+                  {overdueByManager.length === 0 && (
+                    <p className="text-[10px] text-stone-500 font-bold text-center py-4">無數據可統計</p>
+                  )}
+                </div>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-[2rem] lg:rounded-[2.5rem] border border-stone-100 shadow-sm">
             <h3 className="text-xs sm:text-sm font-black text-stone-900 mb-4 sm:mb-6 lg:mb-8 uppercase tracking-widest border-l-4 border-orange-500 pl-3 sm:pl-4">全案場狀態分佈矩陣</h3>
