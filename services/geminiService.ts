@@ -38,11 +38,15 @@ const cleanJsonString = (str: string) => {
  * 全案場風險報告分析 - 針對大數據量進行採樣優化
  */
 export const getPortfolioAnalysis = async (projects: Project[]) => {
-  const ai = getAI();
   try {
+    const ai = getAI();
+    // 再次確保排除測試專案
+    const realProjects = projects.filter(p => !p.name.toLowerCase().includes('test') && !p.name.includes('測試'));
+    const totalCount = realProjects.length;
+
+    // 找出目前狀態異常的案件：進度緩慢、逾期、預算超標
     // 當專案數量龐大時，僅提取「施工中」且「進度滯後」或「報價過久」的異常件，避免 Context 爆量
-    const totalCount = projects.length;
-    const criticalOnes = projects
+    const criticalOnes = realProjects
       .filter(p => (p.status === '施工中' && p.progress < 20) || (p.status === '報價中'))
       .slice(0, 50); // 採樣前 50 個高風險案件
 

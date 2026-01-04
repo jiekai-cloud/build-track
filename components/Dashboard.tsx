@@ -32,7 +32,9 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
     setIsAnalyzing(true);
     try {
       const { getPortfolioAnalysis } = await import('../services/geminiService');
-      const result = await getPortfolioAnalysis(projects);
+      // 排除測試專案
+      const realProjects = projects.filter(p => !p.name.toLowerCase().includes('test') && !p.name.includes('測試'));
+      const result = await getPortfolioAnalysis(realProjects);
       setPortfolioAnalysis(result.text);
       setShowAIModal(true);
     } catch (e) {
@@ -60,6 +62,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
   // 1. 高效過濾：在大數據量下僅在必要時重新計算
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
+      // 排除測試專案 (濾除名稱包含「測試」或「Test」的案件)
+      const isTestProject = p.name.toLowerCase().includes('test') || p.name.includes('測試');
+      if (isTestProject) return false;
+
       if (!p.startDate) return false;
       const [pYear, pMonth] = p.startDate.split('-');
       const matchYear = selectedYear === 'all' || pYear === selectedYear;
