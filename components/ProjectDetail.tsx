@@ -232,7 +232,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:h-full animate-in slide-in-from-right-4 duration-500 lg:overflow-hidden">
+    <div className="flex flex-col lg:h-full animate-in slide-in-from-right-4 duration-500 lg:overflow-hidden relative">
+      {isReadOnly && (
+        <div className="bg-amber-500 text-white px-8 py-2 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 z-[60] shadow-sm">
+          <ShieldAlert size={14} /> 您目前以訪客模式登入，僅供檢視，無法修改資料。
+        </div>
+      )}
       {/* 固定標頭資訊 */}
       <div className="p-4 lg:p-8 space-y-4 shrink-0 bg-white/50 border-b border-stone-100">
         <div className="flex justify-between items-center no-print">
@@ -1483,13 +1488,20 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         <span className="text-[9px] text-stone-400 font-bold">MATERIALS & TOOLS</span>
                       </div>
                     </div>
-                    <textarea
-                      readOnly={isReadOnly}
-                      className="w-full min-h-[250px] bg-stone-50/30 border border-stone-100 rounded-[1.5rem] p-5 text-sm font-bold text-stone-700 outline-none focus:ring-4 focus:ring-orange-500/5 transition-all no-scrollbar leading-relaxed"
-                      placeholder="請描述此案所需材料與工具，或點擊上方「AI 輔助」自動生成..."
-                      value={project.preConstruction?.materialsAndTools || ''}
-                      onChange={(e) => onUpdatePreConstruction({ ...project.preConstruction, materialsAndTools: e.target.value, updatedAt: new Date().toISOString() })}
-                    />
+                    <div className="relative group">
+                      <textarea
+                        readOnly={isReadOnly}
+                        className={`w-full min-h-[250px] bg-stone-50/30 border border-stone-100 rounded-[1.5rem] p-5 text-sm font-bold text-stone-700 outline-none focus:ring-4 focus:ring-orange-500/5 transition-all no-scrollbar leading-relaxed ${isReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}
+                        placeholder="請描述此案所需材料與工具，或點擊上方「AI 輔助」自動生成..."
+                        value={project.preConstruction?.materialsAndTools || ''}
+                        onChange={(e) => onUpdatePreConstruction({ ...project.preConstruction, materialsAndTools: e.target.value, updatedAt: new Date().toISOString() })}
+                      />
+                      {isReadOnly && (
+                        <div className="absolute top-4 right-4 text-stone-300 pointer-events-none">
+                          <Lock size={16} />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* 施工公告 */}
@@ -1503,13 +1515,20 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         <span className="text-[9px] text-stone-400 font-bold">OFFICIAL NOTICE</span>
                       </div>
                     </div>
-                    <textarea
-                      readOnly={isReadOnly}
-                      className="w-full min-h-[250px] bg-stone-50/30 border border-stone-100 rounded-[1.5rem] p-5 text-sm font-bold text-stone-700 outline-none focus:ring-4 focus:ring-blue-500/5 transition-all no-scrollbar leading-relaxed"
-                      placeholder="請輸入公告內容，或使用 AI 產生標準範本..."
-                      value={project.preConstruction?.notice || ''}
-                      onChange={(e) => onUpdatePreConstruction({ ...project.preConstruction, notice: e.target.value, updatedAt: new Date().toISOString() })}
-                    />
+                    <div className="relative group">
+                      <textarea
+                        readOnly={isReadOnly}
+                        className={`w-full min-h-[250px] bg-stone-50/30 border border-stone-100 rounded-[1.5rem] p-5 text-sm font-bold text-stone-700 outline-none focus:ring-4 focus:ring-blue-500/5 transition-all no-scrollbar leading-relaxed ${isReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}
+                        placeholder="請輸入公告內容，或使用 AI 產生標準範本..."
+                        value={project.preConstruction?.notice || ''}
+                        onChange={(e) => onUpdatePreConstruction({ ...project.preConstruction, notice: e.target.value, updatedAt: new Date().toISOString() })}
+                      />
+                      {isReadOnly && (
+                        <div className="absolute top-4 right-4 text-stone-300 pointer-events-none">
+                          <Lock size={16} />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1886,7 +1905,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         <p className="text-[10px] font-black text-emerald-600 uppercase">預估毛利</p>
                         {/* Profit Health Indicator */}
                         <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${(margin / (project.budget || 1)) > 0.3 ? 'bg-emerald-500 text-white' :
-                            (margin / (project.budget || 1)) > 0.15 ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
+                          (margin / (project.budget || 1)) > 0.15 ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
                           }`}>
                           <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>
                           {(margin / (project.budget || 1)) > 0.3 ? 'Safe' : (margin / (project.budget || 1)) > 0.15 ? 'Caution' : 'Critical'}
