@@ -1,9 +1,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Project } from "../types";
 
-// 使用 1.5-flash 作為預設穩定模型 (最廣為支援的版本)
-const STABLE_MODEL = 'gemini-1.5-flash';
-const EXPERIMENTAL_MODEL = 'gemini-2.0-flash-exp';
+// 優先採用的穩定模型列表 (依序備援)
+const FALLBACK_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-pro',
+  'gemini-2.0-flash-exp'
+];
+const STABLE_MODEL = FALLBACK_MODELS[0];
+const EXPERIMENTAL_MODEL = 'gemini-2.0-flash';
 
 // Always use named parameter for apiKey and fetch from process.env.API_KEY
 const getAI = () => {
@@ -38,19 +44,53 @@ const getAI = () => {
 /**
  * 集中處理 AI 報錯，提供更友善的資訊
  */
-const handleAIError = (error: any, context: string) => {
-  console.error(`${context} 失敗:`, error);
+const handleAIError = (error: any, context: string, modelUsed: string) => {
+  console.error(`${context} 使用 ${modelUsed} 失敗:`, error);
 
   const errorMsg = error?.message || "";
+
+  // 如果是配額問題，直接拋出，不進行備援
   if (errorMsg.includes("limit: 0") || errorMsg.includes("RESOURCE_EXHAUSTED")) {
-    throw new Error("AI 服務暫時無法使用：您的 API Key 目前配額為 0 或已耗盡。建議確認您的 Google AI Studio 帳號是否已啟用 Generative Language API，或嘗試更換另一個 API Key。");
+    throw new Error(`AI 服務配額已耗盡 (使用 ${modelUsed})：您的 API Key 目前配額不足。請確認您的 Google AI Studio 帳號狀態，或更換另一個 API Key。`);
   }
+
+  // 404 代表模型不存在或未被授權
   if (errorMsg.includes("404") || errorMsg.includes("not found")) {
-    throw new Error(`AI 模型連線失敗 (404)。系統目前嘗試使用 ${STABLE_MODEL}。若此錯誤持續發生，請嘗試重新配置 API Key 或稍後再試。`);
+    return "MODEL_NOT_FOUND";
   }
 
   throw error;
 };
+
+/**
+ * 具備自動備援機制的 AI 調用函式
+ */
+async function callAIWithFallback(payload: any, context: string) {
+  const ai = getAI();
+  let lastError: any = null;
+
+  for (const modelId of FALLBACK_MODELS) {
+    try {
+      console.log(`[AI] 嘗試調用模型: ${modelId} (${context})`);
+      const response = await ai.models.generateContent({
+        ...payload,
+        model: modelId
+      });
+      return response;
+    } catch (err: any) {
+      lastError = err;
+      const status = handleAIError(err, context, modelId);
+      if (status === "MODEL_NOT_FOUND") {
+        console.warn(`[AI] 模型 ${modelId} 不存在，嘗試下一個備援模型...`);
+        continue;
+      }
+      // 如果不是 404 (例如配額問題、安全檢查等)，則直接報錯不續試
+      throw err;
+    }
+  }
+
+  throw lastError || new Error(`${context} 失敗：所有備援模型均無法連線 (404)。請檢查您的 API Key 權限。`);
+}
 
 /**
  * 輔助函式：清理 AI 回傳的 JSON 字串 (移除 Markdown 區塊標記)
@@ -82,8 +122,7 @@ export const getPortfolioAnalysis = async (projects: Project[]) => {
       return `- ${p.name}: 狀態 ${p.status}, 進度 ${p.progress}%, 預算 ${p.budget}, 工資支出 ${laborCost}, 材料支出 ${expenseCost}`;
     }).join('\n');
 
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [{
         parts: [{
           text: `妳是「生活品質工程管理系統」的首席營運策略官。
@@ -99,10 +138,10 @@ ${projectSummary}
 報告請使用簡潔、專業的繁體中文 Markdown 格式。`
         }]
       }]
-    });
+    }, "全案場分析");
     return { text: response.text };
   } catch (error) {
-    return handleAIError(error, "全案場分析");
+    throw error;
   }
 };
 
@@ -112,8 +151,7 @@ ${projectSummary}
 export const getProjectInsights = async (project: Project, question: string) => {
   const ai = getAI();
   try {
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [{
         parts: [{
           text: `妳是專業的智慧營造顧問。請根據提供的單一專案數據，精確回答使用者的疑問並提出具體的改進或監控建議。
@@ -127,10 +165,10 @@ export const getProjectInsights = async (project: Project, question: string) => 
 問題內容: ${question}`
         }]
       }]
-    });
+    }, "獲取專案洞察");
     return { text: response.text };
   } catch (error) {
-    return handleAIError(error, "獲取專案洞察");
+    throw error;
   }
 };
 
@@ -138,10 +176,8 @@ export const getProjectInsights = async (project: Project, question: string) => 
  * 搜尋營造法規與市場知識 (使用 Google Search)
  */
 export const searchEngineeringKnowledge = async (query: string) => {
-  const ai = getAI();
   try {
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [{
         parts: [{
           text: `妳是營造法規與市場趨勢專家。請利用搜尋功能為使用者提供具備權權威來源的解答，包含最新法規更新或建材價格行情。
@@ -152,7 +188,7 @@ export const searchEngineeringKnowledge = async (query: string) => {
       config: {
         tools: [{ googleSearch: {} }]
       }
-    });
+    }, "搜尋知識");
 
     // Extract grounding chunks for URLs
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
@@ -171,11 +207,9 @@ export const searchEngineeringKnowledge = async (query: string) => {
  * 智慧施工排程建議
  */
 export const suggestProjectSchedule = async (project: Project) => {
-  const ai = getAI();
   try {
     // 對於複雜推理任務使用 Pro 模型
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [{
         parts: [{
           text: `妳是具備二十年經驗的資深工務經理。妳擅長進行裝修與建築工程的排程規劃，請提供符合實務邏輯的階段劃分。
@@ -184,7 +218,7 @@ export const suggestProjectSchedule = async (project: Project) => {
 請提供專業的施工進度節點規劃與各階段工期佔比建議。`
         }]
       }]
-    });
+    }, "排程建議");
     return { text: response.text };
   } catch (error) {
     return handleAIError(error, "排程建議");
@@ -195,7 +229,6 @@ export const suggestProjectSchedule = async (project: Project) => {
  * 團隊資源負載分析 - 診斷人員壓力與瓶頸
  */
 export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) => {
-  const ai = getAI();
   try {
     const memberSummary = members.map(m =>
       `- ${m.name}${m.nicknames?.length ? ` (外號: ${m.nicknames.join(', ')})` : ''} (${m.role}): 負責 ${m.activeProjectsCount} 案, 狀態: ${m.status}, 專長: ${m.specialty?.join(',')}`
@@ -206,8 +239,7 @@ export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) =
       .map(p => `- ${p.name}: 進度 ${p.progress}%, 負責人: ${p.manager}`)
       .join('\n');
 
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [{
         parts: [{
           text: `妳是技術總監級別的 AI 管理顧問。
@@ -220,7 +252,7 @@ export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) =
 成員數據：\n${memberSummary}\n\n施工中專案：\n${projectSummary}`
         }]
       }]
-    });
+    }, "團隊負載分析");
     return { text: response.text };
   } catch (error) {
     return handleAIError(error, "團隊負載分析");
@@ -231,11 +263,9 @@ export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) =
  * 搜尋案場附近資源 (使用 Google Maps)
  */
 export const searchNearbyResources = async (address: string, lat: number, lng: number, resourceType: string) => {
-  const ai = getAI();
   try {
-    // 地圖服務僅支援 Gemini 2.5 系列模型
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    // 地圖服務僅支援 Gemini 系列模型
+    const response = await callAIWithFallback({
       contents: [{
         parts: [{
           text: `妳是地圖導航專家。請在 ${address} 附近搜尋 ${resourceType} 並提供相關資訊。`
@@ -252,7 +282,7 @@ export const searchNearbyResources = async (address: string, lat: number, lng: n
           }
         }
       }
-    });
+    }, "案場資源搜尋");
 
     // 根據規範，必須提取 groundingChunks 中的地圖連結
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
@@ -305,11 +335,9 @@ ${memberContext}
  * 智慧名片辨識 - 提取聯絡資訊
  */
 export const scanBusinessCard = async (base64Image: string) => {
-  const ai = getAI();
   try {
     // 使用具備視覺能力的模型
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [
         {
           inlineData: {
@@ -319,7 +347,7 @@ export const scanBusinessCard = async (base64Image: string) => {
         },
         "妳是專業的商務名片數位化專家。妳能從名片照片中精準辨認各個欄位。請辨識這張名片上的聯絡資訊。請僅回傳 JSON 格式數據，包含姓名、公司、職稱、電話、Email、地址、Line ID 等。如果某個欄位不存在，請回傳空字串。"
       ]
-    });
+    }, "名片掃描");
 
     try {
       return JSON.parse(response.text || "{}");
@@ -338,8 +366,7 @@ export const scanBusinessCard = async (base64Image: string) => {
 export const scanReceipt = async (base64Image: string) => {
   const ai = getAI();
   try {
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [
         {
           inlineData: {
@@ -359,7 +386,7 @@ export const scanReceipt = async (base64Image: string) => {
         
         請直接回傳 JSON 物件，不包含 Markdown 標記，也不要包含 \`\`\`json 等字樣。`
       ]
-    });
+    }, "收據掃描");
 
     try {
       const jsonStr = cleanJsonString(response.text || "{}");
@@ -376,7 +403,6 @@ export const scanReceipt = async (base64Image: string) => {
  * 專案財務與盈虧預測分析
  */
 export const analyzeProjectFinancials = async (project: Project) => {
-  const ai = getAI();
   try {
     const laborCost = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
     const materialCost = (project.expenses || []).filter(e => e.category === '機具材料').reduce((acc, curr) => acc + curr.amount, 0);
@@ -384,8 +410,7 @@ export const analyzeProjectFinancials = async (project: Project) => {
     const otherCost = (project.expenses || []).filter(e => !['機具材料', '委託工程'].includes(e.category)).reduce((acc, curr) => acc + curr.amount, 0);
     const totalSpent = laborCost + materialCost + subCost + otherCost;
 
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [{
         parts: [{
           text: `妳是擁有30年經驗的營造業財務稽核專家。請針對以下專案數據進行嚴格的盈虧預測與成本結構分析。
@@ -410,7 +435,7 @@ export const analyzeProjectFinancials = async (project: Project) => {
 語氣請專業、犀利且一針見血，不要講客套話。`
         }]
       }]
-    });
+    }, "財務分析");
     return { text: response.text };
   } catch (error) {
     return handleAIError(error, "財務分析");
@@ -421,7 +446,6 @@ export const analyzeProjectFinancials = async (project: Project) => {
  * 解析報價單/合約影像為施工排程
  */
 export const parseScheduleFromImage = async (base64Image: string, startDate: string, workOnHolidays: boolean) => {
-  const ai = getAI();
   try {
     const prompt = `妳是專業的工程排程規劃師。請讀取這張報價單或合約內容，分析出「施工項目」以及合理的「預計工期」。
     
@@ -439,8 +463,7 @@ export const parseScheduleFromImage = async (base64Image: string, startDate: str
     - status: 固定為 'Upcoming'
     - progress: 固定為 0`;
 
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [
         {
           inlineData: {
@@ -450,7 +473,7 @@ export const parseScheduleFromImage = async (base64Image: string, startDate: str
         },
         prompt
       ]
-    });
+    }, "排程解析");
 
     try {
       return JSON.parse(cleanJsonString(response.text || "[]"));
@@ -467,10 +490,8 @@ export const parseScheduleFromImage = async (base64Image: string, startDate: str
  * 產生施工前準備事項 (材料機具與施工公告)
  */
 export const generatePreConstructionPrep = async (project: Project) => {
-  const ai = getAI();
   try {
-    const response = await ai.models.generateContent({
-      model: STABLE_MODEL,
+    const response = await callAIWithFallback({
       contents: [{
         parts: [{
           text: `妳是資深工務工地主任。請針對以下專案資訊，協助產生「施工前準備事項」。
@@ -487,7 +508,7 @@ export const generatePreConstructionPrep = async (project: Project) => {
 請直接回傳 JSON 物件，包含這兩個欄位。`
         }]
       }]
-    });
+    }, "產生施工前準備");
 
     const jsonStr = cleanJsonString(response.text || "{}");
     return JSON.parse(jsonStr);
