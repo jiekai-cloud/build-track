@@ -2108,7 +2108,77 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 );
               })}
 
-              {/* PAGE 5: QUOTATION SUMMARY */}
+              {/* PAGE 10: ENGINEERING WARRANTY (工程保固書) */}
+              <div className="w-full aspect-[1/1.4142] p-20 flex flex-col relative print:break-after-page border-t sm:border-t-0 border-stone-100">
+                <div className="flex-1 border-[1.5px] border-stone-800 p-12 flex flex-col space-y-10">
+                  <h3 className="text-4xl font-black text-slate-900 text-center tracking-[0.5em] mb-12 underline underline-offset-8">工程保固書</h3>
+
+                  <div className="space-y-6 text-base font-bold text-slate-800">
+                    <p>一、工程名稱：{project.name}</p>
+                    <p>二、工程地點：{project.location?.address}</p>
+                    <p>三、承包廠商：台灣生活品質發展股份有限公司</p>
+                    <p>四、工程範圍：工程項目詳細報價單</p>
+
+                    <div className="pt-4 leading-relaxed space-y-4">
+                      <p>五、保固責任：本工程已於民國一一四年十一月三日全部竣工完成，</p>
+                      <p className="pl-12">並由承商負責保固，保固期限為壹年，自民國一一四年</p>
+                      <p className="pl-12">十一月二日起至民國一一五年十一月一日止，保固期間</p>
+                      <p className="pl-12">施工範圍內，倘發生結構損壞或漏水情形，由承商負責</p>
+                      <p className="pl-12">無償修復(因不可抗力及材料自然老化之因素，或甲方</p>
+                      <p className="pl-12">使用不當、未善盡保管之責所造成之損害除外)，並於</p>
+                      <p className="pl-12">甲方通知後，七日內安排保固修繕，絕無異議。</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto grid grid-cols-2 gap-8 pt-12">
+                    <div className="space-y-3 text-sm font-black text-slate-900">
+                      <p>承攬廠商：台灣生活品質發展股份有限公司</p>
+                      <p>負責人：陳信寬</p>
+                      <p>工地負責人：陳信寬 &nbsp;&nbsp; 專案負責人：{project.engineeringManager}</p>
+                      <p>公司地址：新北市中和區景平路 71-7 號 5 樓之 9</p>
+                      <p>統一編號：60618756</p>
+                      <p>公司電話：02-2242-1955 公司傳真：02-2242-1905</p>
+                    </div>
+
+                    <div className="relative flex flex-col items-center justify-center">
+                      <div className="w-48 h-48 border-2 border-dashed border-rose-200 rounded-2xl flex items-center justify-center relative overflow-hidden group">
+                        <div className="text-[10px] text-rose-300 font-black text-center group-hover:text-rose-400 transition-colors">
+                          <p>保固書專用章用印處</p>
+                          <p className="mt-1">無戳印則本保固書無效</p>
+                        </div>
+                        {/* Seal Simulation Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
+                          <div className="w-24 h-24 border-4 border-rose-600 rounded flex items-center justify-center text-rose-600 font-black text-xs rotate-12">公司大章</div>
+                          <div className="w-12 h-12 border-2 border-rose-600 rounded flex items-center justify-center text-rose-600 font-black text-[8px] -rotate-12 absolute bottom-4 right-4">私章</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-end pt-12">
+                    <div className="flex gap-4 text-xl font-black text-slate-900 tracking-widest">
+                      <span>中</span>
+                      <span>華</span>
+                      <span>民</span>
+                      <span>國</span>
+                      <span className="w-12 border-b-2 border-stone-800 text-center">一一四</span>
+                      <span>年</span>
+                      <span className="w-8 border-b-2 border-stone-800 text-center">十</span>
+                      <span>月</span>
+                      <span className="w-8 border-b-2 border-stone-800 text-center">四</span>
+                      <span>日</span>
+                    </div>
+                    <div className="flex items-center gap-3 opacity-60 scale-75 origin-right">
+                      <div className="text-right">
+                        <p className="text-[10px] font-black text-stone-900 uppercase">傑凱相關企業</p>
+                        <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tighter">Jiekai Affiliated Companies</p>
+                      </div>
+                      <img src="./pwa-icon.png" className="w-8 h-8" alt="Logo" />
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-stone-300">10</div>
+              </div>
               <div className="w-full aspect-[1/1.4142] p-16 flex flex-col relative print:break-after-page border-t sm:border-t-0 border-stone-100">
                 <div className="border-[1.5px] border-stone-900 h-full p-8 flex flex-col">
                   <div className="flex justify-between items-start mb-8">
