@@ -205,6 +205,17 @@ const App: React.FC = () => {
           return projects.map(p => {
             let updatedProject = { ...p };
 
+            // CLEANUP: Fix incorrectly migrated IDs (format: PREFIX0101XXX)
+            const brokenFormatMatch = updatedProject.id.match(/^([A-Z]+)0101(\d{3})$/);
+            if (brokenFormatMatch) {
+              const [, prefix, serial] = brokenFormatMatch;
+              const year = new Date().getFullYear();
+              const yearShort = year.toString().slice(-2);
+              const fixedId = `${prefix}${yearShort}01${serial}`;
+              console.log(`Fixing broken ID: ${updatedProject.id} -> ${fixedId}`);
+              updatedProject.id = fixedId;
+            }
+
             // Specific fix: JW2601907 should be JW2601003
             if (p.id === 'JW2601907') {
               updatedProject.id = 'JW2601003';
