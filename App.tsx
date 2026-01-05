@@ -249,7 +249,21 @@ const App: React.FC = () => {
           });
         };
 
-        const initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
+        let initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
+
+        // RECOVERY: Force restore specific projects if they are missing from localStorage
+        // This handles the case where localStorage has 'valid' but incomplete data (e.g. after a reset)
+        const criticalRestorationIds = ['BNI2601001', 'BNI2601002'];
+        const missingProjects = MOCK_PROJECTS.filter(mockP =>
+          criticalRestorationIds.includes(mockP.id) &&
+          !initialProjects.some((p: Project) => p.id === mockP.id)
+        );
+
+        if (missingProjects.length > 0) {
+          console.log('Restoring missing critical projects:', missingProjects.map(p => p.name));
+          initialProjects = [...initialProjects, ...missingProjects];
+        }
+
         const migratedProjects = migrateProjectIds(initialProjects);
 
         // Deduplicate projects by name (keep the one with newer format ID)
@@ -279,10 +293,8 @@ const App: React.FC = () => {
           return acc;
         }, []);
 
-        // Save deduplicated projects back to localStorage immediately
-        localStorage.setItem('bt_projects', JSON.stringify(deduplicatedProjects));
-        console.log(`Saved ${deduplicatedProjects.length} deduplicated projects to localStorage`);
-
+        // CRITICAL FIX: Update State FIRST before attempting to save to localStorage
+        // This ensures that even if storage is full (QuotaExceededError), the user still sees their data.
         setProjects(deduplicatedProjects.map((p: Project) => ({
           ...p,
           expenses: p.expenses || [],
@@ -294,7 +306,8 @@ const App: React.FC = () => {
           payments: p.payments || []
         })));
 
-        setCustomers(parseSafely('bt_customers', []));
+        const customersData = parseSafely('bt_customers', []);
+        setCustomers(customersData);
 
         const initialTeam = parseSafely('bt_team', MOCK_TEAM_MEMBERS);
         setTeamMembers(initialTeam.map((m: any) => ({
@@ -304,9 +317,23 @@ const App: React.FC = () => {
           departmentIds: m.departmentIds || [m.departmentId]
         })));
 
-        setVendors(parseSafely('bt_vendors', []));
-        setLeads(parseSafely('bt_leads', []));
-        setActivityLogs(parseSafely('bt_logs', []));
+        const vendorsData = parseSafely('bt_vendors', []);
+        setVendors(vendorsData);
+
+        const leadsData = parseSafely('bt_leads', []);
+        setLeads(leadsData);
+
+        const logsData = parseSafely('bt_logs', []);
+        setActivityLogs(logsData);
+
+        // Try to save back to localStorage (migration/deduplication results)
+        // Wrapped in try-catch so it doesn't block the UI if it fails
+        try {
+          localStorage.setItem('bt_projects', JSON.stringify(deduplicatedProjects));
+          console.log(`Saved ${deduplicatedProjects.length} deduplicated projects to localStorage`);
+        } catch (e) {
+          console.warn('Failed to save deduplicated projects to localStorage (Quota or Error)', e);
+        }
 
         // 3. 優先解鎖介面 (不等待雲端)
         setInitialSyncDone(true);
