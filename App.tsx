@@ -211,8 +211,10 @@ const App: React.FC = () => {
               console.log(`Fixed specific project ID: JW2601907 -> JW2601003`);
             }
 
-            // Check if ID is in old format (contains 4-digit year like 2026)
-            const oldFormatMatch = updatedProject.id.match(/^([A-Z]+)(\d{4})(\d{3,4})$/);
+            // Check if ID is in old format (must have 20XX year, not already migrated)
+            // Old format: PREFIX + 20XX + serial (e.g., BNI2026001)
+            // New format: PREFIX + YY + 01 + serial (e.g., BNI2601001)
+            const oldFormatMatch = updatedProject.id.match(/^([A-Z]+)(20\d{2})(\d{3,4})$/);
             if (oldFormatMatch) {
               const [, prefix, year, serial] = oldFormatMatch;
               const yearShort = year.slice(-2);
