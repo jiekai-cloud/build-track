@@ -187,8 +187,39 @@ const App: React.FC = () => {
           }
         };
 
+        // Migration: Update old project ID format to new format
+        const migrateProjectIds = (projects: Project[]): Project[] => {
+          const sourcePrefixes: Record<string, string> = {
+            'BNI': 'BNI',
+            '台塑集團': 'FPC',
+            '士林電機': 'SE',
+            '信義居家': 'SY',
+            '企業': 'CORP',
+            '新建工程': 'NEW',
+            '網路客': 'OC',
+            '住宅': 'AB',
+            'JW': 'JW',
+            '台灣美光晶圓': 'MIC'
+          };
+
+          return projects.map(p => {
+            // Check if ID is in old format (contains 4-digit year like 2026)
+            const oldFormatMatch = p.id.match(/^([A-Z]+)(\d{4})(\d{3,4})$/);
+            if (oldFormatMatch) {
+              const [, prefix, year, serial] = oldFormatMatch;
+              const yearShort = year.slice(-2);
+              const serialPadded = serial.padStart(3, '0');
+              const newId = `${prefix}${yearShort}01${serialPadded}`;
+              console.log(`Migrating project ID: ${p.id} -> ${newId}`);
+              return { ...p, id: newId };
+            }
+            return p;
+          });
+        };
+
         const initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
-        setProjects(initialProjects.map((p: Project) => ({
+        const migratedProjects = migrateProjectIds(initialProjects);
+        setProjects(migratedProjects.map((p: Project) => ({
           ...p,
           expenses: p.expenses || [],
           workAssignments: p.workAssignments || [],
