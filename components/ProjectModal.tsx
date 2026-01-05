@@ -90,7 +90,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
           <button onClick={onClose} className="text-white/60 hover:text-white transition-colors"><X size={20} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[80vh] overflow-y-auto no-scrollbar">
+        <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto no-scrollbar">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件名稱 *</label>
             <input required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
