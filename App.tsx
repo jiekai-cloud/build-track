@@ -235,7 +235,39 @@ const App: React.FC = () => {
 
         const initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
         const migratedProjects = migrateProjectIds(initialProjects);
-        setProjects(migratedProjects.map((p: Project) => ({
+
+        // Deduplicate projects by name (keep the one with newer format ID)
+        const deduplicatedProjects = migratedProjects.reduce((acc: Project[], current: Project) => {
+          const existingIndex = acc.findIndex(p => p.name === current.name);
+          if (existingIndex >= 0) {
+            // Keep the one with the new format (contains '01' after year)
+            const existing = acc[existingIndex];
+            if (current.id.includes('01') && !existing.id.includes('01')) {
+              acc[existingIndex] = current; // Replace with new format
+              console.log(`Deduplicating: keeping ${current.id} over ${existing.id}`);
+            } else if (!current.id.includes('01') && existing.id.includes('01')) {
+              console.log(`Deduplicating: keeping ${existing.id} over ${current.id}`);
+              // Keep existing, don't add current
+            } else if (current.id.includes('01') && existing.id.includes('01')) {
+              // Both are new format, keep the one with smaller serial number
+              const currentSerial = parseInt(current.id.slice(-3));
+              const existingSerial = parseInt(existing.id.slice(-3));
+              if (currentSerial < existingSerial) {
+                acc[existingIndex] = current;
+                console.log(`Deduplicating: keeping ${current.id} over ${existing.id}`);
+              }
+            }
+          } else {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+
+        // Save deduplicated projects back to localStorage immediately
+        localStorage.setItem('bt_projects', JSON.stringify(deduplicatedProjects));
+        console.log(`Saved ${deduplicatedProjects.length} deduplicated projects to localStorage`);
+
+        setProjects(deduplicatedProjects.map((p: Project) => ({
           ...p,
           expenses: p.expenses || [],
           workAssignments: p.workAssignments || [],
