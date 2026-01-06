@@ -1242,28 +1242,29 @@ const App: React.FC = () => {
             return p;
           }));
         } else {
-          // 案件編號產生規則: [來源代碼][年份縮寫(YY)]01[流水號(001)]
+          // 案件編號產生規則: [來源代碼][年份縮寫(YY)][月份(MM)][流水號(001)]
           const prefix = sourcePrefixes[data.source || 'BNI'] || 'PJ';
-          const year = new Date().getFullYear();
-          const yearShort = year.toString().slice(-2); // 取後兩碼，例如 2026 -> 26
+          const now = new Date();
+          const yearShort = now.getFullYear().toString().slice(-2);
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
 
-          // 找尋全系統的最大流水號（不分來源、不分年份）
+          // 找尋全系統的最大流水號（不分來源、不分年份），確保流水號連貫
           let sequence = 1;
           if (projects.length > 0) {
             // 從所有專案中提取最後三碼流水號，找出最大值
             const sequences = projects
               .map(p => {
-                const match = p.id.match(/\d{3}$/);
-                return match ? parseInt(match[0]) : 0;
+                const match = p.id.match(/(\d{3})$/);
+                return match ? parseInt(match[1], 10) : 0;
               })
-              .filter(num => num > 0);
+              .filter(num => !isNaN(num) && num > 0);
 
             if (sequences.length > 0) {
               sequence = Math.max(...sequences) + 1;
             }
           }
 
-          const newId = `${prefix}${yearShort}01${sequence.toString().padStart(3, '0')}`;
+          const newId = `${prefix}${yearShort}${month}${sequence.toString().padStart(3, '0')}`;
           addActivityLog('建立新專案', data.name, newId, 'project');
           setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, statusChangedAt: new Date().toISOString(), progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [], updatedAt: new Date().toISOString() } as any, ...prev]);
         }
