@@ -61,8 +61,17 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
 
         switch (sortBy) {
           case 'id':
-            aVal = a.id;
-            bVal = b.id;
+            // Extract numeric part for sorting (ignore prefix like BNI, JW, OC)
+            const aNum = parseInt(a.id.replace(/\D/g, '')) || 0;
+            const bNum = parseInt(b.id.replace(/\D/g, '')) || 0;
+            if (aNum !== bNum) {
+              aVal = aNum;
+              bVal = bNum;
+            } else {
+              // Fallback to string sort if numbers identify (unlikely but safe)
+              aVal = a.id;
+              bVal = b.id;
+            }
             break;
           case 'manager':
             aVal = a.manager || '';
