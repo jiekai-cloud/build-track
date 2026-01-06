@@ -287,33 +287,27 @@ const App: React.FC = () => {
 
         const migratedProjects = migrateProjectIds(initialProjects);
 
-        // Deduplicate projects by name (keep the one with newer format ID)
-        // Deduplicate projects by name (Aggressive: Only ONE project per name allowed)
+        // Deduplicate projects by ID (Strict: Only ONE project per ID allowed)
+        // This handles cases where remapping produced identical IDs from different source names
         const projectMap = new Map<string, Project>();
 
         migratedProjects.forEach((p: Project) => {
-          if (!projectMap.has(p.name)) {
-            projectMap.set(p.name, p);
+          if (!projectMap.has(p.id)) {
+            projectMap.set(p.id, p);
           } else {
-            const existing = projectMap.get(p.name)!;
+            const existing = projectMap.get(p.id)!;
 
-            // Conflict Resolution Rules:
-            // 1. Prefer correct IDs for critical projects
-            if (p.id === 'BNI2601001' && existing.id !== 'BNI2601001') {
-              projectMap.set(p.name, p); // Zhishan 001 wins
-            } else if (p.id === 'BNI2601002' && existing.id !== 'BNI2601002') {
-              projectMap.set(p.name, p); // Guishan 002 wins
-            } else if (p.id === 'BNI2601004' && existing.id !== 'BNI2601004') {
-              projectMap.set(p.name, p); // Guangfu 004 wins
+            // Conflict Resolution:
+            // 1. Prefer the version with the "Canonical Name" (matches official records)
+            //    This fixes "桃園市..." vs "桃園..." duplication
+            const isCurrentCanonical = MOCK_PROJECTS.some(mp => mp.id === p.id && mp.name === p.name);
+            const isExistingCanonical = MOCK_PROJECTS.some(mp => mp.id === existing.id && mp.name === existing.name);
+
+            if (isCurrentCanonical && !isExistingCanonical) {
+              projectMap.set(p.id, p);
             }
-            // 2. Prefer '01' format over '19' format if IDs are different but same project
-            else if (p.id.includes('01') && !existing.id.includes('01')) {
-              projectMap.set(p.name, p);
-            }
-            // 3. Fallback: Prefer newer updated date or generic tie-break
-            else {
-              // Keep existing (first one found usually fine, or could compare dates)
-            }
+            // 2. If both are non-canonical, prefer the one with more data (e.g. has financials)
+            //    (Simplified: just keep existing unless canonical found)
           }
         });
 
