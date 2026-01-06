@@ -1259,7 +1259,9 @@ const App: React.FC = () => {
                 const match = p.id.match(/[A-Z]+(?:20\d{2}|\d{2})\d{2}(\d{3})$/);
                 return match ? parseInt(match[1], 10) : 0;
               })
-              .filter(num => !isNaN(num) && num > 0 && num < 900);
+              // Filter out sequences >= 100 to avoid artifacts from legacy YYMMDD dates (e.g. 251217 -> 217)
+              // Valid sequences are currently low (001-006)
+              .filter(num => !isNaN(num) && num > 0 && num < 100);
 
             if (sequences.length > 0) {
               sequence = Math.max(...sequences) + 1;
