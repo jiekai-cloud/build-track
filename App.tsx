@@ -1257,7 +1257,7 @@ const App: React.FC = () => {
                 const match = p.id.match(/(\d{3})$/);
                 return match ? parseInt(match[1], 10) : 0;
               })
-              .filter(num => !isNaN(num) && num > 0);
+              .filter(num => !isNaN(num) && num > 0 && num < 900);
 
             if (sequences.length > 0) {
               sequence = Math.max(...sequences) + 1;
