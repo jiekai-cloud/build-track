@@ -260,6 +260,7 @@ const App: React.FC = () => {
         initialProjects = initialProjects.map((p: any) => {
           if (p.name.includes('至善')) return { ...p, id: 'BNI2601001' };
           if (p.name.includes('龜山')) return { ...p, id: 'BNI2601002' };
+          if (p.name.includes('光復北路')) return { ...p, id: 'BNI2601004' }; // Added Rule
           return p;
         });
 
