@@ -56,7 +56,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
 
     // Apply sorting
     if (sortBy) {
-      result.sort((a, b) => {
+      result = [...result].sort((a, b) => {
         let aVal: any, bVal: any;
 
         switch (sortBy) {

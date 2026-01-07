@@ -414,7 +414,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
 
               <div className="flex-1 lg:overflow-y-auto p-6 space-y-8 touch-scroll no-scrollbar">
                 {project.dailyLogs && project.dailyLogs.length > 0 ? (
-                  project.dailyLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((log, idx) => (
+                  [...project.dailyLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((log, idx) => (
                     <div key={log.id} className="relative pl-8 group">
                       {/* Timeline Line */}
                       <div className="absolute left-[11px] top-2 bottom-0 w-0.5 bg-stone-100 group-last:bg-transparent"></div>
@@ -923,7 +923,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-50">
-                          {(project.expenses || []).length > 0 ? (project.expenses || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((exp) => (
+                          {(project.expenses || []).length > 0 ? [...(project.expenses || [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((exp) => (
                             <tr key={exp.id} className="hover:bg-stone-50/30 transition-colors">
                               <td className="px-6 py-4 text-xs font-bold text-stone-500">{exp.date}</td>
                               <td className="px-6 py-4">
