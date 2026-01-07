@@ -41,7 +41,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         return;
       }
 
-      // 1.5 檢查同步專用帳號 (用於新設備初始化)
+      // 1.5 檢查同步專用帳號 (用於新設備初始化，權限受限)
       if (cleanId.toLowerCase() === 'text' && cleanPassword === 'text') {
         onLoginSuccess({
           id: 'SYNC-ONLY',
@@ -50,6 +50,18 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           picture: `https://ui-avatars.com/api/?name=Sync&background=0ea5e9&color=fff`,
           role: 'SyncOnly'
         }, 'all');
+        return;
+      }
+
+      // 1.6 增加通用測試帳號 (供新進人員初步瀏覽系統)
+      if (cleanId.toLowerCase() === 'test' && cleanPassword === '1234') {
+        onLoginSuccess({
+          id: 'TEST-USER',
+          name: "系統測試員",
+          email: "test@lifequality.ai",
+          picture: `https://ui-avatars.com/api/?name=Test&background=8b5cf6&color=fff`,
+          role: 'Guest' // 設為訪客權限，確保安全
+        }, 'DEPT-1');
         return;
       }
 
@@ -235,6 +247,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <Sparkles size={14} className="text-amber-500" />
                 訪客模式預覽 (唯讀)
               </button>
+
+              <div className="pt-2 flex flex-col items-center gap-1 opacity-40 hover:opacity-100 transition-opacity">
+                <p className="text-[9px] font-bold text-stone-600 uppercase tracking-widest">
+                  初次登入 / 新設備提示
+                </p>
+                <div className="flex gap-4">
+                  <span className="text-[9px] text-stone-500">同步專用: <code className="text-orange-500/80">text</code></span>
+                  <span className="text-[9px] text-stone-500">系統體驗: <code className="text-orange-500/80">test</code></span>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col items-center gap-2 pt-6">
