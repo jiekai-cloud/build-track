@@ -179,37 +179,54 @@ const App: React.FC = () => {
         const [, prefix, year, serial] = oldFormatMatch;
         const yearShort = year.slice(-2);
         const serialPadded = serial.padStart(3, '0');
-
-        // Special Case: JW projects should retain 4 digit year or handle specifically if needed
-        // But per request "JW2026907" -> "JW260907" (standard) or "JW2601003" (mapped)
-        // If it's already mapped above (Rule 0/Specific fix), this won't run.
-
         updatedProject.id = `${prefix}${yearShort}01${serialPadded}`;
       }
 
-      // CRITICAL FIX: If ID became "JW2601907", remap it to "JW2601003" immediately
-      if (updatedProject.id === 'JW2601907') updatedProject.id = 'JW2601003';
+      // CRITICAL FIX: If ID became "JW2601907" or legacy match, remap it to "JW2601003"
+      if (updatedProject.id === 'JW2601907' || updatedProject.name.includes('樹林區三龍街')) updatedProject.id = 'JW2601003';
+
       return updatedProject;
     });
 
-    // Deduplicate projects by ID
+    // Deduplicate and Deep Merge projects by ID
     const projectMap = new Map<string, Project>();
     processed.forEach(p => {
       if (!projectMap.has(p.id)) {
         projectMap.set(p.id, p);
       } else {
         const existing = projectMap.get(p.id)!;
-        // Conflict Resolution: Prefer "Canonical Name"
-        const isCurrentCanonical = MOCK_PROJECTS.some(mp => mp.id === p.id && mp.name === p.name);
-        const isExistingCanonical = MOCK_PROJECTS.some(mp => mp.id === existing.id && mp.name === existing.name);
-        if (isCurrentCanonical && !isExistingCanonical) {
-          projectMap.set(p.id, p);
-        } else if (!isExistingCanonical) {
-          // If neither is canonical, prefer the one with later update time, or just keep existing
-          const existingTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
-          const currentTime = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
-          if (currentTime > existingTime) projectMap.set(p.id, p);
+
+        // SAFE MERGE STRATEGY: Preserve meaningful content (logs, comments) 
+        // from both versions, and choose the most recent basic info.
+        const mergeLogs = (l1: any[] = [], l2: any[] = []) => {
+          const map = new Map();
+          [...l1, ...l2].forEach(log => { if (log.id) map.set(log.id, log); });
+          return Array.from(map.values()).sort((a, b) => new Date(b.timestamp || b.date).getTime() - new Date(a.timestamp || a.date).getTime());
+        };
+
+        const existingTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+        const currentTime = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
+
+        // Start with the more recent overall object
+        const merged: Project = currentTime > existingTime ? { ...p } : { ...existing };
+
+        // Deep merge protected fields
+        merged.dailyLogs = mergeLogs(existing.dailyLogs, p.dailyLogs);
+        merged.comments = mergeLogs(existing.comments, p.comments); // Reuse logic for comments
+        merged.files = mergeLogs(existing.files, p.files);
+        merged.expenses = mergeLogs(existing.expenses, p.expenses);
+        merged.checklist = mergeLogs(existing.checklist, p.checklist);
+        merged.payments = mergeLogs(existing.payments, p.payments);
+
+        // Final state: canonical/standard projects from MOCK should not overwrite user data fields if missing
+        if (MOCK_PROJECTS.some(mp => mp.id === p.id)) {
+          // If incoming 'p' is from MOCK (canonical), we update basic info but strictly preserve existing logs
+          if (existing.dailyLogs && existing.dailyLogs.length > (p.dailyLogs?.length || 0)) {
+            merged.dailyLogs = existing.dailyLogs;
+          }
         }
+
+        projectMap.set(p.id, merged);
       }
     });
 
@@ -282,8 +299,8 @@ const App: React.FC = () => {
         let initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
 
         // 0. Force Restore Critical Projects
-        // CRITICAL CHANGE: Updated to include JW2601003 and ensure BNI2601004 is present.
-        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005', 'JW2601003'];
+        // CRITICAL CHANGE: Removed AB2601003 and JW2601003 to prevent overwriting user data with mock data.
+        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005'];
 
         // 0a. AUTOMATED BACKUP SYSTEM (Safeguard)
         // Before doing anything destructive, save a snapshot of current localStorage
@@ -1126,13 +1143,23 @@ const App: React.FC = () => {
                 <Settings
                   user={user} projects={projects} customers={customers} teamMembers={teamMembers}
                   onResetData={() => { if (confirm('注意：這將清除所有數據，確定嗎？')) { localStorage.clear(); window.location.reload(); } }}
-                  onImportData={(data) => {
+                  onImportData={(data, mode = 'overwrite') => {
                     try {
                       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-                      if (parsed.projects) setProjects(parsed.projects);
-                      if (parsed.customers) setCustomers(parsed.customers);
-                      if (parsed.teamMembers) setTeamMembers(parsed.teamMembers);
-                      if (parsed.vendors) setVendors(parsed.vendors);
+                      if (mode === 'overwrite') {
+                        if (parsed.projects) setProjects(parsed.projects);
+                        if (parsed.customers) setCustomers(parsed.customers);
+                        if (parsed.teamMembers) setTeamMembers(parsed.teamMembers);
+                        if (parsed.vendors) setVendors(parsed.vendors);
+                        if (parsed.leads) setLeads(parsed.leads);
+                      } else {
+                        // Safe Merge Mode
+                        if (parsed.projects) setProjects(prev => mergeData(prev, parsed.projects));
+                        if (parsed.customers) setCustomers(prev => mergeData(prev, parsed.customers || []));
+                        if (parsed.teamMembers) setTeamMembers(prev => mergeData(prev, parsed.teamMembers || []));
+                        if (parsed.vendors) setVendors(prev => mergeData(prev, parsed.vendors || []));
+                        if (parsed.leads) setLeads(prev => mergeData(prev, parsed.leads || []));
+                      }
                       alert('資料匯入成功！');
                     } catch (e: any) {
                       console.error('Import Failed:', e);
