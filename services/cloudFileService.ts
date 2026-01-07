@@ -40,6 +40,23 @@ class CloudFileService {
             });
             const folder = await createRes.json();
             this.folderId = folder.id;
+
+            // 設定資料夾為任何人可讀 (繼承用)
+            try {
+                const permissionUrl = `https://www.googleapis.com/drive/v3/files/${this.folderId}/permissions`;
+                // @ts-ignore
+                await googleDriveService.fetchWithAuth(permissionUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        role: 'reader',
+                        type: 'anyone'
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            } catch (e) {
+                console.warn('資料夾權限設定失敗:', e);
+            }
+
             return this.folderId;
         } catch (e) {
             console.error('資料夾建立失敗:', e);
@@ -102,8 +119,22 @@ class CloudFileService {
 
             const result = await response.json();
 
-            // 嘗試設定權限為任何人可讀 (或維持私有，視需求而定)
-            // 這裡我們暫時使用 webContentLink 作為直接存取連結
+            // 設定權限為任何人可讀，確保跨帳號可視
+            try {
+                const permissionUrl = `https://www.googleapis.com/drive/v3/files/${result.id}/permissions`;
+                // @ts-ignore
+                await googleDriveService.fetchWithAuth(permissionUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        role: 'reader',
+                        type: 'anyone'
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            } catch (permError) {
+                console.warn('權限設定失敗 (但不影響上傳):', permError);
+            }
+
             return {
                 id: result.id,
                 url: result.webContentLink || result.webViewLink
