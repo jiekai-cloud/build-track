@@ -298,9 +298,8 @@ const App: React.FC = () => {
         // This was missing, causing data loss on reload.
         let initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
 
-        // 0. Force Restore Critical Projects
-        // CRITICAL CHANGE: Removed AB2601003 and JW2601003 to prevent overwriting user data with mock data.
-        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005'];
+        // 0. Force Restore Critical Projects (Safe Merge enabled)
+        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005', 'JW2601003'];
 
         // 0a. AUTOMATED BACKUP SYSTEM (Safeguard)
         // Before doing anything destructive, save a snapshot of current localStorage
