@@ -107,7 +107,7 @@ class CloudFileService {
                 close_delim
             ], { type: 'multipart/related; boundary=' + boundary });
 
-            const uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webContentLink,webViewLink';
+            const uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webContentLink,webViewLink,thumbnailLink';
 
             // @ts-ignore
             const response = await googleDriveService.fetchWithAuth(uploadUrl, {
@@ -135,9 +135,10 @@ class CloudFileService {
                 console.warn('權限設定失敗 (但不影響上傳):', permError);
             }
 
+            // 使用 lh3.googleusercontent.com/d/{id} 格式，這是目前最穩定且支援手機端顯示的公開網址格式
             return {
                 id: result.id,
-                url: `https://docs.google.com/uc?export=view&id=${result.id}&t=${Date.now()}`
+                url: `https://lh3.googleusercontent.com/d/${result.id}=w1600`
             };
         } catch (e) {
             console.error('檔案上傳失敗:', e);
