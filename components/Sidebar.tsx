@@ -14,6 +14,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenuClose, isSyncing }) => {
   const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+  const [prevSyncing, setPrevSyncing] = useState(false);
 
   useEffect(() => {
     // Load initial modules
@@ -26,6 +28,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
 
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (prevSyncing && !isSyncing) {
+      setSyncSuccess(true);
+      const timer = setTimeout(() => setSyncSuccess(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    setPrevSyncing(!!isSyncing);
+  }, [isSyncing, prevSyncing]);
 
   // Map tab IDs to module IDs
   const tabToModuleMap: Record<string, ModuleId> = {
@@ -124,7 +135,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
             {/* @ts-ignore */}
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-refresh-cw transition-transform duration-500 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180'}`}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>
           </div>
-          <span className="font-bold text-xs">{isSyncing ? '同步中...' : '立即同步'}</span>
+          <span className="font-bold text-xs">{isSyncing ? '同步中...' : syncSuccess ? '同步完成' : '立即同步'}</span>
+          {syncSuccess && (
+            <div className="absolute right-4 animate-in zoom-in fade-in duration-300">
+              <div className="bg-emerald-500 p-1 rounded-full shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check"><path d="M20 6 9 17l-5-5" /></svg>
+              </div>
+            </div>
+          )}
         </button>
 
         {/* Force Restore Button (Temporary Rescue) */}

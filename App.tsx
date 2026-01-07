@@ -1119,9 +1119,11 @@ const App: React.FC = () => {
               }}
               onUpdateStatus={(status) => handleUpdateStatus(selectedProject.id, status)}
               onAddComment={(text) => handleAddComment(selectedProject.id, text)}
+              onDeleteComment={(commentId) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, comments: p.comments?.filter(c => c.id !== commentId), updatedAt: new Date().toISOString() } : p))}
               onUpdateFiles={(files) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, files, updatedAt: new Date().toISOString() } : p))}
               onUpdatePhases={(phases) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, phases, updatedAt: new Date().toISOString() } : p))}
               onAddDailyLog={(log) => handleAddDailyLog(selectedProjectId, log)}
+              onDeleteDailyLog={(logId) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, dailyLogs: p.dailyLogs?.filter(l => l.id !== logId), updatedAt: new Date().toISOString() } : p))}
               onUpdateChecklist={(checklist) => handleUpdateChecklist(selectedProjectId, checklist)}
               onUpdatePayments={(payments) => handleUpdatePayments(selectedProjectId, payments)}
               onUpdateTasks={(tasks) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, tasks, updatedAt: new Date().toISOString() } : p))}

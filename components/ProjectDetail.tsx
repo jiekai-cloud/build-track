@@ -32,12 +32,14 @@ interface ProjectDetailProps {
   onUpdateProgress: (progress: number) => void;
   onUpdateStatus: (status: ProjectStatus) => void;
   onAddComment: (text: string) => void;
+  onDeleteComment: (commentId: string) => void;
   onUpdateExpenses: (expenses: Expense[]) => void;
   onUpdateWorkAssignments: (assignments: WorkAssignment[]) => void;
   onUpdatePreConstruction: (prep: any) => void;
   onUpdateFiles?: (files: ProjectFile[]) => void;
   onUpdatePhases?: (phases: ProjectPhase[]) => void;
   onAddDailyLog: (log: { content: string, photoUrls: string[] }) => void;
+  onDeleteDailyLog: (logId: string) => void;
   onUpdateChecklist: (checklist: ChecklistTask[]) => void;
   onUpdatePayments: (payments: PaymentStage[]) => void;
   onUpdateContractUrl: (url: string) => void;
@@ -429,6 +431,19 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                             </span>
                             <span className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full font-bold text-stone-500 uppercase">{log.authorName}</span>
                           </div>
+                          {!isReadOnly && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('確定要刪除這條紀錄嗎？')) {
+                                  onDeleteDailyLog(log.id);
+                                }
+                              }}
+                              className="p-1.5 text-stone-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
 
                         <div className="bg-stone-50/50 hover:bg-stone-50 p-4 rounded-2xl border border-stone-100 transition-colors">
@@ -514,7 +529,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                 </div>
                 <div className="flex-1 lg:overflow-y-auto p-4 space-y-4 no-scrollbar">
                   {(project.comments || []).map((comment) => (
-                    <div key={comment.id} className="flex gap-2">
+                    <div key={comment.id} className="flex gap-2 group/comment items-start">
                       <div className="w-6 h-6 rounded-lg bg-stone-100 flex items-center justify-center font-black text-stone-400 text-[8px] shrink-0 uppercase border border-stone-200">
                         {comment.authorName.charAt(0)}
                       </div>
@@ -523,6 +538,19 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                           "{comment.text}"
                         </p>
                       </div>
+                      {(!isReadOnly && (comment.authorName === user.name || user.role === 'SuperAdmin')) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('確定要刪除這條留言嗎？')) {
+                              onDeleteComment(comment.id);
+                            }
+                          }}
+                          className="p-1.5 text-stone-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover/comment:opacity-100 shrink-0"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
