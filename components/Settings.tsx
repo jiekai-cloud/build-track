@@ -30,7 +30,10 @@ const Settings: FC<SettingsProps> = ({
   const [activeSection, setActiveSection] = useState('cloud');
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pendingData, setPendingData] = useState<any>(null);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
 
+  const [importMode, setImportMode] = useState<'overwrite' | 'merge'>('merge');
   const isReadOnly = user.role === 'Guest';
   const currentUrl = window.location.origin + window.location.pathname;
 
@@ -249,6 +252,22 @@ const Settings: FC<SettingsProps> = ({
                       <p className="text-[11px] text-stone-500 leading-relaxed font-bold">
                         從現有的備份檔恢復數據。
                       </p>
+
+                      <div className="flex bg-stone-100 p-1 rounded-xl mb-3">
+                        <button
+                          onClick={() => setImportMode('merge')}
+                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-all ${importMode === 'merge' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400'}`}
+                        >
+                          合併 (Merge)
+                        </button>
+                        <button
+                          onClick={() => setImportMode('overwrite')}
+                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-all ${importMode === 'overwrite' ? 'bg-rose-600 text-white shadow-sm' : 'text-stone-400'}`}
+                        >
+                          覆蓋 (Overwrite)
+                        </button>
+                      </div>
+
                       <div className="relative">
                         <input
                           type="file"
@@ -260,8 +279,15 @@ const Settings: FC<SettingsProps> = ({
                             const reader = new FileReader();
                             reader.onload = (event) => {
                               try {
-                                const json = event.target?.result as string;
-                                onImportData(json, 'overwrite');
+                                const jsonStr = event.target?.result as string;
+                                const parsed = JSON.parse(jsonStr);
+                                if (parsed.projects && Array.isArray(parsed.projects) && parsed.projects.length > 0) {
+                                  setPendingData(parsed);
+                                  // Default select all
+                                  setSelectedProjectIds(new Set(parsed.projects.map((p: any) => p.id)));
+                                } else {
+                                  onImportData(jsonStr, importMode);
+                                }
                               } catch (err) {
                                 alert('檔案解析失敗：請確認上傳的是有效的 .json 備份檔');
                               }
@@ -420,6 +446,102 @@ const Settings: FC<SettingsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Selective Import Modal */}
+      {pendingData && (
+        <div className="fixed inset-0 z-[100] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in">
+          <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-8 lg:p-10 border-b border-stone-100 flex items-center justify-between bg-stone-50">
+              <div>
+                <h2 className="text-2xl font-black text-stone-900 uppercase tracking-tight flex items-center gap-3">
+                  <Database className="text-orange-500" /> 選擇要復原的專案
+                </h2>
+                <p className="text-sm text-stone-500 font-bold mt-1">從備份檔中偵測到 {pendingData.projects.length} 個專案，請選取您要還原的項目。</p>
+              </div>
+              <button
+                onClick={() => setPendingData(null)}
+                className="p-3 hover:bg-white rounded-2xl text-stone-400 hover:text-stone-900 transition-all active:scale-90"
+              >
+                取消
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 lg:p-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pendingData.projects.map((project: any) => (
+                  <label
+                    key={project.id}
+                    className={`flex items-center gap-4 p-5 rounded-3xl border-2 transition-all cursor-pointer ${selectedProjectIds.has(project.id)
+                        ? 'border-orange-500 bg-orange-50/50 shadow-md'
+                        : 'border-stone-100 hover:border-stone-200 bg-white'
+                      }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded-lg border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                      checked={selectedProjectIds.has(project.id)}
+                      onChange={() => {
+                        const next = new Set(selectedProjectIds);
+                        if (next.has(project.id)) next.delete(project.id);
+                        else next.add(project.id);
+                        setSelectedProjectIds(next);
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-black bg-stone-900 text-white px-2 py-0.5 rounded-md uppercase tracking-wider">{project.id}</span>
+                        <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{project.source}</span>
+                        {project.deletedAt && <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">(已刪除)</span>}
+                      </div>
+                      <h4 className="font-black text-stone-900 truncate">{project.name}</h4>
+                      <p className="text-[10px] text-stone-500 font-bold mt-1">最後更新：{project.updatedAt ? new Date(project.updatedAt).toLocaleString() : '未知'}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-8 lg:p-10 bg-stone-50 border-t border-stone-100 flex items-center justify-between gap-6">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setSelectedProjectIds(new Set(pendingData.projects.map((p: any) => p.id)))}
+                  className="text-xs font-black text-stone-500 hover:text-stone-900 transition-colors"
+                >
+                  全部勾選
+                </button>
+                <button
+                  onClick={() => setSelectedProjectIds(new Set())}
+                  className="text-xs font-black text-stone-500 hover:text-stone-900 transition-colors"
+                >
+                  全部取消
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="text-right mr-4">
+                  <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">目前選取</p>
+                  <p className="text-lg font-black text-stone-900">{selectedProjectIds.size} 個項目</p>
+                </div>
+                <button
+                  disabled={selectedProjectIds.size === 0}
+                  onClick={() => {
+                    const filteredData = {
+                      ...pendingData,
+                      projects: pendingData.projects.filter((p: any) => selectedProjectIds.has(p.id))
+                    };
+                    onImportData(filteredData, importMode);
+                    setPendingData(null);
+                  }}
+                  className="bg-orange-600 text-white px-10 py-4 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-orange-100 hover:bg-orange-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center gap-3"
+                >
+                  <RefreshCw size={18} className={selectedProjectIds.size > 0 ? "animate-spin-slow" : ""} />
+                  執行復原匯入
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
