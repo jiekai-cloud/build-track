@@ -137,7 +137,7 @@ class CloudFileService {
 
             return {
                 id: result.id,
-                url: result.webContentLink || result.webViewLink
+                url: `https://drive.google.com/uc?id=${result.id}`
             };
         } catch (e) {
             console.error('檔案上傳失敗:', e);
