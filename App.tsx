@@ -848,6 +848,8 @@ const App: React.FC = () => {
 
   const filteredData = useMemo(() => {
     const filterByDept = (item: any) => {
+      // 永久刪除的項目在所有視圖中完全隱藏
+      if (item.isPurged) return false;
       // 過濾已被軟刪除的項目 (除非開啟查看垃圾桶)
       if (item.deletedAt && !showDeleted) return false;
 
@@ -1130,11 +1132,14 @@ const App: React.FC = () => {
                   alert('✅ 案件已復原！');
                 }}
                 onHardDeleteClick={(id) => {
-                  if (confirm('警告：此操作將永久刪除案件，無法原，確定嗎？')) {
+                  if (confirm('警告：此操作將永久刪除案件，無法還原，確定嗎？')) {
                     const p = projects.find(x => x.id === id);
-                    if (p) addActivityLog('永久刪除了專案', p.name, id, 'project');
-                    setProjects(prev => prev.filter(p => p.id !== id));
-                    alert('✅ 案件已永久刪除。');
+                    if (p) {
+                      addActivityLog('永久刪除了專案', p.name, id, 'project');
+                      // 不直接從陣列 filter，而是標記 isPurged 以維持同步一致性，防止從雲端復原
+                      setProjects(prev => prev.map(item => item.id === id ? { ...item, isPurged: true, updatedAt: new Date().toISOString() } : item));
+                      alert('✅ 案件已永久刪除。');
+                    }
                   }
                 }}
                 onDetailClick={(p) => setSelectedProjectId(p.id)}

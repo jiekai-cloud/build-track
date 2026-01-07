@@ -207,6 +207,7 @@ export interface Project {
   statusChangedAt?: string; // 狀態變更時間 (用於逾期計算)
   updatedAt?: string;
   deletedAt?: string;
+  isPurged?: boolean;
 }
 
 export interface Lead {
