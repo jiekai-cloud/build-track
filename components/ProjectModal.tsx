@@ -33,6 +33,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
     startDate: new Date().toISOString().split('T')[0],
     endDate: '',
     address: '',
+    id: '', // 新增：可編輯的案件編號
   });
 
   useEffect(() => {
@@ -54,6 +55,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         startDate: initialData.startDate,
         endDate: initialData.endDate,
         address: initialData.location?.address || '',
+        id: initialData.id || '', // 載入現有編號
       });
     }
   }, [initialData]);
@@ -91,9 +93,15 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto no-scrollbar">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件名稱 *</label>
-            <input required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件名稱 *</label>
+              <input required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件編號 (可手動修正)</label>
+              <input className="w-full bg-amber-50 border border-amber-200 text-amber-900 rounded-xl px-4 py-2.5 outline-none font-black uppercase tracking-wider" value={formData.id} onChange={e => setFormData({ ...formData, id: e.target.value })} placeholder="自動產生" />
+            </div>
           </div>
 
           <div>
