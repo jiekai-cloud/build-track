@@ -560,13 +560,33 @@ const App: React.FC = () => {
 
     // 定期本地保存 (訪客不保存)
     if (user.role !== 'Guest') {
+      // Deep clean function to strip base64 images from objects
+      const stripImages = (obj: any): any => {
+        if (!obj) return obj;
+        if (Array.isArray(obj)) return obj.map(stripImages);
+        if (typeof obj === 'object') {
+          const newObj: any = {};
+          for (const k in obj) {
+            // Strip large base64 strings (likely images)
+            if (typeof obj[k] === 'string' && obj[k].startsWith('data:image') && obj[k].length > 1000) {
+              newObj[k] = ''; // Remove the image data
+            } else {
+              newObj[k] = stripImages(obj[k]);
+            }
+          }
+          return newObj;
+        }
+        return obj;
+      };
+
       // 使用安全儲存函式，處理 QuotaExceededError
-      safeLocalStorageSave('bt_projects', projects);
-      safeLocalStorageSave('bt_customers', customers);
-      safeLocalStorageSave('bt_team', teamMembers);
-      safeLocalStorageSave('bt_logs', activityLogs.slice(0, 30)); // 限制 logs 最多 30 筆
+      // 關鍵優化：在存入 LocalStorage 前，先移除所有 Base64 圖片以節省空間
+      safeLocalStorageSave('bt_projects', stripImages(projects));
+      safeLocalStorageSave('bt_customers', stripImages(customers));
+      safeLocalStorageSave('bt_team', teamMembers); // Team likely small
+      safeLocalStorageSave('bt_logs', activityLogs.slice(0, 20)); // 再次限制 logs 最多 20 筆
       safeLocalStorageSave('bt_vendors', vendors);
-      safeLocalStorageSave('bt_leads', leads);
+      safeLocalStorageSave('bt_leads', stripImages(leads));
       setLastLocalSave(new Date().toLocaleTimeString());
     }
 
