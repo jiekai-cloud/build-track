@@ -1102,7 +1102,10 @@ const App: React.FC = () => {
                       if (parsed.teamMembers) setTeamMembers(parsed.teamMembers);
                       if (parsed.vendors) setVendors(parsed.vendors);
                       alert('資料匯入成功！');
-                    } catch (e) { alert('匯入失敗：格式錯誤'); }
+                    } catch (e: any) {
+                      console.error('Import Failed:', e);
+                      alert(`匯入失敗：${e.message || '格式錯誤'}`);
+                    }
                   }}
                   isCloudConnected={isCloudConnected}
                   onConnectCloud={handleConnectCloud}

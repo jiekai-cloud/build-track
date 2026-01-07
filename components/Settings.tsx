@@ -263,8 +263,11 @@ const Settings: FC<SettingsProps> = ({
                                 const json = event.target?.result as string;
                                 onImportData(json, 'overwrite');
                               } catch (err) {
-                                alert('檔案讀取失敗');
+                                alert('檔案解析失敗：請確認上傳的是有效的 .json 備份檔');
                               }
+                            };
+                            reader.onerror = () => {
+                              alert('檔案讀取錯誤，請重試');
                             };
                             reader.readAsText(file);
                             // Clear input so same file can be selected again
