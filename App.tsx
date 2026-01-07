@@ -271,7 +271,7 @@ const App: React.FC = () => {
 
         // 0. Force Restore Critical Projects (Missing from localStorage)
         // This handles cases where localStorage has 'valid' but incomplete data
-        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005'];
+        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005', 'AB2601003', 'JW2601003'];
 
         // 0b. Deep Clone to PREVENT READ-ONLY ERRORS (Fix for "Cannot assign to read only property")
         // This ensures that whether data comes from localStorage or MOCK_PROJECTS, it is fully mutable.
