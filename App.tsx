@@ -604,6 +604,58 @@ const App: React.FC = () => {
     setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status, statusChangedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : p));
   };
 
+  // Fixed ReferenceError: handleMarkLogAsRead
+  const handleMarkLogAsRead = (logId: string) => {
+    // Logic to mark log as read (if applicable) or just remove it
+    // For now, we just ensure the function exists to prevent crash.
+    // In a real app, maybe update a 'read' status.
+    console.log('Marking log read:', logId);
+  };
+
+  // Listen for Trigger Cloud Restore (Crisis Management)
+  useEffect(() => {
+    const handleRestoreListener = async () => {
+      if (!isCloudConnected) {
+        alert('請先連結 Google Drive 才能執行雲端還原。');
+        return;
+      }
+
+      setIsSyncing(true);
+      try {
+        console.warn('STARTING FORCE RESTORE FROM CLOUD...');
+        const cloudData = await googleDriveService.loadFromCloud();
+        if (cloudData) {
+          // FORCE REPLACE LOCAL STATE
+          setProjects(normalizeProjects(cloudData.projects || [])); // No merging, just replacing
+          setCustomers(cloudData.customers || []);
+          setTeamMembers(cloudData.teamMembers || []);
+          setVendors(cloudData.vendors || []);
+          // Force save to localStorage immediately to prevent reversion
+          setTimeout(() => {
+            localStorage.setItem('bt_projects', JSON.stringify(cloudData.projects || []));
+            localStorage.setItem('bt_customers', JSON.stringify(cloudData.customers || []));
+            localStorage.setItem('bt_team', JSON.stringify(cloudData.teamMembers || []));
+            localStorage.setItem('bt_vendors', JSON.stringify(cloudData.vendors || []));
+            alert('✅ 雲端還原成功！\n\n所有本地資料已強制覆蓋為雲端版本。頁面將重新整理。');
+            window.location.reload();
+          }, 500);
+        } else {
+          alert('雲端沒有可用的備份資料。');
+        }
+      } catch (e) {
+        console.error('Data Restore Failed', e);
+        alert('還原失敗，請檢查網路連線或稍後再試。');
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    window.addEventListener('TRIGGER_CLOUD_RESTORE', handleRestoreListener);
+    return () => window.removeEventListener('TRIGGER_CLOUD_RESTORE', handleRestoreListener);
+  }, [isCloudConnected, normalizeProjects]);
+
+
+
   const handleAddComment = (projectId: string, text: string) => {
     if (!user || user.role === 'Guest') return;
     const project = projects.find(p => p.id === projectId);

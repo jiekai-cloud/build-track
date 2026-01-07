@@ -127,6 +127,24 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
           <span className="font-bold text-xs">{isSyncing ? '同步中...' : '立即同步'}</span>
         </button>
 
+        {/* Force Restore Button (Temporary Rescue) */}
+        <button
+          onClick={() => {
+            if (confirm('警告：此操作將會強制從雲端下載所有資料，並「覆蓋」目前的本地資料。\n\n請確認您要執行救援嗎？')) {
+              window.dispatchEvent(new CustomEvent('TRIGGER_CLOUD_RESTORE'));
+            }
+          }}
+          disabled={isSyncing}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-900/20 hover:text-rose-400 transition-colors group"
+          title="強制雲端還原 (救援)"
+        >
+          <div className="relative">
+            {/* @ts-ignore */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-cloud-download"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m8 17 4 4 4-4" /></svg>
+          </div>
+          <span className="font-bold text-xs">強制還原</span>
+        </button>
+
         <div className="mt-4 px-4 py-3 bg-stone-800/50 border border-white/5 rounded-2xl flex items-center gap-3">
           <img
             src={user.picture}
