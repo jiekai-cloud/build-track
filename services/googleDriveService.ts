@@ -114,7 +114,8 @@ class GoogleDriveService {
     try {
       const existingFile = await this.findBackupFile();
       if (!existingFile) return null;
-      const url = `https://www.googleapis.com/drive/v3/files/${existingFile.id}?fields=id,name,modifiedTime,size`;
+      // Add timestamp to prevent caching
+      const url = `https://www.googleapis.com/drive/v3/files/${existingFile.id}?fields=id,name,modifiedTime,size&_=${Date.now()}`;
       const response = await this.fetchWithAuth(url);
       if (!response.ok) return null;
       return await response.json();
