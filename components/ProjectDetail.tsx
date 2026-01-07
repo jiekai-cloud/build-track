@@ -424,7 +424,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-stone-900">{new Date(log.date).toLocaleDateString('zh-TW')}</span>
+                            <span className="text-xs font-black text-stone-900">{new Date(log.date).toLocaleString('zh-TW', { hour12: false })}</span>
                             <span className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full font-bold text-stone-500 uppercase">{log.authorName}</span>
                           </div>
                         </div>
