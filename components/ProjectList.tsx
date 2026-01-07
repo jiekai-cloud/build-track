@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, FileSpreadsheet, Pencil, Trash2, CalendarDays, FilterX, Activity, XCircle, ChevronLeft, ChevronRight, Hash, ShieldAlert, LayoutGrid, List, Zap, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Search, Plus, FileSpreadsheet, Pencil, Trash2, CalendarDays, FilterX, Activity, XCircle, ChevronLeft, ChevronRight, Hash, ShieldAlert, LayoutGrid, List, Zap, ChevronUp, ChevronDown, ChevronsUpDown, RotateCcw } from 'lucide-react';
 import { Project, ProjectStatus, User } from '../types';
 import { exportProjectsToCSV } from '../utils/csvExport';
 
@@ -11,13 +11,19 @@ interface ProjectListProps {
   onAddTestClick: () => void;
   onEditClick: (project: Project) => void;
   onDeleteClick: (id: string) => void;
+  onRestoreClick: (id: string) => void;
   onLossClick: (project: Project) => void;
   onDetailClick: (project: Project) => void;
+  showDeleted: boolean;
+  onToggleDeleted: (val: boolean) => void;
 }
 
 const ITEMS_PER_PAGE = 15;
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, onAddTestClick, onEditClick, onDeleteClick, onLossClick, onDetailClick }) => {
+const ProjectList: React.FC<ProjectListProps> = ({
+  projects, user, onAddClick, onAddTestClick, onEditClick, onDeleteClick, onRestoreClick, onLossClick, onDetailClick,
+  showDeleted, onToggleDeleted
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -183,7 +189,19 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
             {Object.values(ProjectStatus).map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <button onClick={() => { setSearchTerm(''); setSelectedStatus('all'); }} className="bg-stone-900 py-2.5 rounded-xl text-[10px] font-black uppercase text-white hover:bg-black transition-all">清除所有篩選</button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onToggleDeleted(!showDeleted)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${showDeleted
+              ? 'bg-rose-50 border-rose-200 text-rose-600'
+              : 'bg-white border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300'
+              }`}
+          >
+            <Trash2 size={14} />
+            {showDeleted ? '關閉垃圾桶' : '案件垃圾桶'}
+          </button>
+          <button onClick={() => { setSearchTerm(''); setSelectedStatus('all'); onToggleDeleted(false); }} className="flex-1 bg-stone-900 py-2.5 rounded-xl text-[10px] font-black uppercase text-white hover:bg-black transition-all">清除所有篩選</button>
+        </div>
       </div>
 
       {viewMode === 'table' ? (
@@ -229,8 +247,11 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
                 <tr key={p.id} onClick={() => onDetailClick(p)} className="hover:bg-orange-50/30 transition-colors cursor-pointer group">
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-stone-400 mb-0.5">{p.id}</span>
-                      <span className="font-bold text-stone-900 group-hover:text-orange-600 transition-colors">{p.name}</span>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-black text-stone-400">{p.id}</span>
+                        {p.deletedAt && <span className="text-[9px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded uppercase tracking-widest">已刪除</span>}
+                      </div>
+                      <span className="font-bold text-stone-900 group-hover:text-orange-600 transition-colors line-clamp-1">{p.name}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -254,8 +275,19 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
                   <td className="px-6 py-4 text-center">
                     {!isReadOnly ? (
                       <div className="flex justify-center gap-1">
-                        <button onClick={(e) => { e.stopPropagation(); onEditClick(p); }} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all"><Pencil size={14} className="text-stone-400 group-hover:text-blue-600" /></button>
-                        <button onClick={(e) => { e.stopPropagation(); onDeleteClick(p.id); }} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all"><Trash2 size={14} className="text-stone-400 group-hover:text-rose-600" /></button>
+                        {p.deletedAt ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onRestoreClick(p.id); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
+                          >
+                            <RotateCcw size={12} /> 復原
+                          </button>
+                        ) : (
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); onEditClick(p); }} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all"><Pencil size={14} className="text-stone-400 group-hover:text-blue-600" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); onDeleteClick(p.id); }} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all"><Trash2 size={14} className="text-stone-400 group-hover:text-rose-600" /></button>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <span className="text-[10px] font-black text-stone-300 uppercase italic">唯讀</span>
@@ -322,20 +354,29 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
                   </div>
                   <div className="flex gap-1">
                     {!isReadOnly ? (
-                      <>
+                      p.deletedAt ? (
                         <button
-                          onClick={(e) => { e.stopPropagation(); onEditClick(p); }}
-                          className="p-2 bg-stone-50 hover:bg-white hover:shadow-sm rounded-xl text-stone-400 hover:text-blue-600 transition-all"
+                          onClick={(e) => { e.stopPropagation(); onRestoreClick(p.id); }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-emerald-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-emerald-700 active:scale-95 transition-all"
                         >
-                          <Pencil size={14} />
+                          <RotateCcw size={12} /> 復原此案件
                         </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onDeleteClick(p.id); }}
-                          className="p-2 bg-stone-50 hover:bg-white hover:shadow-sm rounded-xl text-stone-400 hover:text-rose-600 transition-all"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onEditClick(p); }}
+                            className="p-2 bg-stone-50 hover:bg-white hover:shadow-sm rounded-xl text-stone-400 hover:text-blue-600 transition-all"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteClick(p.id); }}
+                            className="p-2 bg-stone-50 hover:bg-white hover:shadow-sm rounded-xl text-stone-400 hover:text-rose-600 transition-all"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )
                     ) : (
                       <span className="text-[10px] font-black text-stone-300 uppercase italic">唯讀</span>
                     )}

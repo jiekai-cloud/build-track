@@ -889,10 +889,12 @@ const App: React.FC = () => {
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
+  const [showDeleted, setShowDeleted] = useState(false);
+
   const filteredData = useMemo(() => {
     const filterByDept = (item: any) => {
-      // 過濾已被軟刪除的項目
-      if (item.deletedAt) return false;
+      // 過濾已被軟刪除的項目 (除非開啟查看垃圾桶)
+      if (item.deletedAt && !showDeleted) return false;
 
       if (viewingDeptId === 'all') return true;
       // 支援多部門過濾
@@ -1164,8 +1166,16 @@ const App: React.FC = () => {
                     setProjects(prev => prev.map(p => p.id === id ? { ...p, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : p));
                   }
                 }}
+                onRestoreClick={(id) => {
+                  const p = projects.find(x => x.id === id);
+                  if (p) addActivityLog('復原了專案', p.name, id, 'project');
+                  setProjects(prev => prev.map(p => p.id === id ? { ...p, deletedAt: undefined, updatedAt: new Date().toISOString() } : p));
+                  alert('✅ 案件已復原！');
+                }}
                 onDetailClick={(p) => setSelectedProjectId(p.id)}
                 onLossClick={() => { }}
+                showDeleted={showDeleted}
+                onToggleDeleted={setShowDeleted}
               />}
               {activeTab === 'settings' && (
                 <Settings
