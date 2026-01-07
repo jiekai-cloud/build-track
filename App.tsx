@@ -265,6 +265,10 @@ const App: React.FC = () => {
           }
         };
 
+        // 2b. CRITICAL FIX: Restore Projects from LocalStorage (or MOCK fallback)
+        // This was missing, causing data loss on reload.
+        let initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
+
         // 0. Force Restore Critical Projects (Missing from localStorage)
         // This handles cases where localStorage has 'valid' but incomplete data
         const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005'];
