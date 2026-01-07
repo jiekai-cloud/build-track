@@ -122,11 +122,35 @@ const App: React.FC = () => {
         const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
         const remoteTime = remoteItem.updatedAt ? new Date(remoteItem.updatedAt).getTime() : 0;
 
-        // Soft Delete Logic: 如果任一方有 deletedAt 且時間較新，該物件應保持刪除狀態
-        // 但此處簡化邏輯：只要遠端 updated_at 較新，就採信遠端 (包含 deletedAt)
-        // 因為 deletedAt 设置时也会更新 updatedAt
+        // If remote is newer, we want to update the object, but PRESERVE deep arrays if it's a project
         if (remoteTime > localTime) {
-          merged[localIndex] = remoteItem;
+          // Special handling for Projects
+          if ('dailyLogs' in localItem || 'comments' in localItem) {
+            const l = localItem as any;
+            const r = remoteItem as any;
+
+            // Combine arrays without duplicates
+            const combine = (arr1: any[] = [], arr2: any[] = []) => {
+              const map = new Map();
+              [...arr1, ...arr2].forEach(x => { if (x.id) map.set(x.id, x); });
+              return Array.from(map.values()).sort((a, b) =>
+                new Date(b.timestamp || b.date || 0).getTime() - new Date(a.timestamp || a.date || 0).getTime()
+              );
+            };
+
+            merged[localIndex] = {
+              ...remoteItem,
+              dailyLogs: combine(l.dailyLogs, r.dailyLogs),
+              comments: combine(l.comments, r.comments),
+              files: combine(l.files, r.files),
+              expenses: combine(l.expenses, r.expenses),
+              payments: combine(l.payments, r.payments),
+              checklist: combine(l.checklist, r.checklist),
+              workAssignments: combine(l.workAssignments, r.workAssignments)
+            } as any;
+          } else {
+            merged[localIndex] = remoteItem;
+          }
         }
       }
     });
@@ -135,9 +159,14 @@ const App: React.FC = () => {
 
   // Helper: Normalize, Correct, and Deduplicate Projects
   // This ensures that whether data comes from LocalStorage or Cloud, it strictly follows our ID rules
-  const normalizeProjects = useCallback((projects: Project[]): Project[] => {
+  const normalizeProjects = useCallback((projects: Project[] | null | undefined): Project[] => {
+    if (!projects || !Array.isArray(projects)) return [];
+
+    // Filter out null/undefined or malformed project objects first
+    const validProjects = projects.filter(p => p && typeof p === 'object' && (p.id || p.name));
+
     // 0. ID CORRECTION: Enforce correct IDs based on Project Name or known Legacy IDs
-    let processed = projects.map(p => {
+    let processed = validProjects.map(p => {
       // Rule 0: Specific fix for legacy IDs (BNI2026001->002, BNI2026002->001)
       if (p.id === 'BNI2026001') return { ...p, id: 'BNI2601002' };
       if (p.id === 'BNI2026002') return { ...p, id: 'BNI2601001' };
@@ -723,7 +752,7 @@ const App: React.FC = () => {
       authorAvatar: user.picture,
       authorRole: user.role === 'SuperAdmin' ? '管理總監' : '成員',
       text,
-      timestamp: new Date().toLocaleString('zh-TW', { hour12: false })
+      timestamp: new Date().toLocaleString('zh-TW', { hour12: false }) || new Date().toISOString()
     };
     if (project) {
       addActivityLog(`在案件中留言`, project.name, projectId, 'project');

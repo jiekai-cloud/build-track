@@ -81,9 +81,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
     let totalSpent = 0;
 
     filteredProjects.forEach(p => {
+      if (!p) return;
       counts[p.status] = (counts[p.status] || 0) + 1;
-      totalBudget += p.budget;
-      totalSpent += p.spent;
+      totalBudget += (p.budget || 0);
+      totalSpent += (p.spent || 0);
     });
 
     return { counts, totalBudget, totalSpent };
@@ -203,7 +204,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
               <span className="text-[10px] font-black uppercase tracking-widest">Scale Optimized</span>
             </div>
           </div>
-          <p className="text-stone-500 text-xs font-medium">數據規模：{projects.length} 案場 | 最後運算：{lastSync.toLocaleTimeString()}</p>
+          <p className="text-stone-500 text-xs font-medium">數據規模：{projects.length} 案場 | 最後運算：{lastSync ? lastSync.toLocaleTimeString() : 'N/A'}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-stone-200 shadow-sm">

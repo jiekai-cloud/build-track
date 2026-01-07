@@ -424,7 +424,9 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-stone-900">{new Date(log.date).toLocaleString('zh-TW', { hour12: false })}</span>
+                            <span className="text-xs font-black text-stone-900">
+                              {log.date ? new Date(log.date).toLocaleString('zh-TW', { hour12: false }) : '無日期'}
+                            </span>
                             <span className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full font-bold text-stone-500 uppercase">{log.authorName}</span>
                           </div>
                         </div>
@@ -626,7 +628,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                         <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><DollarSign size={20} /></div>
                         <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">BUDGET</span>
                       </div>
-                      <p className="text-2xl font-black text-stone-900 tracking-tight">NT$ {project.budget.toLocaleString()}</p>
+                      <p className="text-2xl font-black text-stone-900 tracking-tight">NT$ {(project.budget || 0).toLocaleString()}</p>
                       <p className="text-[11px] font-bold text-stone-400 mt-1">專案總預算</p>
                     </div>
 
@@ -636,7 +638,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                         <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">LABOR COST</span>
                       </div>
                       <p className="text-2xl font-black text-stone-900 tracking-tight">
-                        NT$ {((project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0)).toLocaleString()}
+                        NT$ {((project.workAssignments || []).reduce((acc, curr) => acc + (curr?.totalCost || 0), 0) || 0).toLocaleString()}
                       </p>
                       <p className="text-[11px] font-bold text-stone-400 mt-1">累積施工成本 (自動計算)</p>
                     </div>
@@ -645,7 +647,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                       { label: '委託工程 (分包)', key: '委託工程', icon: Building2, color: 'text-purple-600', bg: 'bg-purple-50' },
                       { label: '機具材料', key: '機具材料', icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-50' },
                     ].map(cat => {
-                      const amount = (project.expenses || []).filter(e => e.category === cat.key).reduce((acc, curr) => acc + curr.amount, 0);
+                      const amount = (project.expenses || []).filter(e => e.category === cat.key).reduce((acc, curr) => acc + (curr?.amount || 0), 0);
                       const Icon = cat.icon;
                       return (
                         <div key={cat.label} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
@@ -653,7 +655,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                             <div className={`p-3 ${cat.bg} ${cat.color} rounded-2xl`}><Icon size={20} /></div>
                             <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">EXPENSE</span>
                           </div>
-                          <p className="text-2xl font-black text-stone-900 tracking-tight">NT$ {amount.toLocaleString()}</p>
+                          <p className="text-2xl font-black text-stone-900 tracking-tight">NT$ {(amount || 0).toLocaleString()}</p>
                           <p className="text-[11px] font-bold text-stone-400 mt-1">{cat.label}</p>
                         </div>
                       );
@@ -667,7 +669,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                         <span className={`text-[10px] font-black uppercase tracking-widest ${profit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>NET PROFIT</span>
                       </div>
                       <p className={`text-2xl font-black tracking-tight ${profit >= 0 ? 'text-emerald-900' : 'text-rose-900'}`}>
-                        NT$ {Math.abs(profit).toLocaleString()}
+                        NT$ {(Math.abs(profit) || 0).toLocaleString()}
                       </p>
                       <p className={`text-[11px] font-bold mt-1 ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {profit >= 0 ? '目前預估毛利' : '目前預估虧損'}
@@ -720,7 +722,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                             <tr key={p.id} className="hover:bg-stone-50/30 transition-colors">
                               <td className="px-6 py-4 text-xs font-black text-stone-900">{p.label}</td>
                               <td className="px-6 py-4 text-xs font-bold text-stone-500">{p.date}</td>
-                              <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {p.amount.toLocaleString()}</td>
+                              <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {(p.amount || 0).toLocaleString()}</td>
                               <td className="px-6 py-4">
                                 <button
                                   disabled={isReadOnly}
@@ -937,7 +939,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                                 </span>
                               </td>
                               <td className="px-6 py-4 text-xs font-black text-stone-900">{exp.name}</td>
-                              <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {exp.amount.toLocaleString()}</td>
+                              <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {(exp.amount || 0).toLocaleString()}</td>
                               <td className="px-6 py-4 text-[10px] font-bold text-stone-500">{exp.supplier || '-'}</td>
                               {!isReadOnly && (
                                 <td className="px-6 py-4 text-center">
@@ -1709,7 +1711,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
 
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <p className="text-white text-[10px] font-bold truncate">{file.name}</p>
-                        <p className="text-white/60 text-[9px]">{new Date(file.uploadedAt).toLocaleDateString()}</p>
+                        <p className="text-white/60 text-[9px]">{file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : '無日期'}</p>
                       </div>
                       {!isReadOnly && onUpdateFiles && (
                         <button onClick={(e) => { e.stopPropagation(); if (confirm('刪除此檔案？')) onUpdateFiles(project.files!.filter(f => f.id !== file.id)); }} className="absolute top-2 right-2 p-1.5 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-rose-500 transition-colors opacity-0 group-hover:opacity-100">
@@ -1758,7 +1760,9 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
               <div className="mt-8 text-center space-y-2">
                 <h3 className="text-white text-lg font-black tracking-tight">{selectedImage.name}</h3>
                 <div className="flex items-center justify-center gap-4">
-                  <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{new Date(selectedImage.uploadedAt).toLocaleString()}</p>
+                  <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">
+                    {selectedImage.uploadedAt ? new Date(selectedImage.uploadedAt).toLocaleString() : '無日期'}
+                  </p>
                   <span className="w-1 h-1 bg-white/20 rounded-full" />
                   <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">上傳者: {selectedImage.uploadedBy}</p>
                   <span className="w-1 h-1 bg-white/20 rounded-full" />
@@ -1874,7 +1878,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                 <div className="p-6 bg-stone-50 rounded-3xl border border-stone-100">
                   <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">案件狀態</p>
                   <p className="text-2xl font-black text-slate-900">{project.status}</p>
-                  <p className="text-[10px] text-stone-400 font-bold mt-2">最後更新: {new Date(project.updatedAt || '').toLocaleDateString()}</p>
+                  <p className="text-[10px] text-stone-400 font-bold mt-2">最後更新: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : '尚未更新'}</p>
                 </div>
                 <div className="p-6 bg-stone-50 rounded-3xl border border-stone-100">
                   <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">合約日期</p>
@@ -1892,11 +1896,11 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                     <div className="flex justify-between items-end">
                       <div>
                         <p className="text-[10px] font-black text-stone-400 uppercase">預算執行狀況</p>
-                        <p className="text-2xl font-black text-slate-900">${currentSpent.toLocaleString()}</p>
+                        <p className="text-2xl font-black text-slate-900">${(currentSpent || 0).toLocaleString()}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] font-black text-stone-400 uppercase">總預算</p>
-                        <p className="text-lg font-black text-stone-400">${project.budget.toLocaleString()}</p>
+                        <p className="text-lg font-black text-stone-400">${(project.budget || 0).toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="relative h-4 bg-stone-100 rounded-full overflow-hidden border border-stone-200">
@@ -1923,7 +1927,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                           {(margin / (project.budget || 1)) > 0.3 ? 'Safe' : (margin / (project.budget || 1)) > 0.15 ? 'Caution' : 'Critical'}
                         </div>
                       </div>
-                      <p className="text-xl font-black text-emerald-700">${margin.toLocaleString()}</p>
+                      <p className="text-xl font-black text-emerald-700">${(margin || 0).toLocaleString()}</p>
                     </div>
                     <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100">
                       <p className="text-[10px] font-black text-blue-600 uppercase mb-1">利潤率</p>
@@ -1940,15 +1944,15 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-xs font-bold text-stone-600">
                       <span>人工成本 (派工)</span>
-                      <span className="font-black text-stone-900">${totalLaborCost.toLocaleString()}</span>
+                      <span className="font-black text-stone-900">${(totalLaborCost || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-xs font-bold text-stone-600">
                       <span>材料及其他支出</span>
-                      <span className="font-black text-stone-900">${totalExpenseCost.toLocaleString()}</span>
+                      <span className="font-black text-stone-900">${(totalExpenseCost || 0).toLocaleString()}</span>
                     </div>
                     <div className="pt-2 border-t flex justify-between items-center text-sm font-black text-stone-900">
                       <span>總支出</span>
-                      <span>${currentSpent.toLocaleString()}</span>
+                      <span>${(currentSpent || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -2277,7 +2281,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                             <td className="py-2 px-1 text-stone-400">{idx + 1}</td>
                             <td className="py-2 px-1 text-slate-800">{phase.name}</td>
                             <td className="py-2 px-1 text-stone-500">一式</td>
-                            <td className="py-2 px-1 text-right font-black">${(project.budget / (project.phases?.length || 1)).toLocaleString()}</td>
+                            <td className="py-2 px-1 text-right font-black">${((project.budget || 0) / (project.phases?.length || 1)).toLocaleString()}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2287,15 +2291,15 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                   <div className="space-y-1 mt-8 border-t-[1.5px] border-stone-900 pt-6">
                     <div className="flex justify-between items-center text-sm font-black">
                       <span className="text-stone-400">未稅金額</span>
-                      <span>${Math.round(project.budget / 1.05).toLocaleString()}</span>
+                      <span>${Math.round((project.budget || 0) / 1.05).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm font-black">
                       <span className="text-stone-400">營業稅 5%</span>
-                      <span>${Math.round(project.budget - (project.budget / 1.05)).toLocaleString()}</span>
+                      <span>${Math.round((project.budget || 0) - ((project.budget || 0) / 1.05)).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-xl font-black pt-4">
                       <span>總計金額</span>
-                      <span className="text-emerald-600">${project.budget.toLocaleString()}</span>
+                      <span className="text-emerald-600">${(project.budget || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>

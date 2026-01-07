@@ -36,7 +36,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
       const monthStr = `${d.getMonth() + 1}月`;
       const monthKey = d.toISOString().substring(0, 7); // YYYY-MM
 
-      const monthProjects = projects.filter(p => p.createdDate.startsWith(monthKey));
+      const monthProjects = projects.filter(p => p && p.createdDate && p.createdDate.startsWith(monthKey));
       const income = monthProjects.reduce((sum, p) => sum + (p.budget || 0), 0) / 10000;
       const expense = monthProjects.reduce((sum, p) => sum + (p.spent || 0), 0) / 10000;
 

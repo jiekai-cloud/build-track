@@ -420,15 +420,15 @@ export const analyzeProjectFinancials = async (project: Project) => {
 
 專案基本面：
 - 案名：${project.name}
-- 總預算：NT$ ${project.budget.toLocaleString()}
-- 目前總支出：NT$ ${totalSpent.toLocaleString()}
+- 總預算：NT$ ${(project.budget || 0).toLocaleString()}
+- 目前總支出：NT$ ${(totalSpent || 0).toLocaleString()}
 - 進度：${project.progress}% (狀態：${project.status})
 
 成本細項結構：
-- 施工人力成本 (來自派工)：NT$ ${laborCost.toLocaleString()}
-- 機具材料成本：NT$ ${materialCost.toLocaleString()}
-- 委託工程 (分包)：NT$ ${subCost.toLocaleString()}
-- 其他行政與雜支：NT$ ${otherCost.toLocaleString()}
+- 施工人力成本 (來自派工)：NT$ ${(laborCost || 0).toLocaleString()}
+- 機具材料成本：NT$ ${(materialCost || 0).toLocaleString()}
+- 委託工程 (分包)：NT$ ${(subCost || 0).toLocaleString()}
+- 其他行政與雜支：NT$ ${(otherCost || 0).toLocaleString()}
 
 請回答以下三個部分，並使用 Markdown 格式：
 1. **盈虧預測結果**：請直白預測此案最終會「獲利」還是「虧損」，並給出預估的毛利率 (Gross Margin)。

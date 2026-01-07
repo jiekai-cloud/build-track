@@ -13,28 +13,8 @@ export const MOCK_DEPARTMENTS: Department[] = [
 
 export const MOCK_PROJECTS: Project[] = [
   {
-    id: 'BNI2601002', // Swapped: Now 002
-    departmentId: 'DEPT-6', // 業務部
-    name: '桃園龜山民安街11號防水工程',
-    category: '防水工程',
-    source: 'BNI',
-    client: '璇凱伯修',
-    referrer: '網站預約',
-    manager: '陳文凱',
-    startDate: '2026-01-05',
-    endDate: '2026-02-05',
-    createdDate: '2026-01-05',
-    budget: 0,
-    spent: 0,
-    progress: 0,
-    status: ProjectStatus.NEGOTIATING,
-    tasks: [],
-    phases: [],
-    financials: { labor: 40, material: 30, subcontractor: 20, other: 10 }
-  },
-  {
-    id: 'BNI2601001', // Swapped: Now 001 as requested
-    departmentId: 'DEPT-6', // 業務部
+    id: 'BNI2601001',
+    departmentId: 'DEPT-6',
     name: '桃園至善街290號防水工程',
     category: '防水工程',
     source: 'BNI',
@@ -42,7 +22,7 @@ export const MOCK_PROJECTS: Project[] = [
     referrer: '舊客介紹',
     manager: '陳信寬',
     startDate: '2026-01-05',
-    endDate: '2026-02-05',
+    endDate: '2026-03-05',
     createdDate: '2026-01-05',
     budget: 0,
     spent: 0,
@@ -53,38 +33,18 @@ export const MOCK_PROJECTS: Project[] = [
     financials: { labor: 40, material: 30, subcontractor: 20, other: 10 }
   },
   {
-    id: 'CORP2601002',
-    departmentId: 'DEPT-6', // 業務部
-    name: '台中商業辦公室擴建',
-    category: '室內裝修',
-    source: '企業',
-    client: '科技公司',
-    referrer: '舊客介紹',
-    manager: '林靜宜',
-    startDate: '2026-02-15',
-    endDate: '2026-08-20',
-    createdDate: '2026-01-20',
-    budget: 8800000,
-    spent: 2100000,
-    progress: 15,
-    status: ProjectStatus.CONSTRUCTING,
-    tasks: [],
-    phases: [],
-    financials: { labor: 25, material: 55, subcontractor: 15, other: 5 }
-  },
-  {
-    id: 'AB2601003',
-    departmentId: 'DEPT-6', // 業務部
-    name: '高雄住宅防水工程',
+    id: 'BNI2601002',
+    departmentId: 'DEPT-6',
+    name: '桃園龜山民安街11號防水工程',
     category: '防水工程',
-    source: '住宅',
-    client: '李女士',
-    referrer: '直客',
-    manager: '郭俊宏',
-    startDate: '2026-03-01',
-    endDate: '2026-06-15',
-    createdDate: '2026-02-15',
-    budget: 1500000,
+    source: 'BNI',
+    client: '璇凱伯修',
+    referrer: '網站預約',
+    manager: '陳文凱',
+    startDate: '2026-01-05',
+    endDate: '2026-03-10',
+    createdDate: '2026-01-05',
+    budget: 0,
     spent: 0,
     progress: 0,
     status: ProjectStatus.NEGOTIATING,
@@ -94,7 +54,7 @@ export const MOCK_PROJECTS: Project[] = [
   },
   {
     id: 'JW2601003',
-    departmentId: 'DEPT-6', // 業務部
+    departmentId: 'DEPT-6',
     name: '樹林區三龍街24巷16號國為海砂屋補強工程',
     category: '補強工程',
     source: 'JW',
@@ -102,7 +62,7 @@ export const MOCK_PROJECTS: Project[] = [
     referrer: '',
     manager: '余家豪',
     startDate: '2026-01-05',
-    endDate: '',
+    endDate: '2026-04-15',
     createdDate: '2026-01-05',
     budget: 0,
     spent: 0,
@@ -114,9 +74,9 @@ export const MOCK_PROJECTS: Project[] = [
   },
   {
     id: 'BNI2601004',
-    departmentId: 'DEPT-6', // 業務部
+    departmentId: 'DEPT-6',
     name: '光復北路190巷40號章省予大樓管線修復工程',
-    category: '管線工程',
+    category: '水電機電',
     source: 'BNI',
     client: '章省予',
     referrer: '',
@@ -133,14 +93,14 @@ export const MOCK_PROJECTS: Project[] = [
     financials: { labor: 40, material: 30, subcontractor: 20, other: 10 }
   },
   {
-    id: 'BNI2601005',
-    departmentId: 'DEPT-6', // 業務部
-    name: '桃園龜山民安街11號防水工程',
-    category: '防水工程',
-    source: 'BNI',
-    client: '璇凱伯修',
+    id: 'OC2601005',
+    departmentId: 'DEPT-6',
+    name: '光復南路住宅電力系統更新工程',
+    category: '水電機電',
+    source: '網路客',
+    client: '光復南路業主',
     referrer: '',
-    manager: '陳文凱',
+    manager: '郭俊宏',
     startDate: '2026-01-05',
     endDate: '',
     createdDate: '2026-01-05',
@@ -153,24 +113,24 @@ export const MOCK_PROJECTS: Project[] = [
     financials: { labor: 40, material: 30, subcontractor: 20, other: 10 }
   },
   {
-    id: 'BNI2601006',
-    departmentId: 'DEPT-6', // 業務部
-    name: '桃園至善街290號防水工程',
-    category: '防水工程',
-    source: 'BNI',
-    client: '冠亨商設計',
-    referrer: '',
-    manager: '陳信寬',
-    startDate: '2026-01-05',
-    endDate: '',
-    createdDate: '2026-01-05',
-    budget: 0,
-    spent: 0,
-    progress: 0,
-    status: ProjectStatus.NEGOTIATING,
+    id: 'CORP2601002',
+    departmentId: 'DEPT-6',
+    name: '台中商業辦公室擴建',
+    category: '室內裝修',
+    source: '企業',
+    client: '科技公司',
+    referrer: '舊客介紹',
+    manager: '林靜宜',
+    startDate: '2026-02-15',
+    endDate: '2026-08-20',
+    createdDate: '2026-01-20',
+    budget: 8800000,
+    spent: 2100000,
+    progress: 15,
+    status: ProjectStatus.CONSTRUCTING,
     tasks: [],
     phases: [],
-    financials: { labor: 40, material: 30, subcontractor: 20, other: 10 }
+    financials: { labor: 25, material: 55, subcontractor: 15, other: 5 }
   }
 ];
 

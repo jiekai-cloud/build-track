@@ -103,7 +103,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ phases }) => {
                         domain={[-padding, domainMax - padding]}
                         tickFormatter={(value) => {
                             const date = new Date(minTime + value);
-                            return date.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+                            return date.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }) || '';
                         }}
                         tick={{ fontSize: 10, fontWeight: 700, fill: '#9ca3af' }}
                         position="top"

@@ -360,14 +360,14 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Hammer size={24} /></div>
           <div>
             <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">總人天統計</p>
-            <p className="text-xl font-black text-stone-900">{filteredAssignments.reduce((acc, curr) => acc + curr.days, 0)} 人天</p>
+            <p className="text-xl font-black text-stone-900">{(filteredAssignments || []).reduce((acc, curr) => acc + (curr?.days || 0), 0)} 人天</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><CreditCard size={24} /></div>
           <div>
             <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">總人力開銷</p>
-            <p className="text-xl font-black text-stone-900">NT$ {filteredAssignments.reduce((acc, curr) => acc + curr.totalCost, 0).toLocaleString()}</p>
+            <p className="text-xl font-black text-stone-900">NT$ {((filteredAssignments || []).reduce((acc, curr) => acc + (curr?.totalCost || 0), 0) || 0).toLocaleString()}</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4">
@@ -421,9 +421,9 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
                     </div>
                   </td>
                   <td className="px-8 py-5 font-bold text-stone-800">{item.memberName}</td>
-                  <td className="px-8 py-5 text-right font-bold text-stone-600">NT$ {item.wagePerDay.toLocaleString()}</td>
+                  <td className="px-8 py-5 text-right font-bold text-stone-600">NT$ {(item.wagePerDay || 0).toLocaleString()}</td>
                   <td className="px-8 py-5 text-right font-black text-stone-900">{item.days}</td>
-                  <td className="px-8 py-5 text-right font-black text-orange-600">NT$ {item.totalCost.toLocaleString()}</td>
+                  <td className="px-8 py-5 text-right font-black text-orange-600">NT$ {(item.totalCost || 0).toLocaleString()}</td>
                   <td className="px-8 py-5 text-center">
                     <button
                       onClick={() => onDeleteDispatch(item.projectId, item.id)}

@@ -250,7 +250,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
                       <span className="text-[10px] font-black text-stone-900 w-8">{p.progress}%</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right font-black text-xs text-stone-900">NT${p.budget.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-right font-black text-xs text-stone-900">NT${(p.budget || 0).toLocaleString()}</td>
                   <td className="px-6 py-4 text-center">
                     {!isReadOnly ? (
                       <div className="flex justify-center gap-1">
@@ -318,7 +318,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, user, onAddClick, o
                 <div className="flex justify-between items-center">
                   <div className="space-y-0.5">
                     <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest">預算</span>
-                    <p className="font-black text-slate-900 leading-none">NT${p.budget.toLocaleString()}</p>
+                    <p className="font-black text-slate-900 leading-none">NT${(p.budget || 0).toLocaleString()}</p>
                   </div>
                   <div className="flex gap-1">
                     {!isReadOnly ? (

@@ -50,10 +50,16 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ logs, onClose, on
     };
 
     const formatTime = (isoString: string) => {
-        const date = new Date(isoString);
-        return date.toLocaleString('zh-TW', {
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
+        if (!isoString) return '無時間紀錄';
+        try {
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) return '格式錯誤';
+            return date.toLocaleString('zh-TW', {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            }) || '格式錯誤';
+        } catch (e) {
+            return '格式錯誤';
+        }
     };
 
     return (
@@ -112,8 +118,8 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ logs, onClose, on
                                 key={type}
                                 onClick={() => setSelectedType(type)}
                                 className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${selectedType === type
-                                        ? 'bg-stone-900 text-white border-stone-900 shadow-md'
-                                        : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'
+                                    ? 'bg-stone-900 text-white border-stone-900 shadow-md'
+                                    : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'
                                     }`}
                             >
                                 {type === 'all' ? '全部' : type === 'project' ? '專案' : type === 'customer' ? '業主' : type === 'team' ? '團隊' : '系統'}
