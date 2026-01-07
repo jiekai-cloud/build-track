@@ -12,6 +12,7 @@ interface ProjectListProps {
   onEditClick: (project: Project) => void;
   onDeleteClick: (id: string) => void;
   onRestoreClick: (id: string) => void;
+  onHardDeleteClick: (id: string) => void;
   onLossClick: (project: Project) => void;
   onDetailClick: (project: Project) => void;
   showDeleted: boolean;
@@ -21,7 +22,7 @@ interface ProjectListProps {
 const ITEMS_PER_PAGE = 15;
 
 const ProjectList: React.FC<ProjectListProps> = ({
-  projects, user, onAddClick, onAddTestClick, onEditClick, onDeleteClick, onRestoreClick, onLossClick, onDetailClick,
+  projects, user, onAddClick, onAddTestClick, onEditClick, onDeleteClick, onRestoreClick, onHardDeleteClick, onLossClick, onDetailClick,
   showDeleted, onToggleDeleted
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -276,12 +277,21 @@ const ProjectList: React.FC<ProjectListProps> = ({
                     {!isReadOnly ? (
                       <div className="flex justify-center gap-1">
                         {p.deletedAt ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onRestoreClick(p.id); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
-                          >
-                            <RotateCcw size={12} /> 復原
-                          </button>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onRestoreClick(p.id); }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
+                            >
+                              <RotateCcw size={12} /> 復原
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onHardDeleteClick(p.id); }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
+                              title="永久刪除"
+                            >
+                              <XCircle size={12} /> 永久刪除
+                            </button>
+                          </div>
                         ) : (
                           <>
                             <button onClick={(e) => { e.stopPropagation(); onEditClick(p); }} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all"><Pencil size={14} className="text-stone-400 group-hover:text-blue-600" /></button>
@@ -355,12 +365,20 @@ const ProjectList: React.FC<ProjectListProps> = ({
                   <div className="flex gap-1">
                     {!isReadOnly ? (
                       p.deletedAt ? (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onRestoreClick(p.id); }}
-                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-emerald-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-emerald-700 active:scale-95 transition-all"
-                        >
-                          <RotateCcw size={12} /> 復原此案件
-                        </button>
+                        <div className="flex flex-col gap-2 w-full">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onRestoreClick(p.id); }}
+                            className="flex items-center justify-center gap-2 py-2 bg-emerald-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-emerald-700 active:scale-95 transition-all"
+                          >
+                            <RotateCcw size={12} /> 復原此案件
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onHardDeleteClick(p.id); }}
+                            className="flex items-center justify-center gap-2 py-2 bg-rose-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-rose-700 active:scale-95 transition-all"
+                          >
+                            <XCircle size={12} /> 永久刪除
+                          </button>
+                        </div>
                       ) : (
                         <>
                           <button

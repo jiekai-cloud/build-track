@@ -1129,6 +1129,14 @@ const App: React.FC = () => {
                   setProjects(prev => prev.map(p => p.id === id ? { ...p, deletedAt: undefined, updatedAt: new Date().toISOString() } : p));
                   alert('✅ 案件已復原！');
                 }}
+                onHardDeleteClick={(id) => {
+                  if (confirm('警告：此操作將永久刪除案件，無法原，確定嗎？')) {
+                    const p = projects.find(x => x.id === id);
+                    if (p) addActivityLog('永久刪除了專案', p.name, id, 'project');
+                    setProjects(prev => prev.filter(p => p.id !== id));
+                    alert('✅ 案件已永久刪除。');
+                  }
+                }}
                 onDetailClick={(p) => setSelectedProjectId(p.id)}
                 onLossClick={() => { }}
                 showDeleted={showDeleted}
