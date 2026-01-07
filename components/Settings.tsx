@@ -13,7 +13,7 @@ interface SettingsProps {
   customers: Customer[];
   teamMembers: TeamMember[];
   onResetData: () => void;
-  onImportData: (jsonData: string, mode: 'overwrite' | 'merge') => void;
+  onImportData: (data: any, mode?: 'overwrite' | 'merge') => void;
   isCloudConnected: boolean;
   onConnectCloud: () => void;
   onDisconnectCloud: () => void;
@@ -23,7 +23,7 @@ interface SettingsProps {
 }
 
 const Settings: FC<SettingsProps> = ({
-  user, projects, customers, teamMembers, onResetData,
+  user, projects, customers, teamMembers, onResetData, onImportData,
   isCloudConnected, onConnectCloud, onDisconnectCloud, lastSyncTime,
   onDownloadBackup, onRestoreLocalBackup
 }) => {
@@ -279,6 +279,27 @@ const Settings: FC<SettingsProps> = ({
                         >
                           <RotateCcw size={14} />
                           選擇檔案匯入
+                        </button>
+                      </div>
+
+                      {/* Emergency Restore Button */}
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-[10px] text-red-500 font-bold mb-2">緊急救援：</p>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('/backup_JW2601003.json');
+                              if (!response.ok) throw new Error('Backup file not found');
+                              const json = await response.json();
+                              onImportData(json, 'overwrite');
+                              alert('已成功從緊急備份還原資料！');
+                            } catch (e) {
+                              alert('還原失敗：找不到備份檔案');
+                            }
+                          }}
+                          className="w-full bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-xs font-bold transition-colors"
+                        >
+                          還原 JW2601003 專案資料
                         </button>
                       </div>
                     </div>
