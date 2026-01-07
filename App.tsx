@@ -24,6 +24,7 @@ import { Project, ProjectStatus, Customer, TeamMember, User, Department, Project
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 import { moduleService } from './services/moduleService';
 import { ModuleId } from './moduleConfig';
+import { storageService } from './services/storageService';
 
 // Build Trigger: 2026-01-05 Module System Integration
 const App: React.FC = () => {
@@ -297,7 +298,7 @@ const App: React.FC = () => {
       }, 5000);
 
       try {
-        // 1. 恢復本地會話
+        // 恢復本地會話 (User 會話較小，維持使用 localStorage)
         const savedUser = localStorage.getItem('bt_user');
         if (savedUser) {
           try {
@@ -310,22 +311,8 @@ const App: React.FC = () => {
           }
         }
 
-        // 2. 載入本地緩存數據 (優先進入系統)
-        const parseSafely = (key: string, fallback: any) => {
-          try {
-            const data = localStorage.getItem(key);
-            if (!data) return fallback;
-            const parsed = JSON.parse(data);
-            return Array.isArray(parsed) ? parsed : fallback;
-          } catch (e) {
-            console.error(`Error parsing ${key}`, e);
-            return fallback;
-          }
-        };
-
-        // 2b. CRITICAL FIX: Restore Projects from LocalStorage (or MOCK fallback)
-        // This was missing, causing data loss on reload.
-        let initialProjects = parseSafely('bt_projects', MOCK_PROJECTS);
+        // 2. 載入本地緩存數據 (IndexedDB 優先)
+        let initialProjects = await storageService.getItem<Project[]>('bt_projects', MOCK_PROJECTS);
 
         // 0. Force Restore Critical Projects (Safe Merge enabled)
         const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005', 'JW2601003'];
@@ -393,34 +380,28 @@ const App: React.FC = () => {
           payments: p.payments || []
         })));
 
-        const customersData = parseSafely('bt_customers', []);
-        setCustomers(customersData);
+        const [customersData, initialTeam, vendorsData, leadsData, logsData] = await Promise.all([
+          storageService.getItem<Customer[]>('bt_customers', []),
+          storageService.getItem<TeamMember[]>('bt_team', MOCK_TEAM_MEMBERS),
+          storageService.getItem<Vendor[]>('bt_vendors', []),
+          storageService.getItem<Lead[]>('bt_leads', []),
+          storageService.getItem<any[]>('bt_logs', [])
+        ]);
 
-        const initialTeam = parseSafely('bt_team', MOCK_TEAM_MEMBERS);
+        setCustomers(customersData);
         setTeamMembers(initialTeam.map((m: any) => ({
           ...m,
           specialty: m.specialty || [],
           certifications: m.certifications || [],
           departmentIds: m.departmentIds || [m.departmentId]
         })));
-
-        const vendorsData = parseSafely('bt_vendors', []);
         setVendors(vendorsData);
-
-        const leadsData = parseSafely('bt_leads', []);
         setLeads(leadsData);
-
-        const logsData = parseSafely('bt_logs', []);
         setActivityLogs(logsData);
 
-        // Try to save back to localStorage (migration/deduplication results)
-        // Wrapped in try-catch so it doesn't block the UI if it fails
-        try {
-          localStorage.setItem('bt_projects', JSON.stringify(deduplicatedProjects));
-          console.log(`Saved ${deduplicatedProjects.length} deduplicated projects to localStorage`);
-        } catch (e) {
-          console.warn('Failed to save deduplicated projects to localStorage (Quota or Error)', e);
-        }
+        // 儲存至 IndexedDB
+        await storageService.setItem('bt_projects', deduplicatedProjects);
+        console.log(`Initialized storage with ${deduplicatedProjects.length} projects`);
 
         // 3. 優先解鎖介面 (不等待雲端)
         setInitialSyncDone(true);
@@ -572,79 +553,25 @@ const App: React.FC = () => {
   };
 
   // 安全儲存到 localStorage，處理 QuotaExceededError
-  const safeLocalStorageSave = useCallback((key: string, data: any) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-      return true;
-    } catch (e: any) {
-      if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
-        console.warn(`[Storage] QuotaExceededError for ${key}, attempting cleanup...`);
-        // 嘗試清理策略
-        try {
-          // 1. 優先清除 Activity Logs (非必要資料)
-          // 只保留最近 5 筆，或者直接清空，視情況而定
-          const logsKey = 'bt_logs';
-          const currentLogs = localStorage.getItem(logsKey);
-          if (currentLogs) {
-            // 嘗試只保留極少量日誌
-            const parsedLogs = JSON.parse(currentLogs);
-            if (Array.isArray(parsedLogs) && parsedLogs.length > 0) {
-              localStorage.setItem(logsKey, JSON.stringify(parsedLogs.slice(0, 5)));
-              console.log('[Storage] Aggressively trimmed activity logs to 5 entries');
-            } else {
-              localStorage.removeItem(logsKey);
-            }
-          }
-
-          // 2. 再次嘗試儲存
-          localStorage.setItem(key, JSON.stringify(data));
-          return true;
-        } catch (retryError) {
-          console.error('[Storage] Retry failed. storage is full.');
-          alert('⚠️ 嚴重警告：系統儲存空間已滿！\n\n您的最新變更無法儲存到本機，請暫停作業並聯繫管理員。\n(建議嘗試清除瀏覽器快取)');
-          // CRITICAL CHANGE: 絕對不執行 localStorage.clear()，避免遺失專案資料。
-          // 僅在 console 報錯，並依賴雲端同步作為備份。
-          return false;
-        }
-      }
-      console.error(`[Storage] Unexpected error saving ${key}:`, e);
-      return false;
-    }
-  }, []);
+  // 儲存邏輯已移至 storageService
 
   useEffect(() => {
     if (!initialSyncDone || !user) return;
 
-    // 定期本地保存 (訪客不保存)
+    // 定期保存至 IndexedDB (容量極大，維持完整資料)
     if (user.role !== 'Guest') {
-      // Deep clean function to strip base64 images from objects
-      const stripImages = (obj: any): any => {
-        if (!obj) return obj;
-        if (Array.isArray(obj)) return obj.map(stripImages);
-        if (typeof obj === 'object') {
-          const newObj: any = {};
-          for (const k in obj) {
-            // Strip large base64 strings (likely images)
-            if (typeof obj[k] === 'string' && obj[k].startsWith('data:image') && obj[k].length > 1000) {
-              newObj[k] = ''; // Remove the image data
-            } else {
-              newObj[k] = stripImages(obj[k]);
-            }
-          }
-          return newObj;
-        }
-        return obj;
+      const saveToIndexedDB = async () => {
+        await Promise.all([
+          storageService.setItem('bt_projects', projects),
+          storageService.setItem('bt_customers', customers),
+          storageService.setItem('bt_team', teamMembers),
+          storageService.setItem('bt_vendors', vendors),
+          storageService.setItem('bt_leads', leads),
+          storageService.setItem('bt_logs', activityLogs.slice(0, 50))
+        ]);
+        setLastLocalSave(new Date().toLocaleTimeString());
       };
-
-      // 使用安全儲存函式，處理 QuotaExceededError
-      // 關鍵優化：在存入 LocalStorage 前，先移除所有 Base64 圖片以節省空間
-      safeLocalStorageSave('bt_projects', stripImages(projects));
-      safeLocalStorageSave('bt_customers', stripImages(customers));
-      safeLocalStorageSave('bt_team', teamMembers); // Team likely small
-      safeLocalStorageSave('bt_logs', activityLogs.slice(0, 20)); // 再次限制 logs 最多 20 筆
-      safeLocalStorageSave('bt_vendors', vendors);
-      safeLocalStorageSave('bt_leads', stripImages(leads));
-      setLastLocalSave(new Date().toLocaleTimeString());
+      saveToIndexedDB();
     }
 
     // 智慧雲端自動同步 (當資料變更後 10 秒才觸發)
@@ -654,7 +581,7 @@ const App: React.FC = () => {
         handleCloudSync();
       }, 3000);
     }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, safeLocalStorageSave]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads]);
 
   // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
   useEffect(() => {
@@ -717,12 +644,14 @@ const App: React.FC = () => {
           setCustomers(cloudData.customers || []);
           setTeamMembers(cloudData.teamMembers || []);
           setVendors(cloudData.vendors || []);
-          // Force save to localStorage immediately to prevent reversion
-          setTimeout(() => {
-            localStorage.setItem('bt_projects', JSON.stringify(cloudData.projects || []));
-            localStorage.setItem('bt_customers', JSON.stringify(cloudData.customers || []));
-            localStorage.setItem('bt_team', JSON.stringify(cloudData.teamMembers || []));
-            localStorage.setItem('bt_vendors', JSON.stringify(cloudData.vendors || []));
+          // Force save to IndexedDB immediately to prevent reversion
+          setTimeout(async () => {
+            await Promise.all([
+              storageService.setItem('bt_projects', cloudData.projects || []),
+              storageService.setItem('bt_customers', cloudData.customers || []),
+              storageService.setItem('bt_team', cloudData.teamMembers || []),
+              storageService.setItem('bt_vendors', cloudData.vendors || [])
+            ]);
             alert('✅ 雲端還原成功！\n\n所有本地資料已強制覆蓋為雲端版本。頁面將重新整理。');
             window.location.reload();
           }, 500);
@@ -1340,8 +1269,8 @@ const App: React.FC = () => {
                 <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">系統狀態</span><span className="text-[10px] font-bold text-stone-900">核心正常</span></div>
               </div>
               <div className="flex items-center gap-3">
-                <Database size={16} className="text-blue-500" />
-                <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">數據緩存</span><span className="text-[10px] font-bold text-stone-900">{lastLocalSave}</span></div>
+                <Database size={16} className="text-emerald-500" />
+                <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">無限量緩存</span><span className="text-[10px] font-bold text-stone-900">{lastLocalSave}</span></div>
               </div>
             </div>
           </div>
