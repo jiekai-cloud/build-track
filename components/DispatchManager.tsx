@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ClipboardSignature, Plus, User, Briefcase, Calendar,
   Trash2, Search, FilterX, CreditCard, Users, Hammer, TrendingUp,
