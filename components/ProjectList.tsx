@@ -50,6 +50,15 @@ const ProjectList: React.FC<ProjectListProps> = ({
     return sortOrder === 'asc' ? <ChevronUp size={12} className="text-orange-600" /> : <ChevronDown size={12} className="text-orange-600" />;
   };
 
+  // Helper to determine project year consistently
+  const getProjectYear = (p: Project) => {
+    if (p.startDate) return p.startDate.split('-')[0];
+    if (p.createdDate) return p.createdDate.split('-')[0];
+    const idMatch = p.id.match(/^[A-Z]+(\d{2})/);
+    if (idMatch) return '20' + idMatch[1];
+    return '2026';
+  };
+
   // 1. 強化搜尋與篩選邏輯（含排序）
   const filteredProjects = useMemo(() => {
     setCurrentPage(1); // 搜尋時重置分頁
@@ -60,15 +69,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
         p.id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchStatus = selectedStatus === 'all' || p.status === selectedStatus;
 
-      // Year extraction logic (from createdDate or ID)
-      let projectYear = '2026';
-      if (p.createdDate) {
-        projectYear = p.createdDate.split('-')[0];
-      } else {
-        const idMatch = p.id.match(/^[A-Z]+(\d{2})/);
-        if (idMatch) projectYear = '20' + idMatch[1];
-      }
-
+      const projectYear = getProjectYear(p);
       const matchYear = projectYear === selectedYear;
 
       return matchSearch && matchStatus && matchYear;
@@ -195,11 +196,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
       {/* 年度大類別切換 */}
       <div className="flex flex-wrap gap-2 mb-2">
         {['2024', '2025', '2026'].map(year => {
-          const yearCount = projects.filter(p => {
-            if (p.createdDate) return p.createdDate.split('-')[0] === year;
-            const idMatch = p.id.match(/^[A-Z]+(\d{2})/);
-            return idMatch ? ('20' + idMatch[1]) === year : year === '2026';
-          }).length;
+          const yearCount = projects.filter(p => getProjectYear(p) === year).length;
 
           return (
             <button

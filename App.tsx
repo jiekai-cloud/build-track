@@ -1398,9 +1398,9 @@ const App: React.FC = () => {
         } else {
           // 案件編號產生規則: [來源代碼][年份縮寫(YY)][月(MM)][流水號(001)]
           const prefix = sourcePrefixes[data.source || 'BNI'] || 'PJ';
-          const now = new Date();
-          const yearShort = now.getFullYear().toString().slice(-2);
-          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          const projectDate = data.startDate ? new Date(data.startDate) : new Date();
+          const yearShort = projectDate.getFullYear().toString().slice(-2);
+          const month = (projectDate.getMonth() + 1).toString().padStart(2, '0');
 
           // 流水號計數改為「依字首+年份」獨立計數，且排除已永久刪除(isPurged)的案件以避免跳號
           let sequence = 1;
