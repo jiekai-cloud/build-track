@@ -1419,9 +1419,10 @@ const App: React.FC = () => {
             }
           }
 
-          const newId = `${prefix}${yearShort}${month}${sequence.toString().padStart(3, '0')}`;
-          addActivityLog('建立新專案', data.name, newId, 'project');
-          setProjects(prev => [{ ...data, id: newId, status: ProjectStatus.NEGOTIATING, statusChangedAt: new Date().toISOString(), progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [], updatedAt: new Date().toISOString() } as any, ...prev]);
+          const generatedId = `${prefix}${yearShort}${month}${sequence.toString().padStart(3, '0')}`;
+          const finalId = data.id || generatedId;
+          addActivityLog('建立新專案', data.name, finalId, 'project');
+          setProjects(prev => [{ ...data, id: finalId, status: ProjectStatus.NEGOTIATING, statusChangedAt: new Date().toISOString(), progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [], updatedAt: new Date().toISOString() } as any, ...prev]);
         }
         setIsModalOpen(false);
       }} initialData={editingProject} teamMembers={teamMembers} />}
