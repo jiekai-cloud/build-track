@@ -670,6 +670,32 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                         NT$ {((project.workAssignments || []).reduce((acc, curr) => acc + (curr?.totalCost || 0), 0) || 0).toLocaleString()}
                       </p>
                       <p className="text-[11px] font-bold text-stone-400 mt-1">累積施工成本 (自動計算)</p>
+
+                      {/* 派工明細表 */}
+                      {(project.workAssignments || []).length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-stone-100">
+                          <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest mb-3">派工明細 ({(project.workAssignments || []).length} 筆)</p>
+                          <div className="space-y-2 max-h-64 overflow-y-auto no-scrollbar">
+                            {(project.workAssignments || []).map((assignment, idx) => (
+                              <div key={assignment.id || idx} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs font-black text-stone-900 truncate">{assignment.memberName}</p>
+                                    {assignment.isSpiderMan && (
+                                      <span className="text-[7px] font-black text-blue-600 bg-blue-50 px-1 py-0.5 rounded border border-blue-100 flex-shrink-0">🕷️</span>
+                                    )}
+                                  </div>
+                                  <p className="text-[9px] text-stone-400 font-medium">{assignment.date}</p>
+                                </div>
+                                <div className="text-right flex-shrink-0 ml-2">
+                                  <p className="text-xs font-black text-stone-900">NT$ {(assignment.totalCost || 0).toLocaleString()}</p>
+                                  <p className="text-[8px] text-stone-400 font-medium">{assignment.wagePerDay}元 × {assignment.days}天</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {[
