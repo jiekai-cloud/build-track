@@ -34,6 +34,8 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
   const [rawLog, setRawLog] = useState('');
   const [pendingAssignments, setPendingAssignments] = useState<PendingAssignment[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [lastUploadedFileName, setLastUploadedFileName] = useState<string | null>(null);
+  const [selectedPendingIds, setSelectedPendingIds] = useState<Set<string>>(new Set());
 
   const [filterProject, setFilterProject] = useState('all');
   const [formData, setFormData] = useState({
@@ -130,6 +132,14 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // 重複上傳檢查
+    if (file.name === lastUploadedFileName) {
+      if (!window.confirm(`檔案 "${file.name}" 之前已經上傳過，您確定要再次匯入重複的內容嗎？`)) {
+        event.target.value = ''; // 清空 input 以便下次能選同個檔案
+        return;
+      }
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -224,14 +234,44 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
           });
         }).flat();
 
-        setPendingAssignments(mapped);
+        setPendingAssignments(prev => [...prev, ...mapped]);
         setUploadedFileName(file.name);
+        setLastUploadedFileName(file.name);
+        // 不清除已選取的項目，讓用戶可以繼續操作之前的，或者選擇清除
+        // 但如果希望重置選擇，可以: setSelectedPendingIds(new Set());
       } catch (error: any) {
         alert(`Excel 解析失敗: ${error.message || '請確認檔案格式正確'}`);
         setUploadedFileName('');
       }
     };
     reader.readAsBinaryString(file);
+  };
+
+  // 批次刪除功能
+  const handleBatchDelete = () => {
+    if (selectedPendingIds.size === 0) return;
+    if (window.confirm(`確定要刪除選取的 ${selectedPendingIds.size} 筆資料嗎？`)) {
+      setPendingAssignments(prev => prev.filter(p => !selectedPendingIds.has(p.id)));
+      setSelectedPendingIds(new Set());
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedPendingIds.size === pendingAssignments.length) {
+      setSelectedPendingIds(new Set());
+    } else {
+      setSelectedPendingIds(new Set(pendingAssignments.map(p => p.id)));
+    }
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSet = new Set(selectedPendingIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedPendingIds(newSet);
   };
 
   const handleBulkImport = () => {
@@ -263,9 +303,11 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
       setRawLog('');
       setUploadedFileName('');
       setActiveMode('manual');
+      setSelectedPendingIds(new Set());
     } else {
       // 留下那些還沒匹配成功的
       setPendingAssignments(prev => prev.filter(p => p.matchedProjectId === ''));
+      setSelectedPendingIds(new Set());
     }
   };
 
@@ -359,28 +401,60 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
 
           {/* 右側：解析預覽與匹配修正 */}
           <div className="bg-white p-8 rounded-[2.5rem] border border-stone-200 shadow-sm flex flex-col h-full">
-            <div className="flex justify-between items-center mb-6 shrink-0">
+            <div className="flex justify-between items-center mb-6 shrink-0 flex-wrap gap-2">
               <h3 className="text-sm font-black text-stone-900 flex items-center gap-2 uppercase tracking-widest">
                 <Check size={20} className="text-emerald-600" /> 第二步：確認並匯入
               </h3>
-              {pendingAssignments.length > 0 && (
-                <button
-                  onClick={handleBulkImport}
-                  className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 flex items-center gap-2"
-                >
-                  匯入紀錄 ({pendingAssignments.filter(i => i.matchedProjectId !== '').length})
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {pendingAssignments.length > 0 && (
+                  <>
+                    <button
+                      onClick={handleBatchDelete}
+                      disabled={selectedPendingIds.size === 0}
+                      className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${selectedPendingIds.size > 0
+                        ? 'bg-rose-100 text-rose-600 hover:bg-rose-200'
+                        : 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                        }`}
+                    >
+                      <Trash2 size={12} />
+                      刪除選取 ({selectedPendingIds.size})
+                    </button>
+
+                    <button
+                      onClick={toggleSelectAll}
+                      className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-stone-100 text-stone-500 hover:bg-stone-200"
+                    >
+                      {selectedPendingIds.size === pendingAssignments.length ? '取消全選' : '全選'}
+                    </button>
+
+                    <button
+                      onClick={handleBulkImport}
+                      className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 flex items-center gap-2"
+                    >
+                      匯入紀錄 ({pendingAssignments.filter(i => i.matchedProjectId !== '').length})
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar pr-2 min-h-[450px]">
               {pendingAssignments.length > 0 ? pendingAssignments.map((item) => (
                 <div
                   key={item.id}
-                  className={`p-5 rounded-2xl border transition-all space-y-3 relative group ${item.matchedProjectId ? 'bg-stone-50 border-stone-100' : 'bg-rose-50 border-rose-100 ring-2 ring-rose-500/20'
+                  className={`p-5 pl-12 rounded-2xl border transition-all space-y-3 relative group ${item.matchedProjectId ? 'bg-stone-50 border-stone-100' : 'bg-rose-50 border-rose-100 ring-2 ring-rose-500/20'
                     }`}
                 >
-                  <button onClick={() => setPendingAssignments(prev => prev.filter(p => p.id !== item.id))} className="absolute top-4 right-4 text-stone-300 hover:text-rose-500">
+                  <div className="absolute top-0 left-0 bottom-0 w-10 flex items-center justify-center border-r border-stone-100/50">
+                    <input
+                      type="checkbox"
+                      checked={selectedPendingIds.has(item.id)}
+                      onChange={() => toggleSelection(item.id)}
+                      className="w-4 h-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <button onClick={() => setPendingAssignments(prev => prev.filter(p => p.id !== item.id))} className="absolute top-4 right-4 text-stone-300 hover:text-rose-500 z-10">
                     <Trash2 size={14} />
                   </button>
 
@@ -535,28 +609,60 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
 
           {/* 右側：解析預覽與匹配修正（與AI模式共用） */}
           <div className="bg-white p-8 rounded-[2.5rem] border border-stone-200 shadow-sm flex flex-col h-full">
-            <div className="flex justify-between items-center mb-6 shrink-0">
+            <div className="flex justify-between items-center mb-6 shrink-0 flex-wrap gap-2">
               <h3 className="text-sm font-black text-stone-900 flex items-center gap-2 uppercase tracking-widest">
                 <Check size={20} className="text-emerald-600" /> 第二步：確認並匯入
               </h3>
-              {pendingAssignments.length > 0 && (
-                <button
-                  onClick={handleBulkImport}
-                  className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 flex items-center gap-2"
-                >
-                  匯入紀錄 ({pendingAssignments.filter(i => i.matchedProjectId !== '').length})
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {pendingAssignments.length > 0 && (
+                  <>
+                    <button
+                      onClick={handleBatchDelete}
+                      disabled={selectedPendingIds.size === 0}
+                      className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${selectedPendingIds.size > 0
+                        ? 'bg-rose-100 text-rose-600 hover:bg-rose-200'
+                        : 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                        }`}
+                    >
+                      <Trash2 size={12} />
+                      刪除選取 ({selectedPendingIds.size})
+                    </button>
+
+                    <button
+                      onClick={toggleSelectAll}
+                      className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-stone-100 text-stone-500 hover:bg-stone-200"
+                    >
+                      {selectedPendingIds.size === pendingAssignments.length ? '取消全選' : '全選'}
+                    </button>
+
+                    <button
+                      onClick={handleBulkImport}
+                      className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 flex items-center gap-2"
+                    >
+                      匯入紀錄 ({pendingAssignments.filter(i => i.matchedProjectId !== '').length})
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar pr-2 min-h-[450px]">
               {pendingAssignments.length > 0 ? pendingAssignments.map((item) => (
                 <div
                   key={item.id}
-                  className={`p-5 rounded-2xl border transition-all space-y-3 relative group ${item.matchedProjectId ? 'bg-stone-50 border-stone-100' : 'bg-rose-50 border-rose-100 ring-2 ring-rose-500/20'
+                  className={`p-5 pl-12 rounded-2xl border transition-all space-y-3 relative group ${item.matchedProjectId ? 'bg-stone-50 border-stone-100' : 'bg-rose-50 border-rose-100 ring-2 ring-rose-500/20'
                     }`}
                 >
-                  <button onClick={() => setPendingAssignments(prev => prev.filter(p => p.id !== item.id))} className="absolute top-4 right-4 text-stone-300 hover:text-rose-500">
+                  <div className="absolute top-0 left-0 bottom-0 w-10 flex items-center justify-center border-r border-stone-100/50">
+                    <input
+                      type="checkbox"
+                      checked={selectedPendingIds.has(item.id)}
+                      onChange={() => toggleSelection(item.id)}
+                      className="w-4 h-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <button onClick={() => setPendingAssignments(prev => prev.filter(p => p.id !== item.id))} className="absolute top-4 right-4 text-stone-300 hover:text-rose-500 z-10">
                     <Trash2 size={14} />
                   </button>
 
