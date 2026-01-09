@@ -538,7 +538,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
 
               {/* 2. 詳細列表 (原有顯示邏輯) */}
               {pendingAssignments.length > 0 ? (
-                Object.entries(groupedAssignments).map(([groupName, items]) => (
+                Object.entries(groupedPendingAssignments).map(([groupName, items]) => (
                   <div key={groupName} className="mb-6">
                     <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm py-2 mb-2 border-b border-stone-100 flex items-center justify-between">
                       <h4 className={`text-xs font-black uppercase tracking-widest pl-3 border-l-4 ${groupName.startsWith('未匹配') ? 'border-rose-500 text-rose-600' : 'border-emerald-500 text-emerald-700'}`}>
