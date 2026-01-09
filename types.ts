@@ -46,6 +46,7 @@ export interface WorkAssignment {
   wagePerDay: number;
   days: number;
   totalCost: number;
+  isSpiderMan?: boolean; // 新增：是否為蜘蛛人作業（繩索吊掛作業）
 }
 
 export interface Department {
@@ -259,6 +260,7 @@ export interface TeamMember {
   name: string;
   nicknames?: string[]; // 新增：多個外號 (用於 AI 辨識)
   dailyRate?: number; // 新增：日薪 (用於成本計算)
+  spiderManAllowance?: number; // 新增：蜘蛛人津貼 (繩索吊掛作業額外津貼)
   role: '總經理' | '副總經理' | '總經理特助' | '經理' | '副經理' | '專案經理' | '工地主任' | '工地助理' | '工務主管' | '現場工程師' | '行政助理' | '助理' | '設計師' | '工頭' | '外部協力' | '財務部經理';
   systemRole: 'SuperAdmin' | 'DeptAdmin' | 'Staff' | 'Guest' | 'SyncOnly'; // 新增系統權限 (SyncOnly 僅供初始化同步)
   phone: string;

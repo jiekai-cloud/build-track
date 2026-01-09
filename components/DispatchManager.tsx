@@ -25,6 +25,7 @@ interface PendingAssignment {
   wagePerDay: string;
   days: string;
   description: string;
+  isSpiderMan?: boolean; // 是否為蜘蛛人作業
 }
 
 const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers, onAddDispatch, onDeleteDispatch }) => {
@@ -181,11 +182,33 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
           });
 
 
+
           // 為每個工人創建一筆派工記錄
           return workers.map((workerName: string, workerIdx: number) => {
             const matchedMember = teamMembers.find(m =>
               m.name === workerName.trim() || (m.nicknames || []).includes(workerName.trim())
             );
+
+            // 檢查是否為蜘蛛人作業（繩索吊掛作業）
+            const spiderManFields = [
+              row['繩索吊掛作業未滿半小時之人員'],
+              row['繩索吊掛作業達半小時，但未達3小時之人員'],
+              row['工業繩索技術員吊掛施工，已超過3小時之人員'],
+              row['工業繩索技術員吊掛施工，進度超前，沒受到時間束縛之人員'],
+              row['工業繩索技術員備援人員']
+            ];
+
+            // 判斷此工人是否在任何蜘蛛人欄位中
+            const isSpiderManWork = spiderManFields.some(field => {
+              if (!field) return false;
+              const names = field.toString().split(/[,、，\s]+/).filter((n: string) => n.trim());
+              return names.some((n: string) => n.trim() === workerName.trim());
+            });
+
+            // 計算薪資：基本日薪 + 蜘蛛人津貼（如果適用）
+            const baseDailyRate = matchedMember?.dailyRate || 2500;
+            const spiderManAllowance = isSpiderManWork ? (matchedMember?.spiderManAllowance || 0) : 0;
+            const totalDailyRate = baseDailyRate + spiderManAllowance;
 
             return {
               id: `excel-${idx}-${workerIdx}-${Date.now()}`,
@@ -193,9 +216,10 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
               matchedProjectId: matched?.id || '',
               date: parsedDate,
               memberName: workerName.trim(),
-              wagePerDay: matchedMember?.dailyRate?.toString() || '2500',
+              wagePerDay: totalDailyRate.toString(),
               days: '1',
-              description: row['施工進度說明'] || row['施工項目'] || ''
+              description: row['施工進度說明'] || row['施工項目'] || '',
+              isSpiderMan: isSpiderManWork
             };
           });
         }).flat();
@@ -227,7 +251,8 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
         memberName: item.memberName,
         wagePerDay: Number(item.wagePerDay),
         days: Number(item.days),
-        totalCost: Number(item.wagePerDay) * Number(item.days)
+        totalCost: Number(item.wagePerDay) * Number(item.days),
+        isSpiderMan: item.isSpiderMan
       });
       successCount++;
     });
@@ -386,7 +411,12 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-white border border-stone-200 rounded-lg flex items-center justify-center font-black text-xs text-stone-700">{item.memberName.charAt(0)}</div>
                         <div>
-                          <p className="text-xs font-black text-stone-900">{item.memberName}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-black text-stone-900">{item.memberName}</p>
+                            {item.isSpiderMan && (
+                              <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">🕷️ 蜘蛛人</span>
+                            )}
+                          </div>
                           <p className="text-[9px] text-stone-400 font-bold">{item.date}</p>
                         </div>
                       </div>
@@ -557,7 +587,12 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-white border border-stone-200 rounded-lg flex items-center justify-center font-black text-xs text-stone-700">{item.memberName.charAt(0)}</div>
                         <div>
-                          <p className="text-xs font-black text-stone-900">{item.memberName}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-black text-stone-900">{item.memberName}</p>
+                            {item.isSpiderMan && (
+                              <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">🕷️ 蜘蛛人</span>
+                            )}
+                          </div>
                           <p className="text-[9px] text-stone-400 font-bold">{item.date}</p>
                         </div>
                       </div>
