@@ -84,6 +84,34 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
   };
 
 
+  // 智能提取專案 ID 的輔助函數
+  const extractProjectId = (text: string): string | null => {
+    if (!text) return null;
+
+    // 常見的專案 ID 格式：
+    // 1. BNI2024773 (字母+年份+編號)
+    // 2. BNI2024773_專案名稱
+    // 3. [BNI2024773] 專案名稱
+    // 4. 專案名稱 (BNI2024773)
+
+    // 嘗試多種模式
+    const patterns = [
+      /([A-Z]+\d{4,})/i,           // 字母+數字組合 (BNI2024773)
+      /([A-Z]+\d{2}\d{2}\d{3})/i,  // 特定格式 (BNI2601001)
+      /\[([A-Z0-9]+)\]/i,           // 方括號內 ([BNI2024773])
+      /\(([A-Z0-9]+)\)/i,           // 圓括號內 ((BNI2024773))
+    ];
+
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].toUpperCase();
+      }
+    }
+
+    return null;
+  };
+
   // Excel 導入處理
   const handleExcelImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -115,12 +143,31 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
             }
           }
 
-          // 嘗試匹配專案
-          const matched = projects.find(p =>
-            p.name.includes(projectName) ||
-            projectName.includes(p.name) ||
-            p.id.toLowerCase().includes(projectName.toLowerCase())
-          );
+          // 智能提取專案 ID
+          const extractedId = extractProjectId(projectName);
+
+          // 改進的模糊匹配邏輯
+          const matched = projects.find(p => {
+            // 1. 如果成功提取到 ID，優先用 ID 精確匹配
+            if (extractedId) {
+              if (p.id.toUpperCase() === extractedId) return true;
+              // 也檢查部分匹配（例如 BNI2024773 匹配 BNI2601773）
+              if (p.id.toUpperCase().includes(extractedId)) return true;
+              if (extractedId.includes(p.id.toUpperCase())) return true;
+            }
+
+            // 2. 名稱模糊匹配
+            if (p.name && projectName) {
+              if (p.name.includes(projectName)) return true;
+              if (projectName.includes(p.name)) return true;
+            }
+
+            // 3. ID 包含在原始字串中
+            if (projectName.toUpperCase().includes(p.id.toUpperCase())) return true;
+
+            return false;
+          });
+
 
           // 為每個工人創建一筆派工記錄
           return workers.map((workerName: string, workerIdx: number) => {
@@ -130,7 +177,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
 
             return {
               id: `excel-${idx}-${workerIdx}-${Date.now()}`,
-              projectId: projectName,
+              projectId: extractedId || projectName, // 優先顯示提取到的 ID
               matchedProjectId: matched?.id || '',
               date: parsedDate,
               memberName: workerName.trim(),
