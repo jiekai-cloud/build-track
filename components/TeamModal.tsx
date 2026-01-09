@@ -373,6 +373,23 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-400">TWD / 日</span>
                   </div>
                 </div>
+                <div className="pt-4 border-t border-amber-100">
+                  <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">🕷️ 蜘蛛人津貼 Spider-Man Allowance</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder="繩索吊掛作業津貼 (例如: 500)"
+                      disabled={!canEditPayroll}
+                      className="w-full bg-white border border-amber-100 rounded-xl pl-4 pr-12 py-3 text-sm font-bold"
+                      value={formData.spiderManAllowance || ''}
+                      onChange={e => setFormData({ ...formData, spiderManAllowance: Number(e.target.value) })}
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-400">TWD / 日</span>
+                  </div>
+                  <p className="text-[9px] text-amber-600 mt-2 font-medium">
+                    當工人執行繩索吊掛作業時，系統會自動加計此津貼到基本日薪上
+                  </p>
+                </div>
                 <div className="bg-amber-100/30 p-4 rounded-2xl border border-dashed border-amber-200">
                   <p className="text-[10px] text-amber-800 leading-relaxed font-black"> <AlertCircle size={10} className="inline mr-1" /> 此欄位資訊受到進階加密保護，僅限行政主管查核。</p>
                 </div>
