@@ -2510,12 +2510,36 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                   <input
                     type="checkbox"
                     checked={editingAssignment.isSpiderMan || false}
-                    onChange={e => setEditingAssignment({ ...editingAssignment, isSpiderMan: e.target.checked })}
+                    onChange={e => {
+                      const isChecked = e.target.checked;
+                      const member = props.teamMembers.find(m => m.name === editingAssignment.memberName);
+                      const allowance = member?.spiderManAllowance || 0;
+                      let newWage = Number(editingAssignment.wagePerDay) || 0;
+
+                      if (isChecked) {
+                        newWage += allowance;
+                      } else {
+                        newWage -= allowance;
+                      }
+
+                      setEditingAssignment({ ...editingAssignment, isSpiderMan: isChecked, wagePerDay: newWage });
+                    }}
                     className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-600 transition-colors"
                   />
                   <div className="flex-1">
                     <span className="text-sm font-black text-blue-900 group-hover:text-blue-700 transition-colors">🕷️ 蜘蛛人作業 (繩索吊掛)</span>
-                    <p className="text-[10px] text-blue-600 mt-0.5">勾選後將標記為特殊高空作業</p>
+                    <div className="flex justify-between items-center mt-0.5">
+                      <p className="text-[10px] text-blue-600">勾選後將自動加計津貼</p>
+                      {(() => {
+                        const member = props.teamMembers.find(m => m.name === editingAssignment.memberName);
+                        const allowance = member?.spiderManAllowance || 0;
+                        return allowance > 0 ? (
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                            津貼: +${allowance}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
                   </div>
                 </label>
               </div>
