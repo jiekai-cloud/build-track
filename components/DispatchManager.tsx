@@ -14,6 +14,7 @@ interface DispatchManagerProps {
   teamMembers: TeamMember[];
   onAddDispatch: (projectId: string, assignment: WorkAssignment) => void;
   onDeleteDispatch: (projectId: string, assignmentId: string) => void;
+  onProjectsUpdate: (projects: Project[]) => void;
 }
 
 interface PendingAssignment {
@@ -28,7 +29,7 @@ interface PendingAssignment {
   isSpiderMan?: boolean; // 是否為蜘蛛人作業
 }
 
-const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers, onAddDispatch, onDeleteDispatch }) => {
+const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers, onAddDispatch, onDeleteDispatch, onProjectsUpdate }) => {
   const [activeMode, setActiveMode] = useState<'manual' | 'ai' | 'excel'>('manual');
   const [isParsing, setIsParsing] = useState(false);
   const [rawLog, setRawLog] = useState('');

@@ -1208,7 +1208,7 @@ const App: React.FC = () => {
                   }
                 }}
               />}
-              {activeTab === 'dispatch' && moduleService.isModuleEnabled(ModuleId.DISPATCH) && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])], updatedAt: new Date().toISOString() } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid), updatedAt: new Date().toISOString() } : p))} />}
+              {activeTab === 'dispatch' && moduleService.isModuleEnabled(ModuleId.DISPATCH) && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onProjectsUpdate={setProjects} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])], updatedAt: new Date().toISOString() } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid), updatedAt: new Date().toISOString() } : p))} />}
               {activeTab === 'analytics' && moduleService.isModuleEnabled(ModuleId.ANALYTICS) && <Analytics projects={filteredData.projects} />}
 
               {activeTab === 'vendors' && moduleService.isModuleEnabled(ModuleId.VENDORS) && (
