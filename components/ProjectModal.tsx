@@ -33,6 +33,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
     startDate: new Date().toISOString().split('T')[0],
     endDate: '',
     address: '',
+    year: '', // 新增：年度類別 (2024, 2025, 2026)
     id: '', // 新增：可編輯的案件編號
   });
 
@@ -55,6 +56,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         startDate: initialData.startDate,
         endDate: initialData.endDate,
         address: initialData.location?.address || '',
+        year: initialData.year || '', // 載入年度類別
         id: initialData.id || '', // 載入現有編號
       });
     }
@@ -235,6 +237,21 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
               <div className="relative">
                 <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">歸屬年度 (大類別分類用)</label>
+              <div className="relative">
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <select className="w-full bg-orange-50 border border-orange-200 text-orange-900 rounded-xl px-4 py-2.5 outline-none font-black appearance-none" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })}>
+                  <option value="">自動判斷 (依開工日或編號)</option>
+                  <option value="2024">2024 年度</option>
+                  <option value="2025">2025 年度</option>
+                  <option value="2026">2026 年度</option>
+                </select>
               </div>
             </div>
           </div>

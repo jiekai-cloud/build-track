@@ -52,6 +52,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
   // Helper to determine project year consistently
   const getProjectYear = (p: Project) => {
+    if (p.year) return p.year; // 優先使用手動指定的年度
     if (p.startDate) return p.startDate.split('-')[0];
     if (p.createdDate) return p.createdDate.split('-')[0];
     const idMatch = p.id.match(/^[A-Z]+(\d{2})/);
