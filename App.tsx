@@ -166,48 +166,39 @@ const App: React.FC = () => {
     // Filter out null/undefined or malformed project objects first
     const validProjects = projects.filter(p => p && typeof p === 'object' && (p.id || p.name));
 
-    // 0. ID CORRECTION: Enforce correct IDs based on Project Name or known Legacy IDs
+    // 0. ID CORRECTION: Enforce correct IDs for specific projects
     let processed = validProjects.map(p => {
-      // Rule 3: Fix Guangfu North (004) - Fixes missing project by catching legacy ID
+      // Rules for Zhishan and Guishan REMOVED to respect user's manual settings.
+
+      // Rule 3: Fix Guangfu North (004)
       if (p.name.includes('光復北路') || p.id === 'BNI2601908') return { ...p, id: 'BNI2601004' };
-      // Rule 4: Fix Guangfu South (005) - Fixes legacy ID persistence
+      // Rule 4: Fix Guangfu South (005)
       if (p.name.includes('光復南路') || p.id === 'OC2601909') return { ...p, id: 'OC2601005' };
       return p;
     });
 
-    // Migration: Update old project ID format to new format
-    const sourcePrefixes: Record<string, string> = {
-      'BNI': 'BNI', '台塑集團': 'FPC', '士林電機': 'SE', '信義居家': 'SY',
-      '企業': 'CORP', '新建工程': 'NEW', '網路客': 'OC', '住宅': 'AB',
-      'JW': 'JW', '台灣美光晶圓': 'MIC', 'AI會勘系統': 'AI'
-    };
+    // NOTE: Removed automatic ID migration/formatting logic to strictily respect user defined IDs.
 
     processed = processed.map(p => {
       let updatedProject = { ...p };
-      // CLEANUP: Fix incorrectly migrated IDs (format: PREFIX0101XXX)
-      const brokenFormatMatch = updatedProject.id.match(/^([A-Z]+)0101(\d{3})$/);
-      if (brokenFormatMatch) {
-        const [, prefix, serial] = brokenFormatMatch;
-        const year = new Date().getFullYear();
-        const yearShort = year.toString().slice(-2);
-        updatedProject.id = `${prefix}${yearShort}01${serial}`;
-      }
-      // Specific fix: JW2601907 should be JW2601003
-      if (p.id === 'JW2601907') updatedProject.id = 'JW2601003';
-
-      // Old format migration
-      const oldFormatMatch = updatedProject.id.match(/^([A-Z]+)(20\d{2})(\d{3,4})$/);
-      if (oldFormatMatch) {
-        const [, prefix, year, serial] = oldFormatMatch;
-        const yearShort = year.slice(-2);
-        const serialPadded = serial.padStart(3, '0');
-        updatedProject.id = `${prefix}${yearShort}01${serialPadded}`;
-      }
 
       // CRITICAL FIX: If ID became "JW2601907" or legacy match, remap it to "JW2601003"
       if (updatedProject.id === 'JW2601907' || updatedProject.name.includes('樹林區三龍街')) updatedProject.id = 'JW2601003';
 
       return updatedProject;
+    });
+
+    // REPAIR: Safely restore incorrectly shortened IDs to user's desired format
+    // BNI24... -> BNI2024...
+    // BNI25... -> BNI2025...
+    processed = processed.map(p => {
+      if (p.id.startsWith('BNI24')) {
+        return { ...p, id: p.id.replace('BNI24', 'BNI2024') };
+      }
+      if (p.id.startsWith('BNI25')) {
+        return { ...p, id: p.id.replace('BNI25', 'BNI2025') };
+      }
+      return p;
     });
 
     // Deduplicate and Deep Merge projects by ID
