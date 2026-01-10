@@ -74,6 +74,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
   const [isMandatoryUploadOpen, setIsMandatoryUploadOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<ProjectStatus | null>(null);
   const contractFileInputRef = useRef<HTMLInputElement>(null);
+  const headerContractInputRef = useRef<HTMLInputElement>(null);
 
   // Schedule Options State
   const [scheduleStartDate, setScheduleStartDate] = useState(project.startDate || new Date().toISOString().split('T')[0]);
@@ -321,44 +322,96 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="bg-slate-900 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase">{project.id}</span>
-            <span className="bg-blue-50 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-100 uppercase">{project.category}</span>
-            {project.contractUrl && (
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="bg-slate-900 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase">{project.id}</span>
+              <span className="bg-blue-50 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-100 uppercase">{project.category}</span>
+              {project.contractUrl && (
+                <span className="bg-emerald-50 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase flex items-center gap-1">
+                  <ShieldCheck size={10} /> 已簽約
+                </span>
+              )}
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">{project.name}</h1>
+            <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 font-bold uppercase">
+              <span className="flex items-center gap-1"><MapPin size={12} className="text-slate-400" /> {project.location?.address || '無地址'}</span>
+              <span className="bg-stone-100 px-2 py-0.5 rounded-full">負責人：{project.quotationManager || '未指定'}</span>
+              <div className="flex items-center gap-1">
+                <Activity size={12} />
+                <select
+                  disabled={isReadOnly}
+                  className={`bg-transparent outline-none appearance-none text-blue-600 font-black ${isReadOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  value={project.status}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as ProjectStatus;
+                    if (newStatus === ProjectStatus.SIGNED_WAITING_WORK && !project.contractUrl) {
+                      setPendingStatus(newStatus);
+                      setIsMandatoryUploadOpen(true);
+                    } else {
+                      onUpdateStatus(newStatus);
+                    }
+                  }}
+                >
+                  {statusOptions.map(opt => <option key={opt} value={opt} className="text-black font-bold">{opt}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Import/View Contract Button */}
+          <div className="shrink-0">
+            {project.contractUrl ? (
               <a
                 href={project.contractUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-emerald-50 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase flex items-center gap-1 hover:bg-emerald-100 transition-colors"
+                className="flex items-center gap-2 bg-emerald-50 text-emerald-600 border border-emerald-200 px-4 py-2.5 rounded-xl font-black text-[11px] hover:bg-emerald-100 transition-colors shadow-sm"
               >
-                <ShieldCheck size={10} /> 已簽約
+                <FileText size={16} />
+                <span>查看報價單/合約</span>
+                <ExternalLink size={12} />
               </a>
+            ) : (
+              !isReadOnly && (
+                <>
+                  <input
+                    type="file"
+                    className="hidden"
+                    ref={headerContractInputRef}
+                    accept="application/pdf,image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      try {
+                        const result = await cloudFileService.uploadFile(file);
+                        if (result && result.url) {
+                          onUpdateContractUrl(result.url);
+                          // Also try to analyze schedule automatically if it's an image
+                          if (file.type.startsWith('image/')) {
+                            // Optional: Trigger analysis or prompt user
+                          }
+                          alert('檔案上傳成功！');
+                        }
+                      } catch (err) {
+                        console.error('上傳失敗', err);
+                        alert('上傳失敗，請重試');
+                      } finally {
+                        if (headerContractInputRef.current) headerContractInputRef.current.value = '';
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => headerContractInputRef.current?.click()}
+                    className="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl font-black text-[11px] hover:bg-slate-800 transition-all active:scale-95 shadow-md hover:shadow-lg"
+                  >
+                    <Upload size={16} />
+                    <span>匯入報價單或合約</span>
+                  </button>
+                </>
+              )
             )}
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">{project.name}</h1>
-          <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 font-bold uppercase">
-            <span className="flex items-center gap-1"><MapPin size={12} className="text-slate-400" /> {project.location?.address || '無地址'}</span>
-            <span className="bg-stone-100 px-2 py-0.5 rounded-full">負責人：{project.quotationManager || '未指定'}</span>
-            <div className="flex items-center gap-1">
-              <Activity size={12} />
-              <select
-                disabled={isReadOnly}
-                className={`bg-transparent outline-none appearance-none text-blue-600 font-black ${isReadOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                value={project.status}
-                onChange={(e) => {
-                  const newStatus = e.target.value as ProjectStatus;
-                  if (newStatus === ProjectStatus.SIGNED_WAITING_WORK && !project.contractUrl) {
-                    setPendingStatus(newStatus);
-                    setIsMandatoryUploadOpen(true);
-                  } else {
-                    onUpdateStatus(newStatus);
-                  }
-                }}
-              >
-                {statusOptions.map(opt => <option key={opt} value={opt} className="text-black font-bold">{opt}</option>)}
-              </select>
-            </div>
           </div>
         </div>
       </div>
