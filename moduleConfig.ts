@@ -4,7 +4,7 @@
  * 此檔案定義系統中所有可用的功能模組及其配置
  */
 
-import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings } from 'lucide-react';
+import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag } from 'lucide-react';
 
 /**
  * 模組識別碼列舉
@@ -24,7 +24,8 @@ export enum ModuleId {
     ANALYTICS = 'analytics',          // 數據分析
     AI_ASSISTANT = 'ai_assistant',    // AI 智慧助手
     CLOUD_SYNC = 'cloud_sync',        // 雲端同步
-    LEADS = 'leads'                   // 會勘線索管理
+    LEADS = 'leads',                  // 會勘線索管理
+    INVENTORY = 'inventory'           // 庫存管理
 }
 
 /**
@@ -171,6 +172,16 @@ export const ALL_MODULES: ModuleConfig[] = [
         dependencies: [ModuleId.AI_ASSISTANT],
         enabled: true,
         category: 'automation'
+    },
+    {
+        id: ModuleId.INVENTORY,
+        name: '庫存管理',
+        description: '材料、機具與設備庫存追蹤',
+        icon: ShoppingBag,
+        isCore: false,
+        dependencies: [],
+        enabled: true,
+        category: 'management'
     }
 ];
 
@@ -196,7 +207,8 @@ export const MODULE_PRESETS = {
             ModuleId.PROJECTS,
             ModuleId.CUSTOMERS,
             ModuleId.TEAM,
-            ModuleId.CLOUD_SYNC
+            ModuleId.CLOUD_SYNC,
+            ModuleId.INVENTORY
         ]
     },
 
@@ -224,7 +236,8 @@ export const MODULE_PRESETS = {
             ModuleId.CUSTOMERS,
             ModuleId.TEAM,
             ModuleId.ANALYTICS,
-            ModuleId.CLOUD_SYNC
+            ModuleId.CLOUD_SYNC,
+            ModuleId.INVENTORY
         ]
     }
 };

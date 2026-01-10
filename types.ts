@@ -301,3 +301,37 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
+
+export type InventoryCategory = '材料' | '工具' | '設備' | '其他';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  sku?: string; // 料號
+  category: InventoryCategory;
+  quantity: number;
+  unit: string;
+  locations: { name: string; quantity: number }[]; // 多地點庫存皆可追蹤
+  // location?: string; // @deprecated Use locations instead
+  minLevel?: number; // 安全庫存量
+  costPrice?: number; // 成本價
+  sellingPrice?: number; // 建議售價
+  supplier?: string;
+  status: 'Normal' | 'Low' | 'Out';
+  updatedAt?: string;
+  deletedAt?: string;
+  notes?: string;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  itemId: string;
+  itemName: string;
+  type: 'In' | 'Out' | 'Adjust';
+  quantity: number;
+  date: string;
+  performedBy: string; // User Name
+  notes?: string;
+  relatedProjectId?: string; // 關聯專案 ID (若是出庫到專案)
+  relatedProjectName?: string;
+}

@@ -14,13 +14,15 @@ import ProjectDetail from './components/ProjectDetail';
 import CustomerModal from './components/CustomerModal';
 import TeamModal from './components/TeamModal';
 import VendorModal from './components/VendorModal';
+import InventoryModal from './components/InventoryModal';
+import InventoryList from './components/InventoryList';
 import LeadToProjectModal from './components/LeadToProjectModal';
 import Login from './components/Login';
 import ModuleManager from './components/ModuleManager';
 import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
-import { Project, ProjectStatus, Customer, TeamMember, User, Department, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead } from './types';
+import { Project, ProjectStatus, Customer, TeamMember, User, Department, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem } from './types';
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 import { moduleService } from './services/moduleService';
 import { ModuleId } from './moduleConfig';
@@ -39,6 +41,7 @@ const App: React.FC = () => {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
   useEffect(() => {
     // Seed some mock leads if empty for demo
@@ -87,6 +90,8 @@ const App: React.FC = () => {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | null>(null);
 
   // 系統狀態
   const [isCloudConnected, setIsCloudConnected] = useState(false);
@@ -256,7 +261,9 @@ const App: React.FC = () => {
     setCustomers(prev => mergeData(prev, cloudData.customers || []));
     setTeamMembers(prev => mergeData(prev, cloudData.teamMembers || []));
     setVendors(prev => mergeData(prev, cloudData.vendors || []));
+    setVendors(prev => mergeData(prev, cloudData.vendors || []));
     setLeads(prev => mergeData(prev, cloudData.leads || []));
+    setInventoryItems(prev => mergeData(prev, cloudData.inventory || []));
 
     // Activity logs 採取單純合併去重
     setActivityLogs(prev => {
@@ -369,12 +376,13 @@ const App: React.FC = () => {
           payments: p.payments || []
         })));
 
-        const [customersData, initialTeam, vendorsData, leadsData, logsData] = await Promise.all([
+        const [customersData, initialTeam, vendorsData, leadsData, logsData, inventoryData] = await Promise.all([
           storageService.getItem<Customer[]>('bt_customers', []),
           storageService.getItem<TeamMember[]>('bt_team', MOCK_TEAM_MEMBERS),
           storageService.getItem<Vendor[]>('bt_vendors', []),
           storageService.getItem<Lead[]>('bt_leads', []),
-          storageService.getItem<any[]>('bt_logs', [])
+          storageService.getItem<any[]>('bt_logs', []),
+          storageService.getItem<InventoryItem[]>('bt_inventory', [])
         ]);
 
         setCustomers(customersData);
@@ -386,6 +394,9 @@ const App: React.FC = () => {
         })));
         setVendors(vendorsData);
         setLeads(leadsData);
+        setVendors(vendorsData);
+        setLeads(leadsData);
+        setInventoryItems(inventoryData);
         setActivityLogs(logsData);
 
         // 儲存至 IndexedDB
@@ -438,11 +449,10 @@ const App: React.FC = () => {
   };
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
-  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads });
-
+  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems });
   React.useEffect(() => {
-    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads };
-  }, [projects, customers, teamMembers, activityLogs, vendors, leads]);
+    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems };
+  }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems]);
 
   const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
     if (!user) return;
@@ -490,6 +500,7 @@ const App: React.FC = () => {
         teamMembers,
         vendors,
         leads,
+        inventory: inventoryItems,
         activityLogs,
         lastUpdated: new Date().toISOString(),
         userEmail: user?.email
@@ -521,7 +532,7 @@ const App: React.FC = () => {
       isSyncingRef.current = false;
       setIsSyncing(false); // STOP UI SPINNER
     }
-  }, [isCloudConnected, user?.email, user?.role, projects, customers, teamMembers, vendors, leads, activityLogs, updateStateWithMerge, cloudError, handleLogout]);
+  }, [isCloudConnected, user?.email, user?.role, projects, customers, teamMembers, vendors, leads, inventoryItems, activityLogs, updateStateWithMerge, cloudError, handleLogout]);
 
   const handleConnectCloud = async () => {
     if (user?.role === 'Guest') return;
@@ -540,6 +551,7 @@ const App: React.FC = () => {
         setTeamMembers(teamData);
         setActivityLogs(cloudData.activityLogs || []);
         setVendors(cloudData.vendors || []);
+        setInventoryItems(cloudData.inventory || []);
         setLastCloudSync(new Date().toLocaleTimeString());
 
         // 重要：在自動登出前，強制將下載的資料存入 IndexedDB
@@ -549,6 +561,7 @@ const App: React.FC = () => {
           storageService.setItem('bt_team', teamData),
           storageService.setItem('bt_customers', cloudData.customers || []),
           storageService.setItem('bt_vendors', cloudData.vendors || []),
+          storageService.setItem('bt_inventory', cloudData.inventory || []),
           storageService.setItem('bt_logs', cloudData.activityLogs || [])
         ]);
 
@@ -584,6 +597,7 @@ const App: React.FC = () => {
           storageService.setItem('bt_team', teamMembers),
           storageService.setItem('bt_vendors', vendors),
           storageService.setItem('bt_leads', leads),
+          storageService.setItem('bt_inventory', inventoryItems),
           storageService.setItem('bt_logs', activityLogs.slice(0, 50))
         ]);
         setLastLocalSave(new Date().toLocaleTimeString());
@@ -598,7 +612,7 @@ const App: React.FC = () => {
         handleCloudSync();
       }, 3000);
     }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems]);
 
   // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
   useEffect(() => {
@@ -656,14 +670,17 @@ const App: React.FC = () => {
           setProjects(normalizeProjects(cloudData.projects || [])); // No merging, just replacing
           setCustomers(cloudData.customers || []);
           setTeamMembers(cloudData.teamMembers || []);
+          setTeamMembers(cloudData.teamMembers || []);
           setVendors(cloudData.vendors || []);
+          setInventoryItems(cloudData.inventory || []);
           // Force save to IndexedDB immediately to prevent reversion
           setTimeout(async () => {
             await Promise.all([
               storageService.setItem('bt_projects', cloudData.projects || []),
               storageService.setItem('bt_customers', cloudData.customers || []),
               storageService.setItem('bt_team', cloudData.teamMembers || []),
-              storageService.setItem('bt_vendors', cloudData.vendors || [])
+              storageService.setItem('bt_vendors', cloudData.vendors || []),
+              storageService.setItem('bt_inventory', cloudData.inventory || [])
             ]);
             alert('✅ 雲端還原成功！\n\n所有本地資料已強制覆蓋為雲端版本。頁面將重新整理。');
             window.location.reload();
@@ -1211,6 +1228,20 @@ const App: React.FC = () => {
               {activeTab === 'dispatch' && moduleService.isModuleEnabled(ModuleId.DISPATCH) && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onProjectsUpdate={setProjects} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])], updatedAt: new Date().toISOString() } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid), updatedAt: new Date().toISOString() } : p))} />}
               {activeTab === 'analytics' && moduleService.isModuleEnabled(ModuleId.ANALYTICS) && <Analytics projects={filteredData.projects} />}
 
+              {activeTab === 'inventory' && moduleService.isModuleEnabled(ModuleId.INVENTORY) && <InventoryList
+                items={inventoryItems}
+                user={user}
+                onAddClick={() => { setEditingInventoryItem(null); setIsInventoryModalOpen(true); }}
+                onEditClick={(item) => { setEditingInventoryItem(item); setIsInventoryModalOpen(true); }}
+                onDeleteClick={(id) => {
+                  if (confirm('確定移除此庫存項目？')) {
+                    const item = inventoryItems.find(i => i.id === id);
+                    if (item) addActivityLog('移除庫存項目', item.name, id, 'system');
+                    setInventoryItems(prev => prev.map(i => i.id === id ? { ...i, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : i));
+                  }
+                }}
+              />}
+
               {activeTab === 'vendors' && moduleService.isModuleEnabled(ModuleId.VENDORS) && (
                 <div className="p-4 lg:p-8 space-y-6">
                   <div className="flex justify-between items-center">
@@ -1441,6 +1472,24 @@ const App: React.FC = () => {
         }}
         initialData={editingMember}
         currentUser={user!}
+      />}
+
+      {isInventoryModalOpen && user?.role !== 'Guest' && <InventoryModal
+        onClose={() => { setIsInventoryModalOpen(false); setEditingInventoryItem(null); }}
+        onConfirm={(data) => {
+          const timestamped = { ...data, updatedAt: new Date().toISOString() };
+          if (editingInventoryItem) {
+            addActivityLog('更新庫存', data.name || '', editingInventoryItem.id, 'system');
+            setInventoryItems(prev => prev.map(i => i.id === editingInventoryItem.id ? { ...i, ...timestamped } as InventoryItem : i));
+          } else {
+            const newId = 'INV' + Date.now().toString().slice(-6);
+            addActivityLog('新增庫存', data.name || '', newId, 'system');
+            setInventoryItems(prev => [{ ...timestamped, id: newId, status: 'Normal' } as InventoryItem, ...prev]);
+          }
+          setIsInventoryModalOpen(false);
+          setEditingInventoryItem(null);
+        }}
+        initialData={editingInventoryItem}
       />}
 
       <VendorModal
