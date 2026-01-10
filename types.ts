@@ -287,14 +287,18 @@ export interface TeamMember {
   deletedAt?: string;
 }
 
+export type Role = 'SuperAdmin' | 'Admin' | 'Manager' | 'Staff' | 'Guest' | 'SyncOnly' | 'DeptAdmin';
+
+export type Department = 'FirstDept' | 'ThirdDept'; // 第一工程部 | 第三工程部
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  picture: string;
-  role: 'SuperAdmin' | 'DeptAdmin' | 'Staff' | 'Guest';
-  roleName?: string;
-  departmentId?: string;
+  picture?: string;
+  role: Role;
+  roleName?: string; // 自訂職稱 (e.g. 工務經理)
+  department: Department;
 }
 
 export interface Message {

@@ -13,6 +13,12 @@ class GoogleDriveService {
   private accessToken: string | null = null;
   private isInitialized: boolean = false;
   private lastErrorStatus: string | null = null;
+  private currentFilename: string = BACKUP_FILENAME;
+
+  setFilename(filename: string) {
+    this.currentFilename = filename;
+    console.log(`[Drive] Switched context to: ${this.currentFilename}`);
+  }
 
   async init(clientId: string = DEFAULT_CLIENT_ID) {
     return new Promise<void>((resolve, reject) => {
@@ -100,7 +106,7 @@ class GoogleDriveService {
 
   async findBackupFile() {
     try {
-      const url = `https://www.googleapis.com/drive/v3/files?q=name='${BACKUP_FILENAME}' and trashed=false&fields=files(id,name)`;
+      const url = `https://www.googleapis.com/drive/v3/files?q=name='${this.currentFilename}' and trashed=false&fields=files(id,name)`;
       const response = await this.fetchWithAuth(url);
       const data = await response.json();
       return data.files && data.files.length > 0 ? data.files[0] : null;
@@ -131,7 +137,7 @@ class GoogleDriveService {
     try {
       const existingFile = await this.findBackupFile();
       const metadata = {
-        name: BACKUP_FILENAME,
+        name: this.currentFilename,
         mimeType: 'application/json'
       };
       const fileContent = JSON.stringify({
@@ -164,7 +170,7 @@ class GoogleDriveService {
         method = 'PATCH';
       }
 
-      console.log(`[Drive] Syncing: ${method} to ${BACKUP_FILENAME}`);
+      console.log(`[Drive] Syncing: ${method} to ${this.currentFilename}`);
       const response = await this.fetchWithAuth(url, {
         method,
         body,

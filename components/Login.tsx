@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { HardHat, ShieldCheck, Sparkles, User, Lock, ArrowRight, Layers, Check, AlertCircle, Hash, Info, UserCheck, Cloud } from 'lucide-react';
+import { HardHat, ShieldCheck, Sparkles, User, Lock, ArrowRight, Layers, Check, AlertCircle, Hash, Info, UserCheck, Cloud, Building2 } from 'lucide-react';
 import { MOCK_DEPARTMENTS } from '../constants';
 import { storageService } from '../services/storageService';
+import { Department } from '../types';
 
 interface LoginProps {
-  onLoginSuccess: (userData: any, departmentId: string) => void;
+  onLoginSuccess: (userData: any, department: Department) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
@@ -13,6 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedDept, setSelectedDept] = useState<Department>('FirstDept');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,35 +33,40 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const cleanId = employeeId.trim();
     const cleanPassword = password.trim();
 
-    // 1. 檢查管理員
+    // 1. 檢查管理員 (最高權限，可進入任何部門，但這裡先預設進入選定的部門)
     if (cleanId.toLowerCase() === 'admin' && cleanPassword === '1234') {
       onLoginSuccess({
         id: 'ADMIN-ROOT',
         name: "管理總監",
         email: "admin@lifequality.ai",
         picture: `https://ui-avatars.com/api/?name=Admin&background=ea580c&color=fff`,
-        role: 'SuperAdmin'
-      }, 'all');
+        role: 'SuperAdmin',
+        department: selectedDept
+      }, selectedDept);
       return;
     }
 
-    // 1.5 增加通用測試/同步專用帳號 (用於新設備初始化)
+    // 1.5 增加通用測試/同步專用帳號
     if (cleanId.toLowerCase() === 'test' && cleanPassword === 'test') {
       onLoginSuccess({
         id: 'SYNC-ONLY',
         name: "系統初始化員",
         email: "sync@lifequality.ai",
         picture: `https://ui-avatars.com/api/?name=Sync&background=0ea5e9&color=fff`,
-        role: 'SyncOnly'
-      }, 'all');
+        role: 'SyncOnly',
+        department: selectedDept
+      }, selectedDept);
       return;
     }
 
-    // 2. 檢查團隊成員 (從 IndexedDB 載入已同步的團隊資料)
+    // 2. 檢查團隊成員 (根據部門載入不同的清單)
     let team = [];
     try {
-      // 使用 storageService 取得資料，這包含了雲端同步下來的新成員
-      team = await storageService.getItem<any[]>('bt_team', []);
+      // 根據部門決定 Storage Key 前綴
+      const prefix = selectedDept === 'ThirdDept' ? 'dept3_' : '';
+      const teamKey = `${prefix}bt_team`;
+
+      team = await storageService.getItem<any[]>(teamKey, []);
       if (!Array.isArray(team)) team = [];
     } catch (e) {
       console.error('Error loading team during login', e);
@@ -71,9 +78,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     if (member) {
       const expectedPassword = member.password || '1234';
       if (cleanPassword === expectedPassword) {
-        // 強制使用該員工設定的部門和權限
+        // 強制使用該員工設定的部門
         const finalRole = member.systemRole || (member.role === '工務主管' || member.role === '專案經理' ? 'DeptAdmin' : 'Staff');
-        const finalDept = finalRole === 'SuperAdmin' ? 'all' : (member.departmentId || 'DEPT-1');
 
         onLoginSuccess({
           id: member.id,
@@ -81,14 +87,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           email: member.email,
           picture: member.avatar,
           role: finalRole,
-          roleName: member.role
-        }, finalDept);
+          roleName: member.role,
+          department: selectedDept
+        }, selectedDept);
       } else {
         setError('密碼輸入錯誤');
         setIsLoading(false);
       }
     } else {
-      setError('找不到該員工編號 (新設備請先以 test 下載團隊清單)');
+      setError(`找不到該員工編號 (新設備請先以 test 下載 ${selectedDept === 'FirstDept' ? '第一' : '第三'}工程部 團隊清單)`);
       setIsLoading(false);
     }
   };
@@ -101,64 +108,69 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         name: "體驗帳戶",
         email: "guest@lifequality.ai",
         picture: `https://ui-avatars.com/api/?name=Guest&background=1e293b&color=fff`,
-        role: 'Guest'
-      }, 'DEPT-1');
+        role: 'Guest',
+        department: selectedDept
+      }, selectedDept);
     }, 500);
   };
 
   return (
     <div className="min-h-screen bg-stone-950 flex items-center justify-center p-4 lg:p-8 relative overflow-hidden font-sans">
       {/* 動態背景裝飾 */}
-      <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-orange-600/10 blur-[150px] rounded-full animate-pulse"></div>
-      <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] bg-amber-600/10 blur-[150px] rounded-full animate-pulse [animation-delay:2s]"></div>
+      <div className={`absolute top-[-15%] left-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-orange-600/10' : 'bg-blue-600/10'}`}></div>
+      <div className={`absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse [animation-delay:2s] transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-amber-600/10' : 'bg-cyan-600/10'}`}></div>
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-stone-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative z-10 overflow-hidden">
 
-        {/* 左側：品牌形象區 (佔 5 格) */}
-        <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-16 bg-gradient-to-br from-stone-900 to-stone-950 border-r border-white/5 relative">
+        {/* 左側：品牌形象區 */}
+        <div className={`hidden lg:flex lg:col-span-5 flex-col justify-between p-16 bg-gradient-to-br transition-all duration-1000 border-r border-white/5 relative ${selectedDept === 'FirstDept' ? 'from-stone-900 to-stone-950' : 'from-slate-900 to-slate-950'}`}>
           <div className="relative z-10">
             <div className="bg-white/10 w-16 h-16 rounded-3xl flex items-center justify-center border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] mb-10 group hover:scale-110 transition-transform duration-500 overflow-hidden">
               <img src="./pwa-icon.png" alt="Logo" className="w-10 h-10 object-contain" />
             </div>
             <h1 className="text-4xl font-black text-white leading-tight tracking-tighter mb-6">
               生活品質<br />
-              <span className="text-orange-500">工程管理系統</span>
+              <span className={`transition-colors duration-500 ${selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'}`}>工程管理系統</span>
             </h1>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-8">
-              <Sparkles size={14} className="text-amber-400" />
+              <Sparkles size={14} className={selectedDept === 'FirstDept' ? 'text-amber-400' : 'text-cyan-400'} />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">2026 Professional Edition</span>
             </div>
-            <p className="text-stone-400 font-medium leading-relaxed text-sm max-w-xs">
-              為現代工程人打造的數位大腦。整合預算控制、派工追蹤與 AI 智慧分析，全面提升施工效率。
-            </p>
-          </div>
-
-          <div className="space-y-6 relative z-10">
-            <div className="flex items-center gap-3 text-stone-300">
-              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                <ShieldCheck size={20} className="text-orange-500" />
+            <div className="space-y-4">
+              <div onClick={() => setSelectedDept('FirstDept')} className={`cursor-pointer p-4 rounded-2xl border transition-all ${selectedDept === 'FirstDept' ? 'bg-orange-500/20 border-orange-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-white">第一工程部</span>
+                  {selectedDept === 'FirstDept' && <Check size={16} className="text-orange-500" />}
+                </div>
+                <p className="text-xs text-stone-400">住宅修繕、防水工程、空間改造</p>
               </div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-widest text-white">安全連線中心</p>
-                <p className="text-[10px] text-stone-500 font-medium">資料受 256-bit 加密保護</p>
+              <div onClick={() => setSelectedDept('ThirdDept')} className={`cursor-pointer p-4 rounded-2xl border transition-all ${selectedDept === 'ThirdDept' ? 'bg-blue-500/20 border-blue-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-white">第三工程部</span>
+                  {selectedDept === 'ThirdDept' && <Check size={16} className="text-blue-500" />}
+                </div>
+                <p className="text-xs text-stone-400">大型建案、公設維護、機電整合</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 右側：登錄操作區 (佔 7 格) */}
+        {/* 右側：登錄操作區 */}
         <div className="lg:col-span-7 p-8 lg:p-20 flex flex-col justify-center">
           <form onSubmit={handleLogin} className="space-y-8 max-w-md mx-auto w-full">
             <div className="text-center lg:text-left space-y-2">
-              <div className="lg:hidden flex justify-center mb-6">
-                <div className="bg-white/10 w-12 h-12 rounded-2xl flex items-center justify-center border border-white/10 shadow-lg overflow-hidden">
-                  <img src="./pwa-icon.png" alt="Logo" className="w-10 h-8 object-contain" />
-                </div>
-              </div>
-              <h1 className="lg:hidden text-2xl font-black text-white tracking-tighter mb-2">生活品質工程管理系統</h1>
               <h1 className="text-3xl font-black text-stone-900 tracking-tight">Quality of Life</h1>
-              <p className="text-stone-500 font-bold uppercase tracking-widest text-xs mt-2">Development Corporation</p>
-              <p className="text-stone-500 text-sm">歡迎回來，請輸入帳號驗證您的身份。</p>
+              <p className="text-stone-500 font-bold uppercase tracking-widest text-xs mt-2">
+                Login to <span className={selectedDept === 'FirstDept' ? 'text-orange-600' : 'text-blue-600'}>
+                  {selectedDept === 'FirstDept' ? 'First Dept.' : 'Third Dept.'}
+                </span>
+              </p>
+
+              {/* Mobile Selector */}
+              <div className="lg:hidden flex gap-2 mt-4 p-1 bg-stone-100 rounded-xl">
+                <button type="button" onClick={() => setSelectedDept('FirstDept')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${selectedDept === 'FirstDept' ? 'bg-white shadow text-orange-600' : 'text-stone-400'}`}>第一工程部</button>
+                <button type="button" onClick={() => setSelectedDept('ThirdDept')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${selectedDept === 'ThirdDept' ? 'bg-white shadow text-blue-600' : 'text-stone-400'}`}>第三工程部</button>
+              </div>
             </div>
 
             {error && (
@@ -168,23 +180,18 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               </div>
             )}
 
-
-
             {/* 帳號密碼 */}
             <div className="space-y-5">
               <div className="space-y-2">
                 <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.25em] pl-1 flex items-center gap-2">
-                  <Hash size={14} className="text-orange-500" /> 員工編號 Employee ID
+                  <Hash size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'} /> 員工編號 Employee ID
                 </label>
                 <div className="group relative">
                   <input
                     type="text"
                     placeholder="輸入員工編號"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck="false"
-                    autoComplete="username"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-orange-600/50 focus:border-orange-600/50 transition-all placeholder:text-stone-700 uppercase"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-opacity-50 transition-all placeholder:text-stone-700 uppercase"
+                    style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : 'rgb(37 99 235)' } as any}
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
                   />
@@ -192,13 +199,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               </div>
               <div className="space-y-2">
                 <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.25em] pl-1 flex items-center gap-2">
-                  <Lock size={14} className="text-orange-500" /> 登入密碼 Password
+                  <Lock size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'} /> 登入密碼 Password
                 </label>
                 <input
                   type="password"
                   placeholder="••••••••"
-                  autoComplete="current-password"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-orange-600/50 focus:border-orange-600/50 transition-all placeholder:text-stone-700"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-opacity-50 transition-all placeholder:text-stone-700"
+                  style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : 'rgb(37 99 235)' } as any}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -211,7 +218,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 disabled={isLoading}
                 className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black text-sm tracking-[0.2em] uppercase transition-all shadow-2xl active:scale-[0.98] ${isLoading
                   ? 'bg-stone-800 text-stone-600 cursor-not-allowed'
-                  : 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-900/20 hover:shadow-orange-600/30'
+                  : selectedDept === 'FirstDept'
+                    ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-900/20'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20'
                   }`}
               >
                 {isLoading ? (
@@ -248,25 +257,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                       setEmployeeId('test');
                       setPassword('test');
                     }}
-                    className="w-full py-6 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/30 rounded-[2rem] flex flex-col items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] group"
+                    className="w-full py-6 bg-gradient-to-r from-stone-800 to-stone-900 hover:from-stone-700 hover:to-stone-800 border border-white/5 rounded-[2rem] flex flex-col items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] group"
                   >
                     <div className="flex items-center gap-2">
-                      <Cloud size={20} className="text-blue-400 group-hover:animate-bounce" />
-                      <span className="text-sm font-black text-white tracking-widest uppercase">新設備同步初始化</span>
+                      <Cloud size={20} className="text-stone-400 group-hover:text-white transition-colors" />
+                      <span className="text-sm font-black text-stone-300 group-hover:text-white tracking-widest uppercase">新設備同步初始化</span>
                     </div>
-                    <p className="text-[10px] text-blue-300/60 font-medium">使用 test / test 帳號快速啟動</p>
                   </button>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center gap-2 pt-6">
-              <p className="text-stone-700 text-[10px] font-black uppercase tracking-[0.3em]">
-                © 2026 Life Quality Engineering Management
-              </p>
-              <div className="flex gap-4">
-                <span className="text-stone-800 text-[9px] font-bold">服務條款</span>
-                <span className="text-stone-800 text-[9px] font-bold">隱私政策</span>
               </div>
             </div>
           </form>

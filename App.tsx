@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewingDeptId, setViewingDeptId] = useState<string>('all');
+  const [currentDept, setCurrentDept] = useState<Department>('FirstDept');
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -296,150 +297,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 正式上線初始化邏輯
-  useEffect(() => {
-    const startup = async () => {
-      // 0. 設定安全超時 (避免任何異常導致永久卡死)
-      const safetyTimeout = setTimeout(() => {
-        setIsInitializing(false);
-        console.warn('啟動超時：進入自動跳過模式');
-      }, 5000);
-
-      try {
-        // 恢復本地會話 (User 會話較小，維持使用 localStorage)
-        const savedUser = localStorage.getItem('bt_user');
-        if (savedUser) {
-          try {
-            const parsedUser = JSON.parse(savedUser);
-            setUser(parsedUser);
-            setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
-          } catch (e) {
-            console.error('使用者會話格式錯誤');
-            localStorage.removeItem('bt_user');
-          }
-        }
-
-        // 2. 載入本地緩存數據 (IndexedDB 優先)
-        let initialProjects = await storageService.getItem<Project[]>('bt_projects', MOCK_PROJECTS);
-
-        // 0. Force Restore Critical Projects (Safe Merge enabled)
-        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005', 'JW2601003'];
-
-        // 0a. AUTOMATED BACKUP SYSTEM (Safeguard)
-        // 使用 IndexedDB 備份，不佔用有限的 LocalStorage 空間
-        try {
-          if (initialProjects && initialProjects.length > 0) {
-            await storageService.setItem('bt_projects_backup', initialProjects);
-            console.log('✅ Auto-backup created in IndexedDB');
-          }
-        } catch (e) { console.error('Backup failed', e); }
-
-        // 0b. Deep Clone to PREVENT READ-ONLY ERRORS (Fix for "Cannot assign to read only property")
-        // This ensures that whether data comes from localStorage or MOCK_PROJECTS, it is fully mutable.
-        try {
-          initialProjects = JSON.parse(JSON.stringify(initialProjects));
-        } catch (e) { console.error('Deep clone failed', e); }
-
-        // 1. Recover Soft-Deleted Projects (Undo delete)
-        initialProjects = initialProjects.map((p: any) => {
-          if (criticalRestorationIds.includes(p.id) && p.deletedAt) {
-            console.log(`Force recovering soft-deleted project: ${p.id}`);
-            const { deletedAt, ...rest } = p; // Remove deletedAt
-            return { ...rest, updatedAt: new Date().toISOString() };
-          }
-          return p;
-        });
-
-        // 2. Restore Missing Projects (Completely missing)
-        const missingProjects = MOCK_PROJECTS.filter(mockP =>
-          criticalRestorationIds.includes(mockP.id) &&
-          !initialProjects.some((p: Project) =>
-            // Check against both ID and potentially un-migrated ID/Name to be safe, 
-            // but normalizeProjects will handle the ID fix later.
-            // Here we just want to ensure we inject if absolutely missing.
-            p.id === mockP.id || (p.name === mockP.name)
-          )
-        );
-
-        if (missingProjects.length > 0) {
-          console.log('Restoring missing critical projects:', missingProjects.map(p => p.name));
-          // FIX: Deep clone missingProjects to prevent re-introducing frozen objects from MOCK_PROJECTS
-          const mutableMissing = JSON.parse(JSON.stringify(missingProjects));
-          initialProjects = [...initialProjects, ...mutableMissing];
-          // Force re-clone entire array to be absolutely safe against mixed references
-          initialProjects = JSON.parse(JSON.stringify(initialProjects));
-        }
-
-        // 3. Normalize and Deduplicate
-        // Use the same shared logic as cloud sync
-        const deduplicatedProjects = normalizeProjects(initialProjects);
-
-        // CRITICAL FIX: Update State FIRST before attempting to save to localStorage
-        // This ensures that even if storage is full (QuotaExceededError), the user still sees their data.
-        setProjects(deduplicatedProjects.map((p: Project) => ({
-          ...p,
-          expenses: p.expenses || [],
-          workAssignments: p.workAssignments || [],
-          files: p.files || [],
-          phases: p.phases || [],
-          dailyLogs: p.dailyLogs || [],
-          checklist: p.checklist || [],
-          payments: p.payments || []
-        })));
-
-        const [customersData, initialTeam, vendorsData, leadsData, logsData, inventoryData, locationsData] = await Promise.all([
-          storageService.getItem<Customer[]>('bt_customers', []),
-          storageService.getItem<TeamMember[]>('bt_team', MOCK_TEAM_MEMBERS),
-          storageService.getItem<Vendor[]>('bt_vendors', []),
-          storageService.getItem<Lead[]>('bt_leads', []),
-          storageService.getItem<any[]>('bt_logs', []),
-          storageService.getItem<InventoryItem[]>('bt_inventory', []),
-          storageService.getItem<InventoryLocation[]>('bt_locations', [{ id: 'MAIN', name: '總倉庫', type: 'Main', isDefault: true }])
-        ]);
-
-        setCustomers(customersData);
-        setTeamMembers(initialTeam.map((m: any) => ({
-          ...m,
-          specialty: m.specialty || [],
-          certifications: m.certifications || [],
-          departmentIds: m.departmentIds || [m.departmentId]
-        })));
-        setVendors(vendorsData);
-        setLeads(leadsData);
-        setInventoryItems(inventoryData);
-        setInventoryLocations(locationsData);
-        setActivityLogs(logsData);
-
-        // 儲存至 IndexedDB
-        await storageService.setItem('bt_projects', deduplicatedProjects);
-        console.log(`Initialized storage with ${deduplicatedProjects.length} projects`);
-
-        // 3. 優先解鎖介面 (不等待雲端)
-        setInitialSyncDone(true);
-        setTimeout(() => {
-          setIsInitializing(false);
-          clearTimeout(safetyTimeout);
-        }, 800);
-        console.log('System initialized successfully');
-
-        // 4. 背景嘗試續連雲端
-        try {
-          await googleDriveService.init(DEFAULT_CLIENT_ID);
-          if (localStorage.getItem('bt_cloud_connected') === 'true' && user?.role !== 'Guest') {
-            await autoConnectCloud();
-          }
-        } catch (e) {
-          console.warn('Google SDK 初始化背景執行中');
-        }
-      } catch (err) {
-        console.error('啟動流程發生嚴重異常', err);
-        setIsInitializing(false);
-      }
-    };
-    startup();
-  }, []);
-
-  const autoConnectCloud = async () => {
+  const autoConnectCloud = useCallback(async () => {
     try {
       await googleDriveService.authenticate('none');
       setIsCloudConnected(true);
@@ -457,7 +315,142 @@ const App: React.FC = () => {
     } catch (e) {
       setCloudError('會話已過期');
     }
-  };
+  }, [updateStateWithMerge]);
+
+  const loadSystemData = useCallback(async (dept: Department) => {
+    console.log(`[System] Initializing context for: ${dept}`);
+
+    // 1. Configure Cloud Context
+    const prefix = dept === 'ThirdDept' ? 'dept3_' : '';
+    const driveFilename = dept === 'ThirdDept' ? 'life_quality_system_data_dept3.json' : 'life_quality_system_data.json';
+    googleDriveService.setFilename(driveFilename);
+
+    // 2. Load Local Data (IndexedDB) with Prefix
+    try {
+      const defaultProjects = dept === 'FirstDept' ? MOCK_PROJECTS : [];
+      const defaultTeam = dept === 'FirstDept' ? MOCK_TEAM_MEMBERS : [];
+
+      // Load Projects
+      let initialProjects = await storageService.getItem<Project[]>(`${prefix}bt_projects`, defaultProjects);
+
+      // Restoration Logic (Legacy FirstDept Support)
+      if (dept === 'FirstDept') {
+        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005', 'JW2601003'];
+
+        try {
+          if (initialProjects.length > 0) await storageService.setItem(`${prefix}bt_projects_backup`, initialProjects);
+        } catch (e) { }
+
+        try { initialProjects = JSON.parse(JSON.stringify(initialProjects)); } catch (e) { console.error('Deep clone failed', e); }
+
+        initialProjects = initialProjects.map((p: any) => {
+          if (criticalRestorationIds.includes(p.id) && p.deletedAt) {
+            const { deletedAt, ...rest } = p;
+            return { ...rest, updatedAt: new Date().toISOString() };
+          }
+          return p;
+        });
+
+        const missingProjects = MOCK_PROJECTS.filter(mockP =>
+          criticalRestorationIds.includes(mockP.id) &&
+          !initialProjects.some((p: Project) => p.id === mockP.id || p.name === mockP.name)
+        );
+        if (missingProjects.length > 0) {
+          initialProjects = [...initialProjects, ...JSON.parse(JSON.stringify(missingProjects))];
+        }
+      }
+
+      // Normalize
+      const deduplicatedProjects = normalizeProjects(initialProjects);
+
+      setProjects(deduplicatedProjects.map((p: Project) => ({
+        ...p,
+        expenses: p.expenses || [],
+        workAssignments: p.workAssignments || [],
+        files: p.files || [],
+        phases: p.phases || [],
+        dailyLogs: p.dailyLogs || [],
+        checklist: p.checklist || [],
+        payments: p.payments || []
+      })));
+
+      // Load other entities
+      const [customersData, initialTeamData, vendorsData, leadsData, logsData, inventoryData, locationsData] = await Promise.all([
+        storageService.getItem<Customer[]>(`${prefix}bt_customers`, []),
+        storageService.getItem<TeamMember[]>(`${prefix}bt_team`, defaultTeam),
+        storageService.getItem<Vendor[]>(`${prefix}bt_vendors`, []),
+        storageService.getItem<Lead[]>(`${prefix}bt_leads`, []),
+        storageService.getItem<any[]>(`${prefix}bt_logs`, []),
+        storageService.getItem<InventoryItem[]>(`${prefix}bt_inventory`, []),
+        storageService.getItem<InventoryLocation[]>(`${prefix}bt_locations`, [{ id: 'MAIN', name: '總倉庫', type: 'Main', isDefault: true }])
+      ]);
+
+      setCustomers(customersData);
+      setTeamMembers(initialTeamData.map((m: any) => ({
+        ...m,
+        specialty: m.specialty || [],
+        certifications: m.certifications || [],
+        departmentIds: m.departmentIds || [m.departmentId]
+      })));
+      setVendors(vendorsData);
+      setLeads(leadsData);
+      setInventoryItems(inventoryData);
+      setInventoryLocations(locationsData);
+      setActivityLogs(logsData);
+
+      setInitialSyncDone(true);
+      setIsInitializing(false);
+      console.log('System initialized successfully');
+
+      // Auto Connect
+      try {
+        await googleDriveService.init(DEFAULT_CLIENT_ID);
+        if (localStorage.getItem('bt_cloud_connected') === 'true') {
+          await autoConnectCloud();
+        }
+      } catch (e) {
+        console.warn('Google SDK 初始化背景執行中');
+      }
+
+    } catch (err) {
+      console.error('Initialization failed', err);
+      setIsInitializing(false);
+    }
+  }, [normalizeProjects, autoConnectCloud]);
+
+  // Startup Effect
+  useEffect(() => {
+    const startup = async () => {
+      const safetyTimeout = setTimeout(() => {
+        setIsInitializing(false);
+        console.warn('啟動超時：進入自動跳過模式');
+      }, 5000);
+
+      try {
+        const savedUser = localStorage.getItem('bt_user');
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+            const dept = parsedUser.department || 'FirstDept';
+            setCurrentDept(dept);
+            setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
+            loadSystemData(dept);
+          } catch (e) {
+            console.error('Saved user parse error', e);
+            localStorage.removeItem('bt_user');
+            setIsInitializing(false);
+          }
+        } else {
+          setIsInitializing(false);
+        }
+      } catch (e) {
+        setIsInitializing(false);
+      }
+      return () => clearTimeout(safetyTimeout);
+    };
+    startup();
+  }, [loadSystemData]);
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
   const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations });
@@ -605,15 +598,16 @@ const App: React.FC = () => {
     // 定期保存至 IndexedDB (容量極大，維持完整資料)
     if (user.role !== 'Guest') {
       const saveToIndexedDB = async () => {
+        const prefix = currentDept === 'ThirdDept' ? 'dept3_' : '';
         await Promise.all([
-          storageService.setItem('bt_projects', projects),
-          storageService.setItem('bt_customers', customers),
-          storageService.setItem('bt_team', teamMembers),
-          storageService.setItem('bt_vendors', vendors),
-          storageService.setItem('bt_leads', leads),
-          storageService.setItem('bt_inventory', inventoryItems),
-          storageService.setItem('bt_locations', inventoryLocations),
-          storageService.setItem('bt_logs', activityLogs.slice(0, 50))
+          storageService.setItem(`${prefix}bt_projects`, projects),
+          storageService.setItem(`${prefix}bt_customers`, customers),
+          storageService.setItem(`${prefix}bt_team`, teamMembers),
+          storageService.setItem(`${prefix}bt_vendors`, vendors),
+          storageService.setItem(`${prefix}bt_leads`, leads),
+          storageService.setItem(`${prefix}bt_inventory`, inventoryItems),
+          storageService.setItem(`${prefix}bt_locations`, inventoryLocations),
+          storageService.setItem(`${prefix}bt_logs`, activityLogs.slice(0, 50))
         ]);
         setLastLocalSave(new Date().toLocaleTimeString());
       };
@@ -627,7 +621,7 @@ const App: React.FC = () => {
         handleCloudSync();
       }, 3000);
     }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, currentDept]);
 
   // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
   useEffect(() => {
@@ -905,10 +899,12 @@ const App: React.FC = () => {
   }
 
   if (!user) return <Login onLoginSuccess={(u, d) => {
-    const fullUser: User = { ...u, departmentId: d };
+    const fullUser: User = { ...u, department: d };
     setUser(fullUser);
-    setViewingDeptId('all'); // 全員皆可查看所有專案
+    setCurrentDept(d);
+    setViewingDeptId(u.role === 'SuperAdmin' ? 'all' : (d === 'ThirdDept' ? 'DEPT-3' : 'DEPT-1'));
     localStorage.setItem('bt_user', JSON.stringify(fullUser));
+    loadSystemData(d);
   }} />;
 
   // 同步專用視角 (用於初始化新設備)
