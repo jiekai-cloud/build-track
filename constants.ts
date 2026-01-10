@@ -8,7 +8,8 @@ export const MOCK_DEPARTMENTS: Department[] = [
   { id: 'DEPT-4', name: '第一工程部', color: '#16a34a', manager: '工務主管' },
   { id: 'DEPT-5', name: '品質管理部', color: '#8b5cf6', manager: '品管主管' },
   { id: 'DEPT-6', name: '業務部', color: '#ea580c', manager: '業務經理' },
-  { id: 'DEPT-7', name: '行銷部', color: '#ec4899', manager: '行銷經理' }
+  { id: 'DEPT-7', name: '行銷部', color: '#ec4899', manager: '行銷經理' },
+  { id: 'DEPT-8', name: '第三工程部', color: '#0ea5e9', manager: '工務主管' }
 ];
 
 export const MOCK_PROJECTS: Project[] = [

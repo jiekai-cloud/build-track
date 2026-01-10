@@ -25,10 +25,9 @@ import ModuleManager from './components/ModuleManager';
 import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
-import { Project, ProjectStatus, Customer, TeamMember, User, Department, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction } from './types';
+import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction } from './types';
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 import { moduleService } from './services/moduleService';
-import { ModuleId } from './moduleConfig';
 import { storageService } from './services/storageService';
 
 // Build Trigger: 2026-01-05 Module System Integration
@@ -37,7 +36,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewingDeptId, setViewingDeptId] = useState<string>('all');
-  const [currentDept, setCurrentDept] = useState<Department>('FirstDept');
+  const [currentDept, setCurrentDept] = useState<SystemContext>('FirstDept');
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -317,7 +316,7 @@ const App: React.FC = () => {
     }
   }, [updateStateWithMerge]);
 
-  const loadSystemData = useCallback(async (dept: Department) => {
+  const loadSystemData = useCallback(async (dept: SystemContext) => {
     console.log(`[System] Initializing context for: ${dept}`);
 
     // 1. Configure Cloud Context

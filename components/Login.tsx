@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { HardHat, ShieldCheck, Sparkles, User, Lock, ArrowRight, Layers, Check, AlertCircle, Hash, Info, UserCheck, Cloud, Building2 } from 'lucide-react';
 import { MOCK_DEPARTMENTS } from '../constants';
 import { storageService } from '../services/storageService';
-import { Department } from '../types';
+import { SystemContext } from '../types';
 
 interface LoginProps {
-  onLoginSuccess: (userData: any, department: Department) => void;
+  onLoginSuccess: (userData: any, department: SystemContext) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
@@ -14,7 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDept, setSelectedDept] = useState<Department>('FirstDept');
+  const [selectedDept, setSelectedDept] = useState<SystemContext>('FirstDept');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

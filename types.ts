@@ -289,7 +289,7 @@ export interface TeamMember {
 
 export type Role = 'SuperAdmin' | 'Admin' | 'Manager' | 'Staff' | 'Guest' | 'SyncOnly' | 'DeptAdmin';
 
-export type Department = 'FirstDept' | 'ThirdDept'; // 第一工程部 | 第三工程部
+export type SystemContext = 'FirstDept' | 'ThirdDept'; // 第一工程部 | 第三工程部
 
 export interface User {
   id: string;
@@ -298,7 +298,7 @@ export interface User {
   picture?: string;
   role: Role;
   roleName?: string; // 自訂職稱 (e.g. 工務經理)
-  department: Department;
+  department: SystemContext;
 }
 
 export interface Message {
