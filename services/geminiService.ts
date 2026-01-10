@@ -4,14 +4,17 @@ import { Project } from "../types";
 // 優先採用的穩定模型列表 (依序備援)
 // 優先採用的穩定模型列表 (依序備援，涵蓋穩定版與最新版)
 const FALLBACK_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-2.0-flash-exp',
-  'gemini-1.5-pro',
-  'gemini-1.5-flash-001',
-  'gemini-1.5-flash-002'
+  'gemini-1.5-flash-002',      // Newer stable version
+  'gemini-1.5-flash-001',      // Older stable version
+  'gemini-1.5-flash',          // Generic alias (sometimes 404s)
+  'gemini-1.5-flash-8b',       // Another flash variant
+  'gemini-1.5-pro',            // Pro version
+  'gemini-1.5-pro-001',
+  'gemini-1.5-pro-002',
+  'gemini-pro',                // Legacy 1.0 Pro
+  'gemini-2.0-flash-exp'       // Experimental (Moved to last due to lower quotas)
 ];
-const STABLE_MODEL = 'gemini-1.5-flash';
+const STABLE_MODEL = 'gemini-1.5-flash-002';
 const EXPERIMENTAL_MODEL = 'gemini-2.0-flash-exp';
 
 // Always use an named parameter for apiKey and fetch from process.env.API_KEY
