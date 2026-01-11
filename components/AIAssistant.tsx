@@ -68,7 +68,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onPro
       const dx = e.clientX - dragRef.current.startX;
       const dy = e.clientY - dragRef.current.startY;
 
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
         dragRef.current.hasMoved = true;
       }
 
@@ -88,7 +88,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onPro
       const dx = touch.clientX - dragRef.current.startX;
       const dy = touch.clientY - dragRef.current.startY;
 
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
         dragRef.current.hasMoved = true;
       }
 
@@ -201,11 +201,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onPro
 
   return (
     <div
-      className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50 transition-transform duration-75 ease-out will-change-transform"
+      className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-[150] transition-transform duration-75 ease-out will-change-transform"
       style={{
-        transform: (isOpen && window.innerWidth < 640)
-          ? 'none'
-          : `translate(${position.x}px, ${position.y}px)`
+        transform: isOpen ? 'none' : `translate(${position.x}px, ${position.y}px)`
       }}
     >
       {!isOpen && (
