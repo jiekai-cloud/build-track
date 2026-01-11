@@ -137,71 +137,71 @@ export const MOCK_PROJECTS: Project[] = [
 
 export const MOCK_TEAM_MEMBERS: TeamMember[] = [
   {
-    id: 'T-1',
-    employeeId: 'ADM001',
-    name: '李大維',
-    role: '總經理',
-    systemRole: 'SuperAdmin',
-    departmentId: 'DEPT-1', // 戰略指揮部
-    departmentIds: ['DEPT-1', 'DEPT-2'],
-    phone: '0912-000-001',
-    email: 'ceo@lifequality.ai',
-    status: 'Available',
-    activeProjectsCount: 2,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-    specialty: ['企業管理', '戰略規劃'],
-    certifications: ['PMP', '工地主任證照'],
-    joinDate: '2020-01-01'
-  },
-  {
-    id: 'T-2',
-    employeeId: 'ENG001',
-    name: '張家銘',
-    role: '工地主任',
+    id: 'T-101',
+    employeeId: 'ENG101',
+    name: '林志豪',
+    role: '工務主管',
     systemRole: 'DeptAdmin',
     departmentId: 'DEPT-4', // 第一工程部
     departmentIds: ['DEPT-4'],
-    phone: '0928-111-222',
-    email: 'jm.chang@lifequality.ai',
-    status: 'Busy',
-    activeProjectsCount: 3,
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-    specialty: ['室內裝修', '水電配置'],
-    certifications: ['乙級室內裝修工程管理'],
-    joinDate: '2022-03-15'
+    phone: '0910-123-456',
+    email: 'lin.eng1@lifequality.ai',
+    status: 'Available',
+    activeProjectsCount: 2,
+    avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=200',
+    specialty: ['結構工程', '現場管理'],
+    certifications: ['工地主任', '勞安甲種'],
+    joinDate: '2023-01-01'
   },
   {
-    id: 'T-3',
-    employeeId: 'AST001',
-    name: '陳小美',
-    role: '工地助理',
+    id: 'T-102',
+    employeeId: 'ENG102',
+    name: '陳建宏',
+    role: '工程師',
     systemRole: 'Staff',
     departmentId: 'DEPT-4', // 第一工程部
     departmentIds: ['DEPT-4'],
-    phone: '0933-444-555',
-    email: 'xm.chen@lifequality.ai',
-    status: 'Available',
+    phone: '0910-123-457',
+    email: 'chen.eng1@lifequality.ai',
+    status: 'Busy',
     activeProjectsCount: 1,
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-    specialty: ['現場紀錄', '物料清點'],
-    certifications: ['職業安全衛生管理員'],
-    joinDate: '2023-06-01'
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+    specialty: ['水電工程', '圖面繪製'],
+    certifications: ['乙級室內配線'],
+    joinDate: '2023-03-15'
   },
   {
-    id: 'T-4',
-    employeeId: 'ACC001',
-    name: '王雪芬',
-    role: '經理',
+    id: 'T-301',
+    employeeId: 'ENG301',
+    name: '黃國華',
+    role: '工務主管',
     systemRole: 'DeptAdmin',
-    departmentId: 'DEPT-3', // 財務部
-    departmentIds: ['DEPT-3'],
-    phone: '0955-666-777',
-    email: 'accounting@lifequality.ai',
+    departmentId: 'DEPT-8', // 第三工程部
+    departmentIds: ['DEPT-8'],
+    phone: '0920-987-654',
+    email: 'huang.eng3@lifequality.ai',
     status: 'Available',
     activeProjectsCount: 0,
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200',
-    specialty: ['財務會計', '稅務申報'],
-    certifications: ['記帳士', '會計師乙級'],
-    joinDate: '2021-11-20'
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
+    specialty: ['裝修工程', '估價預算'],
+    certifications: ['室內裝修工程管理乙級'],
+    joinDate: '2023-02-01'
+  },
+  {
+    id: 'T-302',
+    employeeId: 'ENG302',
+    name: '李美玲',
+    role: '行政助理',
+    systemRole: 'Staff',
+    departmentId: 'DEPT-8', // 第三工程部
+    departmentIds: ['DEPT-8'],
+    phone: '0920-987-655',
+    email: 'lee.eng3@lifequality.ai',
+    status: 'Available',
+    activeProjectsCount: 1,
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
+    specialty: ['文書處理', '採購作業'],
+    certifications: [],
+    joinDate: '2023-04-10'
   }
 ];
