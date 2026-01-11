@@ -1368,7 +1368,31 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <div className="no-print"><AIAssistant projects={filteredData.projects} /></div>
+        <div className="no-print">
+          <AIAssistant
+            projects={filteredData.projects}
+            onAddProject={(initialData) => {
+              setEditingProject({
+                id: '',
+                name: initialData.name || '新案件',
+                status: ProjectStatus.NEGOTIATING,
+                progress: 0,
+                managers: [],
+                customer: initialData.client ? { name: initialData.client, phone: '', id: 'temp' } as any : undefined,
+                budget: initialData.budget || 0,
+                description: initialData.notes || '',
+                location: initialData.location ? { address: initialData.location } as any : undefined,
+                categories: [],
+                startDate: new Date().toISOString().split('T')[0],
+              } as any);
+              setIsModalOpen(true);
+            }}
+            onProjectClick={(projectId) => {
+              setSelectedProjectId(projectId);
+              setActiveTab('projects');
+            }}
+          />
+        </div>
         {/* AI API Key Settings Modal */}
         {isAISettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in duration-300">

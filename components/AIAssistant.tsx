@@ -1,21 +1,62 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, X, Bot, Loader2, Sparkles, PieChart, Search, Link as LinkIcon, Gavel, Coins } from 'lucide-react';
-import { getProjectInsights, getPortfolioAnalysis, searchEngineeringKnowledge } from '../services/geminiService';
+import { MessageCircle, Send, X, Bot, Loader2, Sparkles, PieChart, Search, Link as LinkIcon, Gavel, Coins, Mic, MicOff } from 'lucide-react';
+import { getProjectInsights, getPortfolioAnalysis, searchEngineeringKnowledge, parseVoiceCommand } from '../services/geminiService';
 import { Project, Message } from '../types';
 
 interface AIAssistantProps {
   projects: Project[];
+  onAddProject?: (data: any) => void;
+  onProjectClick?: (id: string) => void;
 }
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
+const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onProjectClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<(Message & { chunks?: any[] })[]>([
     { role: 'assistant', content: '您好！我是生活品質工程管理系統的智慧營造顧問。我可以幫您分析案場風險、查詢營造法規或市場最新建材報價。' }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const startListening = () => {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert("您的瀏覽器不支援語音辨識功能，請使用 Chrome 或 Safari。");
+      return;
+    }
+
+    // Stop if already started
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = 'zh-TW';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event: any) => {
+      const text = event.results[0][0].transcript;
+      setInput(text);
+      handleSendMessage(text, true); // True indicating voice input
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
 
   // Dragging Logic
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -67,7 +108,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
     if (isOpen) scrollToBottom();
   }, [messages, isOpen, isLoading]);
 
-  const handleSendMessage = async (text?: string) => {
+  const handleSendMessage = async (text?: string, isVoice = false) => {
     const messageText = text || input;
     if (!messageText.trim() || isLoading) return;
 
@@ -77,7 +118,32 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
 
     try {
       let result;
-      if (messageText === '全案場風險報告') {
+
+      // 1. 如果是語音輸入，優先解析意圖
+      if (isVoice) {
+        const intentResult = await parseVoiceCommand(messageText);
+
+        if (intentResult.intent === 'CREATE_PROJECT' && onAddProject) {
+          // Trigger Add Project
+          onAddProject(intentResult.data);
+          result = { text: intentResult.response || "沒問題，正在為您開啟新增案件視窗並帶入資料。" };
+        } else if (intentResult.intent === 'QUERY_PROJECT') {
+          const keyword = intentResult.data?.keywords;
+          const target = projects.find(p => p.name.includes(keyword) || p.clientName?.includes(keyword));
+
+          if (target && onProjectClick) {
+            onProjectClick(target.id);
+            result = { text: `找到案件「${target.name}」，正帶您前往...` };
+          } else {
+            result = { text: `抱歉，找不到關鍵字為「${keyword}」的案件。` };
+          }
+        } else {
+          // Fallback to General Chat
+          result = { text: intentResult.response };
+        }
+      }
+      // 2. 一般文字指令處理
+      else if (messageText === '全案場風險報告') {
         result = await getPortfolioAnalysis(projects);
       } else if (messageText.includes('法規') || messageText.includes('價格') || messageText.includes('行情') || messageText.includes('查詢')) {
         result = await searchEngineeringKnowledge(messageText);
@@ -91,7 +157,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
         chunks: result.chunks
       }]);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "發生意外錯誤，請檢查您的 API 金鑰配置。" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "發生意外錯誤或無法連線 AI 服務。" }]);
     } finally {
       setIsLoading(false);
     }
@@ -208,6 +274,12 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects }) => {
 
           {/* Input Area */}
           <div className="p-5 bg-white border-t border-stone-100 flex items-center gap-3 shrink-0">
+            <button
+              onClick={startListening}
+              className={`p-3 rounded-full transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}
+            >
+              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
             <div className="flex-1 relative">
               <input
                 type="text"

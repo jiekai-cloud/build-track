@@ -589,3 +589,60 @@ export const generatePreConstructionPrep = async (project: Project) => {
     return handleAIError(error, "產生施工前準備");
   }
 };
+
+/**
+ * 解析語音指令
+ * 用於將使用者的口語指令轉換為系統操作 (新增案件、查詢案件)
+ */
+export async function parseVoiceCommand(text: string): Promise<{
+  intent: 'CREATE_PROJECT' | 'QUERY_PROJECT' | 'GENERAL_CHAT';
+  data?: any;
+  response: string;
+}> {
+  try {
+    const ai = getAI();
+    const model = ai.getGenerativeModel({ model: STABLE_MODEL });
+
+    const prompt = `
+      你是營建管理系統的 AI 助理。請分析以下使用者語音指令，並判斷其意圖。
+      指令內容："${text}"
+
+      可能的意圖 (Intent)：
+      1. CREATE_PROJECT: 使用者想要"新增"、"建立"、"添加"一個新案件。
+      2. QUERY_PROJECT: 使用者想要"查詢"、"搜尋"、"找"一個案件。
+      3. GENERAL_CHAT: 其他一般對話或詢問建議。
+
+      請回傳標準 JSON 格式 (不要有 markdown code block)：
+      {
+        "intent": "CREATE_PROJECT" | "QUERY_PROJECT" | "GENERAL_CHAT",
+        "data": {
+          // 如果是 CREATE_PROJECT，請提取：
+          "name": "案件名稱 (若無則依情境產生，必填)",
+          "client": "業主名稱",
+          "budget": 數字 (若未提及則為 0),
+          "location": "地址",
+          "notes": "備註內容"
+          
+          // 如果是 QUERY_PROJECT，請提取：
+          "keywords": "搜尋關鍵字"
+        },
+        "response": "請用繁體中文簡短回覆使用者確認動作 (例如：『好的，正在為您建立關於XXX的案件...』)"
+      }
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    let textResponse = response.text();
+
+    // Clean up potential markdown blocks
+    textResponse = textResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+
+    return JSON.parse(textResponse);
+  } catch (error) {
+    console.warn("Voice parsing failed", error);
+    return {
+      intent: 'GENERAL_CHAT',
+      response: '抱歉，我不太理解您的指令，請再試一次。'
+    };
+  }
+}
