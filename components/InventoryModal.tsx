@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-    X, Package, MapPin, DollarSign, Tag, Save,
     Box, Ruler, Hash, Archive, Truck, AlertTriangle,
-    QrCode, Plus, Trash2, Printer
+    QrCode, Plus, Trash2, Printer, Wrench, Calendar, User, FileText
 } from 'lucide-react';
-import { InventoryItem, InventoryCategory } from '../types';
+import { InventoryItem, InventoryCategory, MaintenanceRecord } from '../types';
 
 interface InventoryModalProps {
     onClose: () => void;
@@ -31,8 +30,49 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, ini
         sellingPrice: 0,
         supplier: '',
         status: 'Normal',
-        notes: ''
+        notes: '',
+        maintenanceRecords: []
     });
+
+    const [newMaintenance, setNewMaintenance] = useState<Partial<MaintenanceRecord>>({
+        type: '維修',
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+        cost: 0,
+        performer: ''
+    });
+
+    const handleAddMaintenance = () => {
+        if (!newMaintenance.description || !newMaintenance.date) return;
+        const record: MaintenanceRecord = {
+            id: Date.now().toString(),
+            date: newMaintenance.date!,
+            type: newMaintenance.type as any || '維修',
+            description: newMaintenance.description!,
+            cost: Number(newMaintenance.cost) || 0,
+            performer: newMaintenance.performer || '',
+        };
+
+        setFormData(prev => ({
+            ...prev,
+            maintenanceRecords: [record, ...(prev.maintenanceRecords || [])]
+        }));
+
+        setNewMaintenance({
+            type: '維修',
+            date: new Date().toISOString().split('T')[0],
+            description: '',
+            cost: 0,
+            performer: ''
+        });
+    };
+
+    const handleRemoveMaintenance = (id: string) => {
+        setFormData(prev => ({
+            ...prev,
+            maintenanceRecords: prev.maintenanceRecords?.filter(r => r.id !== id)
+        }));
+    };
 
     useEffect(() => {
         if (initialData) {
@@ -82,6 +122,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, ini
     const tabs = [
         { id: 'info', label: '基本資訊', icon: Package },
         { id: 'stock', label: '庫存設定', icon: Box },
+        ...(formData.category === '工具' ? [{ id: 'maintenance', label: '維修紀錄', icon: Wrench }] : []),
         { id: 'barcode', label: '條碼管理', icon: QrCode },
     ];
 
@@ -305,6 +346,135 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, ini
                                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
                                     />
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'maintenance' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
+                            {/* Add New Record Form */}
+                            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                                <h3 className="text-sm font-black text-slate-700 mb-4 flex items-center gap-2">
+                                    <Plus size={16} className="text-blue-500" /> 新增紀錄
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">日期</label>
+                                        <div className="relative">
+                                            <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <input
+                                                type="date"
+                                                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={newMaintenance.date}
+                                                onChange={e => setNewMaintenance({ ...newMaintenance, date: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">類型</label>
+                                        <select
+                                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                            value={newMaintenance.type}
+                                            onChange={e => setNewMaintenance({ ...newMaintenance, type: e.target.value as any })}
+                                        >
+                                            <option value="維修">維修</option>
+                                            <option value="保養">保養</option>
+                                            <option value="檢測">檢測</option>
+                                            <option value="其他">其他</option>
+                                        </select>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">內容說明</label>
+                                        <div className="relative">
+                                            <FileText size={14} className="absolute left-3 top-3 text-slate-300" />
+                                            <textarea
+                                                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 resize-none h-20"
+                                                placeholder="請輸入維修或保養內容..."
+                                                value={newMaintenance.description}
+                                                onChange={e => setNewMaintenance({ ...newMaintenance, description: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">費用</label>
+                                        <div className="relative">
+                                            <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <input
+                                                type="number"
+                                                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={newMaintenance.cost}
+                                                onChange={e => setNewMaintenance({ ...newMaintenance, cost: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">執行人員/廠商</label>
+                                        <div className="relative">
+                                            <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <input
+                                                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="輸入名稱..."
+                                                value={newMaintenance.performer}
+                                                onChange={e => setNewMaintenance({ ...newMaintenance, performer: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleAddMaintenance}
+                                    className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-200 active:scale-95"
+                                >
+                                    新增紀錄
+                                </button>
+                            </div>
+
+                            {/* List Records */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">歷史紀錄</h3>
+                                {(!formData.maintenanceRecords || formData.maintenanceRecords.length === 0) ? (
+                                    <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                                        <Wrench className="mx-auto mb-2 opacity-20" size={32} />
+                                        <p className="font-bold text-sm">尚無維修紀錄</p>
+                                    </div>
+                                ) : (
+                                    formData.maintenanceRecords.map((record) => (
+                                        <div key={record.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
+                                            <div className={`p-3 rounded-xl ${record.type === '維修' ? 'bg-rose-50 text-rose-500' :
+                                                record.type === '保養' ? 'bg-green-50 text-green-500' :
+                                                    'bg-blue-50 text-blue-500'
+                                                }`}>
+                                                <Wrench size={20} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <div>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">{record.date}</span>
+                                                        <h4 className="font-bold text-slate-800">{record.description}</h4>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="block font-bold text-slate-900">${record.cost.toLocaleString()}</span>
+                                                        <span className="text-xs text-slate-500 font-medium">{record.performer}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${record.type === '維修' ? 'bg-rose-100 text-rose-600' :
+                                                        record.type === '保養' ? 'bg-green-100 text-green-600' :
+                                                            'bg-slate-100 text-slate-600'
+                                                        }`}>
+                                                        {record.type}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleRemoveMaintenance(record.id)}
+                                                className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     )}

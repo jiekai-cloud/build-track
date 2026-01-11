@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
     Search, Plus, Package, Ruler, Archive, AlertTriangle,
     MoreHorizontal, Pencil, Trash2, Tag, Box, Hash, Filter,
-    ShieldAlert, ShoppingBag, Truck, LayoutList, MapPin, Building2, ArrowRightLeft, ScanBarcode
+    ShieldAlert, ShoppingBag, Truck, LayoutList, MapPin, Building2, ArrowRightLeft, ScanBarcode, Wrench
 } from 'lucide-react';
 import { InventoryItem, User as UserType, InventoryCategory } from '../types';
 
@@ -201,6 +201,12 @@ const InventoryList: React.FC<InventoryListProps> = ({ items, user, onAddClick, 
                                                 </span>
                                             )}
                                             {getStatusBadge(item)}
+                                            {item.maintenanceRecords && item.maintenanceRecords.length > 0 && (
+                                                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex items-center gap-1 border border-slate-200">
+                                                    <Wrench size={10} className="text-slate-400" />
+                                                    {item.maintenanceRecords[0].date}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

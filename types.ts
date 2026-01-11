@@ -327,6 +327,18 @@ export interface InventoryItem {
   updatedAt?: string;
   deletedAt?: string;
   notes?: string;
+  maintenanceRecords?: MaintenanceRecord[];
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  date: string;
+  type: '維修' | '保養' | '檢測' | '其他';
+  description: string;
+  cost: number;
+  performer: string; // 維修廠商或人員
+  nextDate?: string; // 下次預計維修/保養日
+  attachments?: string[]; // 照片或單據
 }
 
 
