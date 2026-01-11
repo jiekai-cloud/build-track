@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, Ruler, Hash, Archive, Truck, AlertTriangle,
-    QrCode, Plus, Trash2, Printer, Wrench, Calendar, User, FileText
+    QrCode, Plus, Trash2, Printer, Wrench, Calendar, User, FileText,
+    Package, X, Tag, DollarSign, MapPin
 } from 'lucide-react';
 import { InventoryItem, InventoryCategory, MaintenanceRecord } from '../types';
 
