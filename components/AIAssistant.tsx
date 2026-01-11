@@ -165,8 +165,10 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onPro
 
   return (
     <div
-      className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50 transition-transform duration-75 ease-out will-change-transform"
-      style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+      className="fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50 transition-transform duration-75 ease-out will-change-transform sm:translate-x-0 sm:translate-y-0"
+      style={{
+        transform: window.innerWidth >= 640 ? `translate(${position.x}px, ${position.y}px)` : 'none'
+      }}
     >
       {!isOpen && (
         <button
