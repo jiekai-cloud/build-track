@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     ShoppingCart, Plus, Package, Truck, Calendar, X,
     DollarSign, User, CheckCircle, Clock, Search, Filter,
-    ChevronDown, ChevronUp, AlertCircle, FileText, Check
+    ChevronDown, ChevronUp, AlertCircle, FileText, Check, Pencil, Trash2
 } from 'lucide-react';
 import { InventoryItem, InventoryLocation, PurchaseOrder, PurchaseOrderItem, OrderPayment } from '../types';
 
@@ -46,6 +46,7 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
         method: 'Transfer',
         note: ''
     });
+    const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
 
     // Helper functions
     const getWarehouseName = (id: string) => locations.find(l => l.id === id)?.name || id;
@@ -126,20 +127,58 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
         setView('detail');
     };
 
-    const handleAddPayment = () => {
+    const handleSavePayment = () => {
         if (!selectedOrder || newPaymentInput.amount <= 0) return;
 
         const updatedOrder = { ...selectedOrder };
-        const newPayment: OrderPayment = {
-            id: Date.now().toString(),
-            ...newPaymentInput
-        };
+        let newPayments = [...(updatedOrder.payments || [])];
 
-        updatedOrder.payments = [...(updatedOrder.payments || []), newPayment];
+        if (editingPaymentId) {
+            // Update existing
+            newPayments = newPayments.map(p => p.id === editingPaymentId ? { ...p, ...newPaymentInput, id: p.id } : p);
+        } else {
+            // Create new
+            const newPayment: OrderPayment = {
+                id: Date.now().toString(),
+                ...newPaymentInput
+            };
+            newPayments.push(newPayment);
+        }
+
+        updatedOrder.payments = newPayments;
 
         onUpdateOrder(updatedOrder);
         setSelectedOrder(updatedOrder); // Update local view
+
+        // Reset
         setNewPaymentInput({ amount: 0, date: new Date().toISOString().split('T')[0], method: 'Transfer', note: '' });
+        setEditingPaymentId(null);
+    };
+
+    const handleEditPayment = (payment: OrderPayment) => {
+        setNewPaymentInput({
+            amount: payment.amount,
+            date: payment.date,
+            method: payment.method,
+            note: payment.note || ''
+        });
+        setEditingPaymentId(payment.id);
+    };
+
+    const handleDeletePayment = (paymentId: string) => {
+        if (!confirm('確定刪除此付款紀錄？')) return;
+        if (!selectedOrder) return;
+
+        const updatedOrder = { ...selectedOrder };
+        updatedOrder.payments = (updatedOrder.payments || []).filter(p => p.id !== paymentId);
+
+        onUpdateOrder(updatedOrder);
+        setSelectedOrder(updatedOrder);
+
+        if (editingPaymentId === paymentId) {
+            setEditingPaymentId(null);
+            setNewPaymentInput({ amount: 0, date: new Date().toISOString().split('T')[0], method: 'Transfer', note: '' });
+        }
     };
 
     const [selectedReceiveIndices, setSelectedReceiveIndices] = useState<number[]>([]);
@@ -239,8 +278,8 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
                                                     <h3 className="text-lg font-black text-slate-800 group-hover:text-blue-600 transition-colors">{order.supplier}</h3>
                                                 </div>
                                                 <div className={`px-3 py-1 rounded-full text-xs font-black uppercase ${order.status === 'Completed' ? 'bg-emerald-100 text-emerald-600' :
-                                                        order.status === 'Cancelled' ? 'bg-slate-100 text-slate-400' :
-                                                            'bg-amber-100 text-amber-600'
+                                                    order.status === 'Cancelled' ? 'bg-slate-100 text-slate-400' :
+                                                        'bg-amber-100 text-amber-600'
                                                     }`}>
                                                     {order.status === 'Pending' ? '待收貨' :
                                                         order.status === 'Partial' ? '部分收貨' :
@@ -449,10 +488,10 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
                                             <div key={idx} className={`p-4 flex items-center justify-between transition-colors ${item.received ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}>
                                                 <div className="flex items-center gap-4">
                                                     <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${item.received
-                                                            ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                            : selectedReceiveIndices.includes(idx)
-                                                                ? 'bg-blue-500 border-blue-500 text-white'
-                                                                : 'border-slate-300 bg-white'
+                                                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                        : selectedReceiveIndices.includes(idx)
+                                                            ? 'bg-blue-500 border-blue-500 text-white'
+                                                            : 'border-slate-300 bg-white'
                                                         }`}
                                                         onClick={() => {
                                                             if (item.received) return;
@@ -489,12 +528,26 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
                                     <div className="p-6">
                                         <div className="space-y-4 mb-6">
                                             {selectedOrder.payments.map(pay => (
-                                                <div key={pay.id} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
+                                                <div key={pay.id} className={`flex justify-between items-center py-2 border-b border-slate-50 last:border-0 ${editingPaymentId === pay.id ? 'bg-blue-50/50 -mx-2 px-2 rounded-lg' : ''}`}>
                                                     <div>
                                                         <div className="font-bold text-slate-700">${pay.amount.toLocaleString()}</div>
                                                         <div className="text-xs text-slate-400 font-bold">{pay.date} • {pay.method}</div>
                                                     </div>
-                                                    {pay.note && <div className="text-sm text-slate-500">{pay.note}</div>}
+                                                    <div className="flex items-center gap-3">
+                                                        {pay.note && <div className="text-sm text-slate-500 mr-2">{pay.note}</div>}
+                                                        <button
+                                                            onClick={() => handleEditPayment(pay)}
+                                                            className="text-slate-300 hover:text-blue-600 transition-colors"
+                                                        >
+                                                            <Pencil size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeletePayment(pay.id)}
+                                                            className="text-slate-300 hover:text-rose-600 transition-colors"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                             {selectedOrder.payments.length === 0 && (
@@ -504,25 +557,25 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
 
                                         {/* Add Payment Form */}
                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-3">
-                                            <div className="flex gap-2">
+                                            <div className="flex flex-wrap gap-2 items-center">
                                                 <input
                                                     type="date"
-                                                    className="w-1/3 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none"
+                                                    className="w-[150px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
                                                     value={newPaymentInput.date}
                                                     onChange={e => setNewPaymentInput({ ...newPaymentInput, date: e.target.value })}
                                                 />
-                                                <div className="relative flex-1">
+                                                <div className="relative flex-1 min-w-[120px]">
                                                     <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
                                                     <input
                                                         type="number"
                                                         placeholder="金額"
-                                                        className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-sm font-bold outline-none"
-                                                        value={newPaymentInput.amount}
+                                                        className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                                                        value={newPaymentInput.amount || ''}
                                                         onChange={e => setNewPaymentInput({ ...newPaymentInput, amount: Number(e.target.value) })}
                                                     />
                                                 </div>
                                                 <select
-                                                    className="w-1/3 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none appearance-none"
+                                                    className="w-[100px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
                                                     value={newPaymentInput.method}
                                                     onChange={e => setNewPaymentInput({ ...newPaymentInput, method: e.target.value })}
                                                 >
@@ -531,11 +584,22 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
                                                     <option value="Check">支票</option>
                                                 </select>
                                                 <button
-                                                    onClick={handleAddPayment}
-                                                    className="bg-slate-900 text-white px-4 rounded-lg font-bold text-sm hover:bg-slate-800"
+                                                    onClick={handleSavePayment}
+                                                    className={`${editingPaymentId ? 'bg-blue-600' : 'bg-slate-900'} text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 shadow-lg active:scale-95 transition-all whitespace-nowrap`}
                                                 >
-                                                    紀錄付款
+                                                    {editingPaymentId ? '更新付款' : '紀錄付款'}
                                                 </button>
+                                                {editingPaymentId && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingPaymentId(null);
+                                                            setNewPaymentInput({ amount: 0, date: new Date().toISOString().split('T')[0], method: 'Transfer', note: '' });
+                                                        }}
+                                                        className="bg-white text-slate-400 border border-slate-200 px-3 py-2 rounded-lg font-bold text-sm hover:bg-slate-50 transition-all whitespace-nowrap"
+                                                    >
+                                                        取消
+                                                    </button>
+                                                )}
                                             </div>
                                             <input
                                                 type="text"

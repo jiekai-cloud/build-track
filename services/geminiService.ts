@@ -3,16 +3,15 @@ import { Project } from "../types";
 
 // 優先採用的穩定模型列表 (依序備援)
 // 優先採用的穩定模型列表 (依序備援，涵蓋穩定版與最新版)
+// 優先採用的穩定模型列表 (依序備援)
 const FALLBACK_MODELS = [
-  'gemini-2.0-flash-exp',      // Primary: Only model working for this user (despite rate limits)
-  'gemini-2.0-flash-thinking-exp', // Backup experimental
-  'gemini-1.5-flash-002',      // Newer stable version
-  'gemini-1.5-flash-001',      // Older stable version
-  'gemini-1.5-flash',          // Generic alias
-  'gemini-1.5-flash-8b',
-  'gemini-1.5-pro',
-  'gemini-1.5-pro-001'
+  'gemini-2.0-flash-exp',      // Primary: Smartest model
+  'gemini-1.5-flash',          // Secondary: Most stable and fast
+  'gemini-1.5-flash-002',
+  'gemini-1.5-pro',            // Backup: Higher capacity
+  'gemini-2.0-flash-thinking-exp'
 ];
+
 const STABLE_MODEL = 'gemini-2.0-flash-exp';
 const EXPERIMENTAL_MODEL = 'gemini-2.0-flash-thinking-exp';
 
@@ -50,19 +49,23 @@ const getAI = () => {
  * 集中處理 AI 報錯，提供更友善的資訊
  */
 const handleAIError = (error: any, context: string, modelUsed: string) => {
-  console.error(`${context} 使用 ${modelUsed} 失敗:`, error);
+  console.warn(`${context} 使用 ${modelUsed} 失敗:`, error); // Changed to warn
 
   const errorMsg = error?.message || "";
 
-  // 如果是配額問題，直接拋出，不進行備援
   // 429: Too Many Requests / Resource Exhausted
   if (errorMsg.includes("limit: 0") || errorMsg.includes("RESOURCE_EXHAUSTED") || errorMsg.includes("429")) {
-    throw new Error(`AI 服務忙碌中 (429)：免費版配額已滿，請等待約 1 分鐘後再試。`);
+    return "QUOTA_EXCEEDED";
   }
 
   // 404 代表模型不存在或未被授權
   if (errorMsg.includes("404") || errorMsg.includes("not found")) {
     return "MODEL_NOT_FOUND";
+  }
+
+  // 503 Service Unavailable
+  if (errorMsg.includes("503") || errorMsg.includes("overloaded")) {
+    return "SERVER_OVERLOADED";
   }
 
   throw error;
@@ -86,16 +89,30 @@ async function callAIWithFallback(payload: any, context: string) {
     } catch (err: any) {
       lastError = err;
       const status = handleAIError(err, context, modelId);
+
+      if (status === "QUOTA_EXCEEDED") {
+        console.warn(`[AI] 模型 ${modelId} 配額已滿 (429)，等待 2 秒後嘗試下一個備援模型...`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Simple backoff
+        continue;
+      }
+
+      if (status === "SERVER_OVERLOADED") {
+        console.warn(`[AI] 模型 ${modelId} 服務忙碌 (503)，等待 1 秒後嘗試下一個備援模型...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        continue;
+      }
+
       if (status === "MODEL_NOT_FOUND") {
         console.warn(`[AI] 模型 ${modelId} 不存在，嘗試下一個備援模型...`);
         continue;
       }
-      // 如果不是 404 (例如配額問題、安全檢查等)，則直接報錯不續試
+
+      // 如果是其他錯誤 (例如安全攔截)，則直接報錯不續試
       throw err;
     }
   }
 
-  throw lastError || new Error(`${context} 失敗：所有備援模型均無法連線 (404)。請檢查您的 API Key 權限。`);
+  throw lastError || new Error(`${context} 失敗：所有備援模型均無法連線 (配額已滿或網路問題)。請稍後再試。`);
 }
 
 /**
