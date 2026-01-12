@@ -39,8 +39,9 @@ const InventoryList: React.FC<InventoryListProps> = ({ items, locations, user, o
             const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
             const matchesLocation = selectedLocation === 'all' || item.locations?.some(l => l.name === selectedLocation);
             const matchesLowStock = !showLowStockOnly || (item.minLevel !== undefined && item.quantity <= item.minLevel);
+            const isNotDeleted = !item.deletedAt;
 
-            return matchesSearch && matchesCategory && matchesLocation && matchesLowStock;
+            return matchesSearch && matchesCategory && matchesLocation && matchesLowStock && isNotDeleted;
         });
     }, [items, searchTerm, selectedCategory, selectedLocation, showLowStockOnly]);
 
