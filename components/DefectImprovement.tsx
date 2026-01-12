@@ -1,7 +1,9 @@
 
-import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Save, X, CheckCircle2, Circle, AlertTriangle, MessageSquare, Calendar, ChevronDown, ChevronRight, Check } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus, Trash2, Edit2, Save, X, CheckCircle2, Circle, AlertTriangle, MessageSquare, Calendar, ChevronDown, ChevronRight, Check, Download, Loader2 } from 'lucide-react';
 import { Project, DefectRecord, DefectItem } from '../types';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface DefectImprovementProps {
     project: Project;
@@ -12,8 +14,10 @@ interface DefectImprovementProps {
 const DefectImprovement: React.FC<DefectImprovementProps> = ({ project, onUpdate, isReadOnly }) => {
     const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
     const [expandedRecords, setExpandedRecords] = useState<string[]>([]);
+    const [isExporting, setIsExporting] = useState(false);
+    const pdfRef = useRef<HTMLDivElement>(null);
 
-    // Temporary state for editing a record
+
     const [tempRecord, setTempRecord] = useState<DefectRecord | null>(null);
 
     const records = project.defectRecords || [];
@@ -104,13 +108,60 @@ const DefectImprovement: React.FC<DefectImprovementProps> = ({ project, onUpdate
                     <h3 className="font-black text-xs uppercase tracking-widest text-stone-900">缺失改善紀錄</h3>
                 </div>
                 {!isReadOnly && (
-                    <button
-                        onClick={addNewRecord}
-                        disabled={!!editingRecordId}
-                        className="flex items-center gap-2 bg-stone-900 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
-                    >
-                        <Plus size={14} /> 新增改善紀錄
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={async () => {
+                                if (!pdfRef.current || isExporting) return;
+                                setIsExporting(true);
+                                try {
+                                    const element = pdfRef.current;
+                                    const canvas = await html2canvas(element, {
+                                        scale: 2,
+                                        useCORS: true,
+                                        logging: false,
+                                        backgroundColor: '#ffffff'
+                                    });
+                                    const imgData = canvas.toDataURL('image/png');
+                                    const pdf = new jsPDF('p', 'mm', 'a4');
+                                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                                    const imgWidth = pdfWidth;
+                                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                                    let heightLeft = imgHeight;
+                                    let position = 0;
+
+                                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                                    heightLeft -= pdfHeight;
+
+                                    while (heightLeft >= 0) {
+                                        position = heightLeft - imgHeight;
+                                        pdf.addPage();
+                                        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                                        heightLeft -= pdfHeight;
+                                    }
+
+                                    pdf.save(`${project.name}_缺失改善紀錄_${new Date().toISOString().split('T')[0]}.pdf`);
+                                } catch (error) {
+                                    console.error('PDF Export failed', error);
+                                    alert('匯出失敗，請稍後再試');
+                                } finally {
+                                    setIsExporting(false);
+                                }
+                            }}
+                            className="flex items-center gap-2 bg-white border border-stone-200 text-stone-600 px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-stone-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                            disabled={isExporting}
+                        >
+                            {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} 匯出 PDF
+                        </button>
+                        <button
+                            onClick={addNewRecord}
+                            disabled={!!editingRecordId}
+                            className="flex items-center gap-2 bg-stone-900 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
+                        >
+                            <Plus size={14} /> 新增改善紀錄
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -243,8 +294,8 @@ const DefectImprovement: React.FC<DefectImprovementProps> = ({ project, onUpdate
                                                                 disabled={!isEditing}
                                                                 onClick={() => updateItem(item.id, { status: item.status === 'Pending' ? 'Completed' : 'Pending' })}
                                                                 className={`shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center border transition-all ${item.status === 'Completed'
-                                                                        ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                                        : 'bg-white border-stone-300 text-transparent hover:border-emerald-400'
+                                                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                                    : 'bg-white border-stone-300 text-transparent hover:border-emerald-400'
                                                                     }`}
                                                             >
                                                                 <Check size={12} strokeWidth={4} />
@@ -325,6 +376,56 @@ const DefectImprovement: React.FC<DefectImprovementProps> = ({ project, onUpdate
                 )}
             </div>
         </div>
+
+            {/* Hidden Print Container */ }
+    <div className="fixed left-[-9999px] top-0 w-[210mm] bg-white p-8" ref={pdfRef}>
+        <div className="mb-6 border-b border-stone-200 pb-4">
+            <h1 className="text-2xl font-black text-stone-900 mb-2">{project.name} - 缺失改善紀錄</h1>
+            <p className="text-sm text-stone-500">列印時間：{new Date().toLocaleString('zh-TW')}</p>
+        </div>
+        <div className="space-y-6">
+            {records.map(record => {
+                const pendingCount = record.items.filter(i => i.status === 'Pending').length;
+                const completedCount = record.items.filter(i => i.status === 'Completed').length;
+                return (
+                    <div key={record.id} className="border border-stone-200 rounded-xl overflow-hidden break-inside-avoid">
+                        <div className="bg-stone-50 px-4 py-2 border-b border-stone-200 flex justify-between items-center">
+                            <span className="font-black text-stone-800">{record.date}</span>
+                            <div className="flex gap-2">
+                                {pendingCount > 0 && <span className="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-bold">待改進: {pendingCount}</span>}
+                                {completedCount > 0 && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-bold">已改善: {completedCount}</span>}
+                            </div>
+                        </div>
+                        <div className="p-4">
+                            <div className="space-y-2 mb-4">
+                                <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">缺失項目</h4>
+                                {record.items.map(item => (
+                                    <div key={item.id} className="flex gap-2 items-start border-b border-stone-100 pb-2 last:border-0 last:pb-0">
+                                        <span className={`shrink-0 text-xs px-1.5 rounded ${item.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{item.status === 'Completed' ? '已改進' : '待改進'}</span>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-stone-800">{item.content}</p>
+                                            {item.improvement && <p className="text-[10px] text-stone-500 mt-1">改善：{item.improvement}</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                                {record.items.length === 0 && <p className="text-xs text-stone-400 italic">無缺失項目</p>}
+                            </div>
+                            <div>
+                                <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">會議建議</h4>
+                                <p className="text-xs text-stone-600 leading-relaxed whitespace-pre-wrap">{record.suggestions || '無'}</p>
+                            </div>
+                        </div>
+                    </div>
+                )
+            })}
+            {records.length === 0 && (
+                <div className="text-center py-20 text-stone-300">
+                    <p className="font-bold">尚無任何缺失紀錄</p>
+                </div>
+            )}
+        </div>
+    </div>
+        </div >
     );
 };
 
