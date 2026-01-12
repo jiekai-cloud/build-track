@@ -890,10 +890,31 @@ const App: React.FC = () => {
       }
       return item.departmentId === viewingDeptId;
     };
+    const filterTeamMembers = (item: any) => {
+      if (item.isPurged) return false;
+      if (item.deletedAt && !showDeleted) return false;
+
+      if (viewingDeptId === 'all') return true;
+
+      const itemDepts = item.departmentIds && Array.isArray(item.departmentIds) && item.departmentIds.length > 0
+        ? item.departmentIds
+        : [item.departmentId];
+
+      // 1. 基本規則：部門相符
+      if (itemDepts.includes(viewingDeptId)) return true;
+
+      // 2. 特殊規則：戰略指揮部 (DEPT-1) 的成員可以在第一/第三工程部出現
+      if (itemDepts.includes('DEPT-1') && (viewingDeptId === 'DEPT-4' || viewingDeptId === 'DEPT-8')) {
+        return true;
+      }
+
+      return false;
+    };
+
     return {
       projects: projects.filter(filterByDept),
       customers: customers.filter(filterByDept),
-      teamMembers: teamMembers.filter(filterByDept),
+      teamMembers: teamMembers.filter(filterTeamMembers), // 使用特殊過濾邏輯
       vendors: vendors.filter(filterByDept)
     };
   }, [projects, customers, teamMembers, vendors, viewingDeptId]);
@@ -926,7 +947,9 @@ const App: React.FC = () => {
     const fullUser: User = { ...u, department: d };
     setUser(fullUser);
     setCurrentDept(d);
-    setViewingDeptId(u.role === 'SuperAdmin' ? 'all' : (d === 'ThirdDept' ? 'DEPT-3' : 'DEPT-1'));
+    // 修正部門 ID 對應：第一工程部(DEPT-4), 第三工程部(DEPT-8)
+    const deptId = d === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4';
+    setViewingDeptId(u.role === 'SuperAdmin' ? 'all' : deptId);
     localStorage.setItem('bt_user', JSON.stringify(fullUser));
     // Data loading happens in background but UI is blocked by isInitializing
     loadSystemData(d);
