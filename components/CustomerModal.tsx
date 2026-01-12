@@ -112,11 +112,11 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ onClose, onConfirm, initi
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex - 1 py - 4 px - 2 flex flex - col items - center gap - 1.5 transition - all relative min - w - [80px] ${activeTab === tab.id ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
-                } `}
+              className={`flex-1 py-4 px-2 flex flex-col items-center gap-2 transition-all relative min-w-[80px] ${activeTab === tab.id ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                }`}
             >
-              <tab.icon size={18} className={activeTab === tab.id ? 'text-blue-500' : ''} />
-              <span className="text-[10px] font-black uppercase tracking-tighter">{tab.label}</span>
+              <tab.icon size={20} className={activeTab === tab.id ? 'text-blue-500' : ''} />
+              <span className="text-sm font-black uppercase tracking-tight">{tab.label}</span>
               {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-t-full" />}
             </button>
           ))}
@@ -289,10 +289,10 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ onClose, onConfirm, initi
                         key={method}
                         type="button"
                         onClick={() => setFormData({ ...formData, preferredContactMethod: method as any })}
-                        className={`py - 3 rounded - 2xl text - xs font - bold border transition - all ${formData.preferredContactMethod === method
+                        className={`py-3 rounded-2xl text-xs font-bold border transition-all ${formData.preferredContactMethod === method
                           ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
                           : 'bg-white border-slate-200 text-slate-500 hover:border-blue-200'
-                          } `}
+                          }`}
                       >
                         {method === 'Phone' ? '電話' : method === 'Email' ? '郵件' : 'Line'}
                       </button>
