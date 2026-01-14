@@ -160,7 +160,8 @@ export interface ProjectFile {
 export interface PreConstructionPrep {
   materialsAndTools?: string;
   notice?: string;
-  scopeDrawingUrl?: string;
+  scopeDrawingUrl?: string; // Legacy
+  scopeDrawings?: string[]; // Supports multiple images and PDFs
   updatedAt?: string;
 }
 

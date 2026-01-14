@@ -1582,6 +1582,8 @@ const App: React.FC = () => {
         initialData={editingInventoryItem}
         // Pass available locations names for suggestion
         availableLocationNames={inventoryLocations.map(l => l.name)}
+        relatedPurchaseOrders={purchaseOrders.filter(o => o.items.some(i => i.itemId === editingInventoryItem?.id))}
+        relatedTransferLogs={activityLogs.filter(l => l.targetId === editingInventoryItem?.id && l.action === '庫存調撥')}
       />}
 
       {isOrderManagerOpen && user?.role !== 'Guest' && <OrderManagerModal

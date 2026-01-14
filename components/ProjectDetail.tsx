@@ -1995,15 +1995,19 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                       type="file"
                       className="hidden"
                       ref={scopeDrawingInputRef}
-                      accept="image/*"
+                      accept="image/*,.pdf"
+                      multiple
                       onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length > 0) {
                           try {
-                            const url = await cloudFileService.uploadFile(file);
+                            const urls = await Promise.all(files.map(f => cloudFileService.uploadFile(f)));
                             props.onUpdatePreConstruction({
                               ...project.preConstruction,
-                              scopeDrawingUrl: url,
+                              scopeDrawings: [
+                                ...(project.preConstruction?.scopeDrawings || []),
+                                ...urls
+                              ],
                               updatedAt: new Date().toISOString()
                             });
                           } catch (err) {
@@ -2013,43 +2017,84 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                       }}
                     />
 
-                    {project.preConstruction?.scopeDrawingUrl ? (
-                      <div className="relative aspect-video max-h-[400px] rounded-[2rem] overflow-hidden border border-stone-100 group">
-                        <img
-                          src={project.preConstruction.scopeDrawingUrl}
-                          alt="施工範圍圖"
-                          className="w-full h-full object-contain bg-stone-50"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
-                          <button
-                            onClick={() => setSelectedImage({ id: 'scope', url: project.preConstruction!.scopeDrawingUrl!, name: '施工範圍圖', type: 'image', uploadedAt: new Date().toISOString(), uploadedBy: user.name })}
-                            className="w-12 h-12 rounded-full bg-white text-stone-900 flex items-center justify-center hover:scale-110 active:scale-90 transition-all"
-                          >
-                            <ZoomIn size={20} />
-                          </button>
+                    {/* Display Scope Drawings (Mixed Legacy & New) */}
+                    {(() => {
+                      const allDrawings = [
+                        ...(project.preConstruction?.scopeDrawingUrl ? [project.preConstruction.scopeDrawingUrl] : []),
+                        ...(project.preConstruction?.scopeDrawings || [])
+                      ];
+                      return allDrawings.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-4">
+                          {allDrawings.map((url, index) => (
+                            <div key={index} className="relative aspect-video rounded-[1.5rem] overflow-hidden border border-stone-100 group bg-stone-50">
+                              {url.toLowerCase().endsWith('.pdf') ? (
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-full h-full flex flex-col items-center justify-center text-stone-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                >
+                                  <FileText size={32} />
+                                  <span className="text-[10px] font-black mt-2 uppercase tracking-widest">PDF 文件</span>
+                                </a>
+                              ) : (
+                                <img
+                                  src={url}
+                                  alt={`施工範圍圖-${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onClick={() => setSelectedImage({ url, category: '施工範圍圖' })}
+                                />
+                              )}
+                              {!isReadOnly && (
+                                <button
+                                  onClick={() => {
+                                    if (!confirm('確認移除此圖面？')) return;
+                                    // Logic to remove... a bit complex if mixing legacy and new.
+                                    // For simplicity, if we remove, we update the state.
+                                    // Determine if it was legacy or new?
+                                    // Easier to just rebuild arrays.
+                                    const legacyUrl = project.preConstruction?.scopeDrawingUrl;
+                                    let newScopeDrawings = [...(project.preConstruction?.scopeDrawings || [])];
+
+                                    if (url === legacyUrl) {
+                                      // Remove legacy
+                                      props.onUpdatePreConstruction({
+                                        ...project.preConstruction,
+                                        scopeDrawingUrl: undefined,
+                                        updatedAt: new Date().toISOString()
+                                      });
+                                    } else {
+                                      newScopeDrawings = newScopeDrawings.filter(u => u !== url);
+                                      props.onUpdatePreConstruction({
+                                        ...project.preConstruction,
+                                        scopeDrawings: newScopeDrawings,
+                                        updatedAt: new Date().toISOString()
+                                      });
+                                    }
+                                  }}
+                                  className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                      ) : (
+                        <div className="aspect-video bg-stone-50/50 rounded-[2rem] border-2 border-dashed border-stone-100 flex flex-col items-center justify-center text-stone-300 gap-4">
+                          <div className="w-16 h-16 rounded-3xl bg-white flex items-center justify-center shadow-sm">
+                            <Construction size={32} className="opacity-20" />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">尚未上傳範圍圖面</p>
                           {!isReadOnly && (
-                            <button
-                              onClick={() => { if (confirm('確定要移除此圖面嗎？')) props.onUpdatePreConstruction({ ...project.preConstruction, scopeDrawingUrl: '', updatedAt: new Date().toISOString() }) }}
-                              className="w-12 h-12 rounded-full bg-rose-500 text-white flex items-center justify-center hover:scale-110 active:scale-90 transition-all"
-                            >
-                              <Trash2 size={20} />
+                            <button onClick={() => scopeDrawingInputRef.current?.click()} className="text-[10px] font-black text-emerald-600 border-b border-emerald-600/30 pb-0.5 hover:border-emerald-600 transition-all">
+                              點擊此處立即上傳
                             </button>
                           )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="aspect-video bg-stone-50/50 rounded-[2rem] border-2 border-dashed border-stone-100 flex flex-col items-center justify-center text-stone-300 gap-4">
-                        <div className="w-16 h-16 rounded-3xl bg-white flex items-center justify-center shadow-sm">
-                          <Construction size={32} className="opacity-20" />
-                        </div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">尚未上傳範圍圖面</p>
-                        {!isReadOnly && (
-                          <button onClick={() => scopeDrawingInputRef.current?.click()} className="text-[10px] font-black text-emerald-600 border-b border-emerald-600/30 pb-0.5 hover:border-emerald-600 transition-all">
-                            點擊此處立即上傳
-                          </button>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               )}

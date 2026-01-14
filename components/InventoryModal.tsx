@@ -2,19 +2,21 @@ import React, { useState, useEffect } from 'react';
 import {
     Box, Ruler, Hash, Archive, Truck, AlertTriangle,
     QrCode, Plus, Trash2, Printer, Wrench, Calendar, User, FileText,
-    Package, X, Tag, DollarSign, MapPin, Save, Pencil, Image as ImageIcon, Upload
+    Package, X, Tag, DollarSign, MapPin, Save, Pencil, Image as ImageIcon, Upload, History as HistoryIcon, ArrowRightLeft
 } from 'lucide-react';
-import { InventoryItem, InventoryCategory, MaintenanceRecord } from '../types';
+import { InventoryItem, InventoryCategory, MaintenanceRecord, PurchaseOrder, ActivityLog } from '../types';
 
 interface InventoryModalProps {
     onClose: () => void;
     onConfirm: (data: Partial<InventoryItem>) => void;
     initialData?: InventoryItem | null;
     availableLocationNames?: string[];
+    relatedPurchaseOrders?: PurchaseOrder[];
+    relatedTransferLogs?: ActivityLog[];
 }
 
-const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, initialData, availableLocationNames }) => {
-    const [activeTab, setActiveTab] = useState<'info' | 'stock'>('info');
+const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, initialData, availableLocationNames, relatedPurchaseOrders = [], relatedTransferLogs = [] }) => {
+    const [activeTab, setActiveTab] = useState<'info' | 'stock' | 'maintenance' | 'barcode' | 'history'>('info');
 
     const [formData, setFormData] = useState<Partial<InventoryItem>>({
         name: '',
@@ -184,6 +186,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, ini
         { id: 'stock', label: '庫存設定', icon: Box },
         ...(formData.category === '工具' ? [{ id: 'maintenance', label: '維修紀錄', icon: Wrench }] : []),
         { id: 'barcode', label: '條碼管理', icon: QrCode },
+        { id: 'history', label: '異動紀錄', icon: HistoryIcon },
     ];
 
     return (
@@ -666,6 +669,78 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, ini
                             <div className="bg-blue-50 p-4 rounded-2xl text-xs text-blue-600 font-bold leading-relaxed max-w-sm">
                                 <p>ℹ️ DataMatrix 二維條碼</p>
                                 <p className="opacity-80 font-medium mt-1">此格式適合標示小型零件與工具，可儲存高密度資訊且具備強大的容錯能力。</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'history' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-8">
+
+                            {/* Purchase History */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                    <DollarSign size={16} className="text-blue-500" />
+                                    採購紀錄
+                                </h3>
+                                {!relatedPurchaseOrders || relatedPurchaseOrders.length === 0 ? (
+                                    <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-xs font-bold">
+                                        尚無關聯採購紀錄
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {relatedPurchaseOrders.map(order => {
+                                            const itemDetail = order.items.find(i => i.itemId === initialData?.id);
+                                            return (
+                                                <div key={order.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-between items-center group hover:bg-white hover:shadow-md transition-all">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-1.5 py-0.5 rounded">{order.date}</span>
+                                                            <span className="text-xs font-bold text-slate-700">{order.supplier}</span>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                            {order.id}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="font-black text-slate-900">
+                                                            {itemDetail?.quantity} {itemDetail?.unit}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 font-bold">
+                                                            ${itemDetail?.cost.toLocaleString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Transfer History */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                    <ArrowRightLeft size={16} className="text-emerald-500" />
+                                    調撥紀錄
+                                </h3>
+                                {!relatedTransferLogs || relatedTransferLogs.length === 0 ? (
+                                    <div className="text-center py-6 text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-xs font-bold">
+                                        尚無調撥紀錄
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {relatedTransferLogs.map(log => (
+                                            <div key={log.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-1.5 py-0.5 rounded">{new Date(log.timestamp).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400">{log.performer}</span>
+                                                </div>
+                                                <div className="text-sm font-bold text-slate-700 leading-snug">
+                                                    {log.details}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
