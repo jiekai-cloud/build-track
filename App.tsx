@@ -1597,6 +1597,11 @@ const App: React.FC = () => {
           setPurchaseOrders(prev => prev.map(o => o.id === order.id ? order : o));
           addActivityLog('更新採購單', order.supplier, order.id, 'system');
         }}
+        onDeleteOrder={(orderId) => {
+          const order = purchaseOrders.find(o => o.id === orderId);
+          setPurchaseOrders(prev => prev.filter(o => o.id !== orderId));
+          addActivityLog('刪除採購單', order?.supplier || '未知廠商', orderId, 'system');
+        }}
         onReceiveItems={(orderId, itemIdxs) => {
           const order = purchaseOrders.find(o => o.id === orderId);
           if (!order) return;

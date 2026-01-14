@@ -14,10 +14,11 @@ interface OrderManagerModalProps {
     onSaveOrder: (order: PurchaseOrder) => void;
     onUpdateOrder: (order: PurchaseOrder) => void;
     onReceiveItems: (orderId: string, itemIdxs: number[]) => void; // itemIdxs are indices of items in the order
+    onDeleteOrder: (orderId: string) => void;
 }
 
 const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
-    onClose, orders, inventoryItems, locations, onSaveOrder, onUpdateOrder, onReceiveItems
+    onClose, orders, inventoryItems, locations, onSaveOrder, onUpdateOrder, onReceiveItems, onDeleteOrder
 }) => {
     const [view, setView] = useState<'list' | 'create' | 'detail'>('list');
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
@@ -47,11 +48,13 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
         note: ''
     });
     const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+    const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
 
     // Helper functions
     const getWarehouseName = (id: string) => locations.find(l => l.id === id)?.name || id;
 
     const handleCreateClick = () => {
+        setEditingOrderId(null);
         setFormData({
             date: new Date().toISOString().split('T')[0],
             supplier: '',
@@ -62,6 +65,26 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
             totalAmount: 0
         });
         setView('create');
+    };
+
+    const handleEditClick = (order: PurchaseOrder) => {
+        setEditingOrderId(order.id);
+        setFormData({
+            ...order,
+            // Ensure deep copy of items/payments if needed, but shallow spread usually ok for form initial state here 
+            // as long as we treat them immutably on update
+        });
+        setView('create');
+    };
+
+    const handleDeleteClick = (orderId: string) => {
+        if (confirm('確定要刪除此筆採購訂單嗎？\n注意：這不會自動扣除已入庫的庫存，若需復原庫存請手動調整。')) {
+            onDeleteOrder(orderId);
+            if (selectedOrder?.id === orderId) {
+                setSelectedOrder(null);
+                setView('list');
+            }
+        }
     };
 
     const handleAddItem = () => {
@@ -105,21 +128,36 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
             return;
         }
 
-        const newOrder: PurchaseOrder = {
-            id: 'PO' + Date.now().toString().slice(-8),
-            date: formData.date!,
-            supplier: formData.supplier!,
-            targetWarehouseId: formData.targetWarehouseId!,
-            items: formData.items!,
-            payments: formData.payments || [],
-            status: 'Pending',
-            totalAmount: formData.totalAmount || 0,
-            notes: formData.notes,
-            updatedAt: new Date().toISOString()
-        };
+        if (editingOrderId) {
+            // Update mode
+            const updatedOrder: PurchaseOrder = {
+                ...formData as PurchaseOrder,
+                id: editingOrderId,
+                updatedAt: new Date().toISOString()
+            };
+            onUpdateOrder(updatedOrder);
+            if (selectedOrder?.id === editingOrderId) {
+                setSelectedOrder(updatedOrder);
+            }
+        } else {
+            // Create mode
+            const newOrder: PurchaseOrder = {
+                id: 'PO' + Date.now().toString().slice(-8),
+                date: formData.date!,
+                supplier: formData.supplier!,
+                targetWarehouseId: formData.targetWarehouseId!,
+                items: formData.items!,
+                payments: formData.payments || [],
+                status: 'Pending',
+                totalAmount: formData.totalAmount || 0,
+                notes: formData.notes,
+                updatedAt: new Date().toISOString()
+            };
+            onSaveOrder(newOrder);
+        }
 
-        onSaveOrder(newOrder);
         setView('list');
+        setEditingOrderId(null);
     };
 
     const handleViewDetail = (order: PurchaseOrder) => {
@@ -220,7 +258,7 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
                     <h2 className="font-bold flex items-center gap-3 text-lg">
                         <ShoppingCart className="text-blue-400" />
                         {view === 'list' && '採購訂單管理'}
-                        {view === 'create' && '新增採購單'}
+                        {view === 'create' && (editingOrderId ? '編輯採購單' : '新增採購單')}
                         {view === 'detail' && `訂單詳情: ${selectedOrder?.id}`}
                     </h2>
                     <button
@@ -443,7 +481,9 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
 
                             <div className="p-6 border-t border-slate-100 flex gap-4">
                                 <button onClick={() => setView('list')} className="flex-1 py-4 text-slate-400 font-bold hover:text-slate-600">取消</button>
-                                <button onClick={handleSaveOrder} className="flex-[2] bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 shadow-xl active:scale-95 transition-all">建立訂單</button>
+                                <button onClick={handleSaveOrder} className="flex-[2] bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 shadow-xl active:scale-95 transition-all">
+                                    {editingOrderId ? '儲存變更' : '建立訂單'}
+                                </button>
                             </div>
                         </div>
                     )}
@@ -462,9 +502,26 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
                                             <span className="text-slate-400">入庫: {getWarehouseName(selectedOrder.targetWarehouseId)}</span>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">訂單總額</div>
-                                        <div className="text-3xl font-black text-slate-900">${selectedOrder.totalAmount.toLocaleString()}</div>
+                                    <div className="text-right flex items-center gap-2">
+                                        <div>
+                                            <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">訂單總額</div>
+                                            <div className="text-3xl font-black text-slate-900">${selectedOrder.totalAmount.toLocaleString()}</div>
+                                        </div>
+                                        <div className="h-10 w-px bg-slate-200 mx-2"></div>
+                                        <div className="flex flex-col gap-1">
+                                            <button
+                                                onClick={() => handleEditClick(selectedOrder)}
+                                                className="bg-white border border-slate-200 text-slate-600 p-2 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                                            >
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteClick(selectedOrder.id)}
+                                                className="bg-white border border-slate-200 text-slate-600 p-2 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
