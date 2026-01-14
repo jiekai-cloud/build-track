@@ -348,6 +348,7 @@ export interface InventoryItem {
   deletedAt?: string;
   notes?: string;
   maintenanceRecords?: MaintenanceRecord[];
+  photoUrl?: string;
 }
 
 export interface MaintenanceRecord {

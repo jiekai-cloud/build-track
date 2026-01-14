@@ -170,7 +170,7 @@ const InventoryList: React.FC<InventoryListProps> = ({ items, locations, user, o
 
                     <div className="hidden sm:flex items-center gap-1.5 border-l border-slate-100 pl-4 overflow-x-auto no-scrollbar whitespace-nowrap">
                         <Filter size={14} className="text-slate-300 mr-2" />
-                        {['all', '材料', '工具', '設備', '其他'].map(cat => (
+                        {['all', '材料', '工具', '其他'].map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
@@ -214,13 +214,17 @@ const InventoryList: React.FC<InventoryListProps> = ({ items, locations, user, o
                             <div className="p-6 lg:px-8 lg:py-5 lg:grid lg:grid-cols-12 lg:items-center gap-4">
                                 {/* Basic Info */}
                                 <div className="col-span-4 flex items-center gap-4 mb-4 lg:mb-0">
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-white shadow-sm shrink-0 ${item.category === '工具' ? 'bg-amber-100 text-amber-600' :
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-white shadow-sm shrink-0 overflow-hidden ${item.category === '工具' ? 'bg-amber-100 text-amber-600' :
                                         item.category === '設備' ? 'bg-purple-100 text-purple-600' :
                                             'bg-blue-100 text-blue-600'
                                         }`}>
-                                        {item.category === '工具' ? <Ruler size={24} /> :
-                                            item.category === '設備' ? <Truck size={24} /> :
-                                                <Package size={24} />}
+                                        {item.photoUrl ? (
+                                            <img src={item.photoUrl} alt={item.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            item.category === '工具' ? <Ruler size={24} /> :
+                                                item.category === '設備' ? <Truck size={24} /> :
+                                                    <Package size={24} />
+                                        )}
                                     </div>
                                     <div>
                                         <h3 className="font-black text-slate-900 leading-tight group-hover:text-blue-600 transition-colors tracking-tight">

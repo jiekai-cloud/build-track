@@ -1677,6 +1677,10 @@ const App: React.FC = () => {
             addActivityLog('移除倉庫', loc.name, id, 'system');
           }
         }}
+        onUpdate={(location) => {
+          setInventoryLocations(prev => prev.map(l => l.id === location.id ? location : l));
+          addActivityLog('更新倉庫資訊', location.name, location.id, 'system');
+        }}
       />}
 
       {transferItem && <TransferModal

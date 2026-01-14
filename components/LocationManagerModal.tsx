@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, MapPin, Building2, Truck } from 'lucide-react';
+import { X, Plus, Trash2, MapPin, Building2, Truck, Pencil } from 'lucide-react';
 import { InventoryLocation } from '../types';
 
 interface LocationManagerModalProps {
@@ -7,23 +7,44 @@ interface LocationManagerModalProps {
     onClose: () => void;
     onAdd: (location: Omit<InventoryLocation, 'id'>) => void;
     onDelete: (id: string) => void;
+    onUpdate: (location: InventoryLocation) => void;
 }
 
-const LocationManagerModal: React.FC<LocationManagerModalProps> = ({ locations, onClose, onAdd, onDelete }) => {
+const LocationManagerModal: React.FC<LocationManagerModalProps> = ({ locations, onClose, onAdd, onDelete, onUpdate }) => {
     const [newLocName, setNewLocName] = useState('');
     const [newLocDesc, setNewLocDesc] = useState('');
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!newLocName) return;
-        onAdd({
-            name: newLocName,
-            description: newLocDesc,
-            type: 'Temporary',
-            isDefault: false
-        });
+
+        if (editingId) {
+            const existing = locations.find(l => l.id === editingId);
+            if (existing) {
+                onUpdate({
+                    ...existing,
+                    name: newLocName,
+                    description: newLocDesc
+                });
+            }
+            setEditingId(null);
+        } else {
+            onAdd({
+                name: newLocName,
+                description: newLocDesc,
+                type: 'Temporary',
+                isDefault: false
+            });
+        }
         setNewLocName('');
         setNewLocDesc('');
+    };
+
+    const handleEditClick = (loc: InventoryLocation) => {
+        setEditingId(loc.id);
+        setNewLocName(loc.name);
+        setNewLocDesc(loc.description || '');
     };
 
     return (
@@ -56,49 +77,76 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({ locations, 
                                         </p>
                                     </div>
                                 </div>
-                                {loc.type !== 'Main' && (
+                                </div>
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
-                                        onClick={() => {
-                                            if (confirm('確定要移除此倉庫嗎？請確認其中已無庫存。')) onDelete(loc.id);
-                                        }}
-                                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-white rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                        onClick={() => handleEditClick(loc)}
+                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                     >
-                                        <Trash2 size={18} />
+                                        <Pencil size={18} />
                                     </button>
-                                )}
+                                    {loc.type !== 'Main' && (
+                                        <button
+                                            onClick={() => {
+                                                if (confirm('確定要移除此倉庫嗎？請確認其中已無庫存。')) onDelete(loc.id);
+                                            }}
+                                            className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ))}
-                    </div>
-
-                    {/* Add New */}
-                    <form onSubmit={handleSubmit} className="pt-6 border-t border-slate-100 space-y-4">
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">新增臨時倉庫</h3>
-                        <div className="grid grid-cols-1 gap-3">
-                            <input
-                                placeholder="倉庫名稱 (如: 信義工地所, 二號車)"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
-                                value={newLocName}
-                                onChange={e => setNewLocName(e.target.value)}
-                            />
-                            <input
-                                placeholder="備註說明 (選填)"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
-                                value={newLocDesc}
-                                onChange={e => setNewLocDesc(e.target.value)}
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={!newLocName.trim()}
-                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Plus size={18} />
-                            新增倉庫
-                        </button>
-                    </form>
                 </div>
+
+                {/* Add New / Edit */}
+                <form onSubmit={handleSubmit} className="pt-6 border-t border-slate-100 space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                            {editingId ? '編輯倉庫資訊' : '新增臨時倉庫'}
+                        </h3>
+                        {editingId && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEditingId(null);
+                                    setNewLocName('');
+                                    setNewLocDesc('');
+                                }}
+                                className="text-xs font-bold text-slate-400 hover:text-slate-600"
+                            >
+                                取消編輯
+                            </button>
+                        )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                        <input
+                            placeholder="倉庫名稱 (如: 信義工地所, 二號車)"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                            value={newLocName}
+                            onChange={e => setNewLocName(e.target.value)}
+                        />
+                        <input
+                            placeholder="備註說明 (選填)"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                            value={newLocDesc}
+                            onChange={e => setNewLocDesc(e.target.value)}
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={!newLocName.trim()}
+                        className={`w-full font-bold py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${editingId ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'
+                            }`}
+                    >
+                        {editingId ? <Pencil size={18} /> : <Plus size={18} />}
+                        {editingId ? '更新資訊' : '新增倉庫'}
+                    </button>
+                </form>
             </div>
         </div>
+        </div >
     );
 };
 
