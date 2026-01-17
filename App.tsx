@@ -1481,22 +1481,38 @@ const App: React.FC = () => {
 
         if (editingProject) {
           addActivityLog('更新了專案資訊', data.name, editingProject.id, 'project');
-          setProjects(prev => prev.map(p => {
-            if (p.id === editingProject.id) {
-              let updatedId = p.id;
-              // 如果來源變更，更新 ID 的字首
-              if (data.source && data.source !== p.source) {
-                const oldPrefix = sourcePrefixes[p.source] || 'PJ';
-                const newPrefix = sourcePrefixes[data.source] || 'PJ';
-                updatedId = p.id.replace(oldPrefix, newPrefix);
-              }
-              const statusChangedAt = data.status !== p.status ? new Date().toISOString() : (p.statusChangedAt || p.updatedAt || p.createdDate);
-              // 優先使用手動輸入的 ID，若無更動則使用自動更換字首後的 ID
-              const finalId = data.id && data.id !== editingProject.id ? data.id : updatedId;
-              return { ...p, ...data, id: finalId, statusChangedAt, updatedAt: new Date().toISOString() };
+          setProjects(prev => {
+            // Find the original project
+            const originalProject = prev.find(p => p.id === editingProject.id);
+            if (!originalProject) return prev;
+
+            let updatedId = originalProject.id;
+            // 如果來源變更，更新 ID 的字首
+            if (data.source && data.source !== originalProject.source) {
+              const oldPrefix = sourcePrefixes[originalProject.source] || 'PJ';
+              const newPrefix = sourcePrefixes[data.source] || 'PJ';
+              updatedId = originalProject.id.replace(oldPrefix, newPrefix);
             }
-            return p;
-          }));
+            const statusChangedAt = data.status !== originalProject.status ? new Date().toISOString() : (originalProject.statusChangedAt || originalProject.updatedAt || originalProject.createdDate);
+            // 優先使用手動輸入的 ID，若無更動則使用自動更換字首後的 ID
+            const finalId = data.id && data.id !== editingProject.id ? data.id : updatedId;
+
+            // 如果 ID 沒有變更，直接更新原物件
+            if (finalId === editingProject.id) {
+              return prev.map(p => p.id === editingProject.id ? { ...p, ...data, statusChangedAt, updatedAt: new Date().toISOString() } : p);
+            } else {
+              // ID 有變更：執行「舊案刪除、新案建立」的邏輯 (Rename)
+              // 1. 標記舊案為已刪除 (Tombstone)，讓雲端同步知道此 ID 已失效
+              const tombstone = { ...originalProject, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+
+              // 2. 建立新 ID 的案件，繼承原有關聯資料
+              const newProject = { ...originalProject, ...data, id: finalId, statusChangedAt, updatedAt: new Date().toISOString() };
+
+              // 3. 回傳新陣列：原地替換舊案為 Tombstone (或保留)，並加入新案
+              // 為了列表穩定性，我們將舊案標記刪除，並將新案加入
+              return [...prev.map(p => p.id === editingProject.id ? tombstone : p), newProject];
+            }
+          });
         } else {
           // 案件編號產生規則: [來源代碼][年份縮寫(YY)][月(MM)][流水號(001)]
           const prefix = sourcePrefixes[data.source || 'BNI'] || 'PJ';
