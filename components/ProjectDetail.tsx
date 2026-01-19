@@ -1125,7 +1125,18 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                           <tbody className="divide-y divide-stone-50">
                             {(project.payments || []).length > 0 ? (project.payments || []).map((p) => (
                               <tr key={p.id} className="hover:bg-stone-50/30 transition-colors">
-                                <td className="px-6 py-4 text-xs font-black text-stone-900">{p.label}</td>
+                                <td className="px-6 py-4 text-xs font-black text-stone-900">
+                                  <input
+                                    type="text"
+                                    value={p.label}
+                                    disabled={isReadOnly}
+                                    onChange={(e) => {
+                                      const newLabel = e.target.value;
+                                      onUpdatePayments((project.payments || []).map(pay => pay.id === p.id ? { ...pay, label: newLabel } : pay));
+                                    }}
+                                    className="bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-200 rounded px-1 -ml-1 w-full"
+                                  />
+                                </td>
                                 <td className="px-6 py-4 text-xs font-bold text-stone-500">
                                   <input
                                     type="date"
@@ -1138,7 +1149,21 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                                     className="bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-200 rounded px-1 -ml-1 text-stone-500 w-[110px]"
                                   />
                                 </td>
-                                <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">NT$ {(p.amount || 0).toLocaleString()}</td>
+                                <td className="px-6 py-4 text-xs font-black text-stone-900 text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span className="text-stone-400">NT$</span>
+                                    <input
+                                      type="number"
+                                      value={p.amount}
+                                      disabled={isReadOnly}
+                                      onChange={(e) => {
+                                        const newAmount = parseInt(e.target.value) || 0;
+                                        onUpdatePayments((project.payments || []).map(pay => pay.id === p.id ? { ...pay, amount: newAmount } : pay));
+                                      }}
+                                      className="bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-200 rounded px-1 text-right w-[80px]"
+                                    />
+                                  </div>
+                                </td>
                                 <td className="px-6 py-4">
                                   <button
                                     disabled={isReadOnly}
