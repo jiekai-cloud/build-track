@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { TeamMember, User as UserType } from '../types';
 import { MOCK_DEPARTMENTS } from '../constants';
+import { ALL_MODULES, DEFAULT_ENABLED_MODULES } from '../moduleConfig';
 
 interface TeamModalProps {
   onClose: () => void;
@@ -429,6 +430,48 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                       <li><b>最高權限：</b> 擁有系統完整控制權，包含刪除資料與指派權限。</li>
                     </ul>
                   </div>
+                </div>
+              </div>
+
+              <div className="bg-stone-50 p-6 rounded-3xl border border-stone-200 mt-6 space-y-4">
+                <h4 className="font-black text-xs text-stone-500 uppercase tracking-widest">模組存取權限</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {ALL_MODULES.filter(m => !m.isCore).map(module => {
+                    const isChecked = (formData.accessibleModules || DEFAULT_ENABLED_MODULES).includes(module.id);
+                    const Icon = module.icon;
+
+                    return (
+                      <label key={module.id} className={`flex items-start gap-3 p-3 bg-white rounded-xl border transition-all ${isChecked ? 'border-stone-300 shadow-sm' : 'border-stone-100 opacity-60'} ${isSuperAdmin ? 'cursor-pointer hover:border-blue-300' : 'cursor-default'}`}>
+                        <div className="pt-1">
+                          <input
+                            type="checkbox"
+                            disabled={!isSuperAdmin}
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const currentModules = formData.accessibleModules || DEFAULT_ENABLED_MODULES;
+                              let newModules;
+                              if (e.target.checked) {
+                                newModules = Array.from(new Set([...currentModules, module.id]));
+                              } else {
+                                newModules = currentModules.filter(id => id !== module.id);
+                              }
+                              setFormData({ ...formData, accessibleModules: newModules });
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-lg ${isChecked ? 'bg-blue-50 text-blue-600' : 'bg-stone-100 text-stone-400'}`}>
+                            <Icon size={16} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={`text-xs font-bold ${isChecked ? 'text-stone-800' : 'text-stone-500'}`}>{module.name}</span>
+                            <span className="text-[9px] text-stone-400 leading-tight">{module.description}</span>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>

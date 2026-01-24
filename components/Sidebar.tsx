@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag, Sparkles } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag, Sparkles, Clock, Wallet } from 'lucide-react';
 import { moduleService } from '../services/moduleService';
-import { ModuleId } from '../moduleConfig';
+import { ModuleId, DEFAULT_ENABLED_MODULES } from '../moduleConfig';
 
 interface SidebarProps {
   activeTab: string;
@@ -46,7 +46,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     'customers': ModuleId.CUSTOMERS,
     'team': ModuleId.TEAM,
     'vendors': ModuleId.VENDORS,
-    'analytics': ModuleId.ANALYTICS
+    'analytics': ModuleId.ANALYTICS,
+    'inventory': ModuleId.INVENTORY,
+    'attendance': ModuleId.ATTENDANCE,
+    'payroll': ModuleId.PAYROLL
   };
 
   const allMenuItems = [
@@ -56,14 +59,24 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     { id: 'customers', label: '客戶資料', icon: Contact2, moduleId: ModuleId.CUSTOMERS },
     { id: 'team', label: '團隊成員', icon: Users, moduleId: ModuleId.TEAM },
     { id: 'vendors', label: '廠商管理', icon: ShoppingBag, moduleId: ModuleId.VENDORS },
-    { id: 'analytics', label: '數據分析', icon: BarChart3, moduleId: ModuleId.ANALYTICS },
     { id: 'inventory', label: '庫存管理', icon: ShoppingBag, moduleId: ModuleId.INVENTORY },
+    { id: 'attendance', label: '考勤打卡', icon: Clock, moduleId: ModuleId.ATTENDANCE },
+    { id: 'payroll', label: '薪資管理', icon: Wallet, moduleId: ModuleId.PAYROLL },
+    { id: 'analytics', label: '數據分析', icon: BarChart3, moduleId: ModuleId.ANALYTICS },
   ];
 
-  // Filter menu items based on enabled modules
-  const menuItems = allMenuItems.filter(item =>
-    enabledModules.includes(item.moduleId)
-  );
+  // Filter menu items based on enabled modules AND user permissions
+  const menuItems = allMenuItems.filter(item => {
+    // 1. Check valid/enabled globally
+    if (!enabledModules.includes(item.moduleId)) return false;
+
+    // 2. Check user role/permissions
+    if (user.role === 'SuperAdmin') return true;
+
+    // For specific modules, check accessibleModules list
+    const userModules = user.accessibleModules || DEFAULT_ENABLED_MODULES;
+    return userModules.includes(item.moduleId);
+  });
 
   const bottomItems = [
     { id: 'settings', label: '設定', icon: Settings },

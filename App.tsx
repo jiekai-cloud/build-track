@@ -22,14 +22,16 @@ import ScanTransferModal from './components/ScanTransferModal';
 import LeadToProjectModal from './components/LeadToProjectModal';
 import Login from './components/Login';
 import OrderManagerModal from './components/OrderManagerModal';
+import AttendanceSystem from './components/AttendanceSystem';
+import PayrollSystem from './components/PayrollSystem';
 import ModuleManager from './components/ModuleManager';
 import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
-import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder } from './types';
+import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder, AttendanceRecord, PayrollRecord } from './types';
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 import { moduleService } from './services/moduleService';
-import { ModuleId } from './moduleConfig';
+import { ModuleId, DEFAULT_ENABLED_MODULES, ALL_MODULES } from './moduleConfig';
 import { storageService } from './services/storageService';
 
 // Build Trigger: 2026-01-05 Module System Integration
@@ -48,6 +50,19 @@ const App: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
+
+  // Calculate permissions dynamically
+  const currentUserPermissions = useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'SuperAdmin') return ALL_MODULES.map(m => m.id);
+
+    const member = teamMembers.find(m => m.employeeId === user.id);
+    // If no specific permissions set, modify this default behavior as needed. 
+    // Currently fallback to DEFAULT_ENABLED_MODULES
+    return member?.accessibleModules || DEFAULT_ENABLED_MODULES;
+  }, [user, teamMembers]);
 
   useEffect(() => {
     // Seed some mock leads if empty for demo
@@ -319,6 +334,28 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleClockRecord = (type: 'work-start' | 'work-end', location: { lat: number; lng: number; address?: string }) => {
+    if (!user) return;
+
+    // Find matching team member to get correct employeeId
+    const member = teamMembers.find(m => m.name === user.name) || { employeeId: user.id || 'UNKNOWN' };
+
+    const newRecord: AttendanceRecord = {
+      id: crypto.randomUUID(),
+      employeeId: member.employeeId,
+      name: user.name,
+      type,
+      timestamp: new Date().toISOString(),
+      location,
+      departmentId: user.department === 'FirstDept' ? 'DEPT-4' : 'DEPT-8'
+    };
+
+    setAttendanceRecords(prev => [...prev, newRecord]);
+
+    const action = type === 'work-start' ? '上班' : '下班';
+    alert(`${action}打卡成功！\n時間：${new Date().toLocaleTimeString()}\n地點：${location.address || 'GPS ' + location.lat.toFixed(4)}`);
+  };
+
   const autoConnectCloud = useCallback(async () => {
     try {
       await googleDriveService.authenticate('none');
@@ -397,7 +434,7 @@ const App: React.FC = () => {
       })));
 
       // Load other entities
-      const [customersData, initialTeamData, vendorsData, leadsData, logsData, inventoryData, locationsData, purchaseOrdersData] = await Promise.all([
+      const [customersData, initialTeamData, vendorsData, leadsData, logsData, inventoryData, locationsData, purchaseOrdersData, attendanceData, payrollData] = await Promise.all([
         storageService.getItem<Customer[]>(`${prefix}bt_customers`, []),
         storageService.getItem<TeamMember[]>(`${prefix}bt_team`, defaultTeam),
         storageService.getItem<Vendor[]>(`${prefix}bt_vendors`, []),
@@ -405,7 +442,9 @@ const App: React.FC = () => {
         storageService.getItem<any[]>(`${prefix}bt_logs`, []),
         storageService.getItem<InventoryItem[]>(`${prefix}bt_inventory`, []),
         storageService.getItem<InventoryLocation[]>(`${prefix}bt_locations`, [{ id: 'MAIN', name: '總倉庫', type: 'Main', isDefault: true }]),
-        storageService.getItem<PurchaseOrder[]>(`${prefix}bt_orders`, [])
+        storageService.getItem<PurchaseOrder[]>(`${prefix}bt_orders`, []),
+        storageService.getItem<AttendanceRecord[]>(`${prefix}bt_attendance`, []),
+        storageService.getItem<PayrollRecord[]>(`${prefix}bt_payroll`, [])
       ]);
 
       setCustomers(customersData);
@@ -420,6 +459,8 @@ const App: React.FC = () => {
       setInventoryItems(inventoryData);
       setInventoryLocations(locationsData);
       setPurchaseOrders(purchaseOrdersData);
+      setAttendanceRecords(attendanceData);
+      setPayrollRecords(payrollData);
       setActivityLogs(logsData);
 
       setInitialSyncDone(true);
@@ -633,6 +674,8 @@ const App: React.FC = () => {
           storageService.setItem(`${prefix}bt_inventory`, inventoryItems),
           storageService.setItem(`${prefix}bt_locations`, inventoryLocations),
           storageService.setItem(`${prefix}bt_orders`, purchaseOrders),
+          storageService.setItem(`${prefix}bt_attendance`, attendanceRecords),
+          storageService.setItem(`${prefix}bt_payroll`, payrollRecords),
           storageService.setItem(`${prefix}bt_logs`, activityLogs.slice(0, 50))
         ]);
         setLastLocalSave(new Date().toLocaleTimeString());
@@ -647,7 +690,7 @@ const App: React.FC = () => {
         handleCloudSync();
       }, 3000);
     }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, currentDept]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, currentDept]);
 
   // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
   useEffect(() => {
@@ -1056,7 +1099,7 @@ const App: React.FC = () => {
       )}
 
       <div className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static transition-transform duration-500 z-[101] w-64 h-full shrink-0`}>
-        <Sidebar activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t); setSelectedProjectId(null); setIsSidebarOpen(false); }} user={user} onMenuClose={() => setIsSidebarOpen(false)} isSyncing={isSyncing} />
+        <Sidebar activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t); setSelectedProjectId(null); setIsSidebarOpen(false); }} user={{ ...user, accessibleModules: currentUserPermissions }} onMenuClose={() => setIsSidebarOpen(false)} isSyncing={isSyncing} />
       </div>
 
       <main className="flex-1 flex flex-col h-full w-full min-0 relative">
@@ -1153,7 +1196,21 @@ const App: React.FC = () => {
               onLossClick={() => handleUpdateStatus(selectedProjectId!, ProjectStatus.LOST)}
             />
           ) : (
-            <div className="pb-32">
+            <div className="p-4 lg:p-8 animate-in fade-in duration-500">
+              {activeTab === 'attendance' && (
+                <AttendanceSystem
+                  currentUser={{ ...user, accessibleModules: currentUserPermissions }}
+                  records={attendanceRecords}
+                  onRecord={handleClockRecord}
+                />
+              )}
+              {activeTab === 'payroll' && (
+                <PayrollSystem
+                  records={attendanceRecords}
+                  teamMembers={teamMembers}
+                  currentUser={{ ...user, accessibleModules: currentUserPermissions }}
+                />
+              )}
               {activeTab === 'dashboard' && !isCloudConnected && user.role !== 'Guest' && (
                 <div className="mx-4 lg:mx-8 mt-6 p-5 bg-orange-600 text-white rounded-[2rem] shadow-2xl flex items-center justify-between gap-6 animate-in slide-in-from-top-6">
                   <div className="flex items-center gap-4">
@@ -1380,20 +1437,22 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {!selectedProjectId && (
-          <div className="fixed bottom-8 right-8 z-[45] flex flex-col items-end gap-3 no-print">
-            <div className="bg-white/90 backdrop-blur-2xl border border-stone-200 p-4 rounded-[2rem] shadow-2xl flex items-center gap-6 animate-in slide-in-from-right-12">
-              <div className="flex items-center gap-3 border-r border-stone-100 pr-6">
-                <Activity size={18} className="text-emerald-500" />
-                <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">系統狀態</span><span className="text-[10px] font-bold text-stone-900">核心正常</span></div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Database size={16} className="text-emerald-500" />
-                <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">無限量緩存</span><span className="text-[10px] font-bold text-stone-900">{lastLocalSave}</span></div>
+        {
+          !selectedProjectId && (
+            <div className="fixed bottom-8 right-8 z-[45] flex flex-col items-end gap-3 no-print">
+              <div className="bg-white/90 backdrop-blur-2xl border border-stone-200 p-4 rounded-[2rem] shadow-2xl flex items-center gap-6 animate-in slide-in-from-right-12">
+                <div className="flex items-center gap-3 border-r border-stone-100 pr-6">
+                  <Activity size={18} className="text-emerald-500" />
+                  <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">系統狀態</span><span className="text-[10px] font-bold text-stone-900">核心正常</span></div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Database size={16} className="text-emerald-500" />
+                  <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">無限量緩存</span><span className="text-[10px] font-bold text-stone-900">{lastLocalSave}</span></div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         <div className="no-print">
           <AIAssistant
@@ -1421,51 +1480,53 @@ const App: React.FC = () => {
           />
         </div>
         {/* AI API Key Settings Modal */}
-        {isAISettingsOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-              <div className="px-8 py-6 bg-stone-900 flex justify-between items-center text-white">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-500 rounded-xl">
-                    <Sparkles size={20} className="text-white" />
+        {
+          isAISettingsOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in duration-300">
+              <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="px-8 py-6 bg-stone-900 flex justify-between items-center text-white">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-500 rounded-xl">
+                      <Sparkles size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-lg leading-tight">AI 服務核心配置</h2>
+                      <p className="text-[10px] text-orange-200 font-bold uppercase tracking-widest">Gemini API Configuration</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="font-bold text-lg leading-tight">AI 服務核心配置</h2>
-                    <p className="text-[10px] text-orange-200 font-bold uppercase tracking-widest">Gemini API Configuration</p>
-                  </div>
-                </div>
-                <button onClick={() => setIsAISettingsOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} /></button>
-              </div>
-
-              <div className="p-8 space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex justify-between">
-                    <span>Gemini API Key</span>
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                      獲取金鑰 <ExternalLink size={10} />
-                    </a>
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="貼上您的 API 金鑰..."
-                    className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-5 py-4 text-sm font-bold text-black outline-none focus:ring-4 focus:ring-orange-500/10 placeholder:text-stone-300 transition-all font-mono"
-                    value={aiApiKey}
-                    onChange={(e) => setAiApiKey(e.target.value)}
-                  />
-                  <p className="text-[10px] text-stone-400 font-bold leading-relaxed px-1">
-                    金鑰將安全地儲存在您的瀏覽器本地 (LocalStorage)，不會上傳至伺服器或 GitHub，且僅用於此設備的 AI 解析功能。
-                  </p>
+                  <button onClick={() => setIsAISettingsOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} /></button>
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button onClick={() => { localStorage.removeItem('GEMINI_API_KEY'); setAiApiKey(''); alert('已清除金鑰'); window.location.reload(); }} className="flex-1 py-4 border border-stone-200 text-stone-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-stone-50 transition-all">清除</button>
-                  <button onClick={saveAiApiKey} className="flex-[2] bg-stone-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-stone-100 hover:bg-black active:scale-[0.98] transition-all">儲存配置</button>
+                <div className="p-8 space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex justify-between">
+                      <span>Gemini API Key</span>
+                      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                        獲取金鑰 <ExternalLink size={10} />
+                      </a>
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="貼上您的 API 金鑰..."
+                      className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-5 py-4 text-sm font-bold text-black outline-none focus:ring-4 focus:ring-orange-500/10 placeholder:text-stone-300 transition-all font-mono"
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                    />
+                    <p className="text-[10px] text-stone-400 font-bold leading-relaxed px-1">
+                      金鑰將安全地儲存在您的瀏覽器本地 (LocalStorage)，不會上傳至伺服器或 GitHub，且僅用於此設備的 AI 解析功能。
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button onClick={() => { localStorage.removeItem('GEMINI_API_KEY'); setAiApiKey(''); alert('已清除金鑰'); window.location.reload(); }} className="flex-1 py-4 border border-stone-200 text-stone-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-stone-50 transition-all">清除</button>
+                    <button onClick={saveAiApiKey} className="flex-[2] bg-stone-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-stone-100 hover:bg-black active:scale-[0.98] transition-all">儲存配置</button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </main>
+          )
+        }
+      </main >
 
       {isModalOpen && user.role !== 'Guest' && <ProjectModal onClose={() => setIsModalOpen(false)} onConfirm={(data) => {
         const sourcePrefixes: Record<string, string> = {
@@ -1548,267 +1609,281 @@ const App: React.FC = () => {
         setIsModalOpen(false);
       }} initialData={editingProject} teamMembers={teamMembers} />}
 
-      {isCustomerModalOpen && user?.role !== 'Guest' && <CustomerModal
-        onClose={() => setIsCustomerModalOpen(false)}
-        onConfirm={(data) => {
-          if (editingCustomer) {
-            addActivityLog('更新客戶資料', data.name, editingCustomer.id, 'customer');
-            setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c));
-          } else {
-            const newId = 'C' + Date.now().toString().slice(-6);
-            addActivityLog('新增客戶', data.name, newId, 'customer');
-            setCustomers(prev => [{ ...data, id: newId, createdDate: new Date().toISOString().split('T')[0], updatedAt: new Date().toISOString() } as any, ...prev]);
-          }
-          setIsCustomerModalOpen(false);
-          setEditingCustomer(null);
-        }}
-        initialData={editingCustomer}
-      />}
-
-      {isTeamModalOpen && user?.role !== 'Guest' && <TeamModal
-        onClose={() => { setIsTeamModalOpen(false); setEditingMember(null); }}
-        onConfirm={(data) => {
-          if (editingMember) {
-            addActivityLog('更新成員資料', data.name, editingMember.id, 'team');
-            setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m));
-          } else {
-            const newId = 'T' + Date.now().toString().slice(-6);
-            addActivityLog('新增團隊成員', data.name, newId, 'team');
-            setTeamMembers(prev => [{ ...data, id: newId, status: 'Available', activeProjectsCount: 0, systemRole: data.systemRole || 'Staff', departmentId: data.departmentId || 'DEPT-1', updatedAt: new Date().toISOString() } as any, ...prev]);
-          }
-          setIsTeamModalOpen(false);
-          setEditingMember(null);
-        }}
-        initialData={editingMember}
-        currentUser={user!}
-      />}
-
-      {isInventoryModalOpen && user?.role !== 'Guest' && <InventoryModal
-        onClose={() => { setIsInventoryModalOpen(false); setEditingInventoryItem(null); }}
-        onConfirm={(data) => {
-          const timestamped = { ...data, updatedAt: new Date().toISOString() };
-          if (editingInventoryItem) {
-            addActivityLog('更新庫存', data.name || '', editingInventoryItem.id, 'system');
-            setInventoryItems(prev => prev.map(i => i.id === editingInventoryItem.id ? { ...i, ...timestamped } as InventoryItem : i));
-          } else {
-            const newId = 'INV' + Date.now().toString().slice(-6);
-            addActivityLog('新增庫存', data.name || '', newId, 'system');
-            setInventoryItems(prev => [{ ...timestamped, id: newId, status: 'Normal' } as InventoryItem, ...prev]);
-          }
-          setIsInventoryModalOpen(false);
-          setEditingInventoryItem(null);
-        }}
-        initialData={editingInventoryItem}
-        // Pass available locations names for suggestion
-        availableLocationNames={inventoryLocations.map(l => l.name)}
-        relatedPurchaseOrders={purchaseOrders.filter(o => o.items.some(i => i.itemId === editingInventoryItem?.id))}
-        relatedTransferLogs={activityLogs.filter(l => l.targetId === editingInventoryItem?.id && l.action === '庫存調撥')}
-      />}
-
-      {isOrderManagerOpen && user?.role !== 'Guest' && <OrderManagerModal
-        onClose={() => setIsOrderManagerOpen(false)}
-        orders={purchaseOrders}
-        inventoryItems={inventoryItems}
-        locations={inventoryLocations}
-        onSaveOrder={(order) => {
-          setPurchaseOrders(prev => [order, ...prev]);
-          addActivityLog('建立採購單', order.supplier, order.id, 'system');
-        }}
-        onUpdateOrder={(order) => {
-          setPurchaseOrders(prev => prev.map(o => o.id === order.id ? order : o));
-          addActivityLog('更新採購單', order.supplier, order.id, 'system');
-        }}
-        onDeleteOrder={(orderId) => {
-          const order = purchaseOrders.find(o => o.id === orderId);
-          setPurchaseOrders(prev => prev.filter(o => o.id !== orderId));
-          addActivityLog('刪除採購單', order?.supplier || '未知廠商', orderId, 'system');
-        }}
-        onReceiveItems={(orderId, itemIdxs) => {
-          const order = purchaseOrders.find(o => o.id === orderId);
-          if (!order) return;
-
-          const updatedItems = [...order.items];
-          let somethingChanged = false;
-
-          itemIdxs.forEach(idx => {
-            if (!updatedItems[idx].received) {
-              updatedItems[idx].received = true;
-              somethingChanged = true;
-
-              // Update Inventory
-              const invItemId = updatedItems[idx].itemId;
-              const quantityToAdd = updatedItems[idx].quantity;
-              const targetWarehouseId = order.targetWarehouseId;
-              const targetWarehouseName = inventoryLocations.find(l => l.id === targetWarehouseId)?.name || '總倉庫';
-
-              setInventoryItems(prev => prev.map(item => {
-                if (item.id === invItemId) {
-                  // Find if location exists
-                  const existingLocIdx = item.locations?.findIndex(l => l.name === targetWarehouseName);
-                  let newLocations = [...(item.locations || [])];
-
-                  if (existingLocIdx !== undefined && existingLocIdx >= 0) {
-                    newLocations[existingLocIdx] = {
-                      ...newLocations[existingLocIdx],
-                      quantity: Number(newLocations[existingLocIdx].quantity) + quantityToAdd
-                    };
-                  } else {
-                    newLocations.push({ name: targetWarehouseName, quantity: quantityToAdd });
-                  }
-
-                  const totalQuantity = newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
-
-                  return {
-                    ...item,
-                    quantity: totalQuantity,
-                    locations: newLocations,
-                    updatedAt: new Date().toISOString()
-                  };
-                }
-                return item;
-              }));
-            }
-          });
-
-          if (somethingChanged) {
-            const allReceived = updatedItems.every(i => i.received);
-            const updatedOrder = {
-              ...order,
-              items: updatedItems,
-              status: allReceived ? 'Completed' : 'Partial' as any
-            };
-            setPurchaseOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
-            addActivityLog('採購單收貨', order.supplier, order.id, 'system');
-          }
-        }}
-      />}
-
-      {isLocationManagerOpen && <LocationManagerModal
-        locations={inventoryLocations}
-        onClose={() => setIsLocationManagerOpen(false)}
-        onAdd={(data) => {
-          const newId = 'LOC' + Date.now().toString().slice(-6);
-          setInventoryLocations(prev => [...prev, { ...data, id: newId } as InventoryLocation]);
-          addActivityLog('新增倉庫', data.name, newId, 'system');
-        }}
-        onDelete={(id) => {
-          const loc = inventoryLocations.find(l => l.id === id);
-          if (loc) {
-            setInventoryLocations(prev => prev.filter(l => l.id !== id));
-            addActivityLog('移除倉庫', loc.name, id, 'system');
-          }
-        }}
-        onUpdate={(location) => {
-          setInventoryLocations(prev => prev.map(l => l.id === location.id ? location : l));
-          addActivityLog('更新倉庫資訊', location.name, location.id, 'system');
-        }}
-      />}
-
-      {transferItem && <TransferModal
-        item={transferItem}
-        allLocations={inventoryLocations}
-        onClose={() => setTransferItem(null)}
-        onConfirm={(from, to, qty, notes) => {
-          // Perform Transfer
-          setInventoryItems(prev => prev.map(item => {
-            if (item.id !== transferItem.id) return item;
-
-            const newLocations = [...(item.locations || [])];
-
-            // Decrease Source
-            const sourceIdx = newLocations.findIndex(l => l.name === from);
-            if (sourceIdx >= 0) {
-              newLocations[sourceIdx] = {
-                ...newLocations[sourceIdx],
-                quantity: Math.max(0, newLocations[sourceIdx].quantity - qty)
-              };
-            }
-
-            // Increase Dest
-            const destIdx = newLocations.findIndex(l => l.name === to);
-            if (destIdx >= 0) {
-              newLocations[destIdx] = {
-                ...newLocations[destIdx],
-                quantity: newLocations[destIdx].quantity + qty
-              };
+      {
+        isCustomerModalOpen && user?.role !== 'Guest' && <CustomerModal
+          onClose={() => setIsCustomerModalOpen(false)}
+          onConfirm={(data) => {
+            if (editingCustomer) {
+              addActivityLog('更新客戶資料', data.name, editingCustomer.id, 'customer');
+              setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c));
             } else {
-              newLocations.push({ name: to, quantity: qty });
+              const newId = 'C' + Date.now().toString().slice(-6);
+              addActivityLog('新增客戶', data.name, newId, 'customer');
+              setCustomers(prev => [{ ...data, id: newId, createdDate: new Date().toISOString().split('T')[0], updatedAt: new Date().toISOString() } as any, ...prev]);
             }
+            setIsCustomerModalOpen(false);
+            setEditingCustomer(null);
+          }}
+          initialData={editingCustomer}
+        />
+      }
 
-            // Update Item total quantity (should technically remain same, but recalc to be safe)
-            const total = newLocations.reduce((sum, l) => sum + (l.quantity || 0), 0);
+      {
+        isTeamModalOpen && user?.role !== 'Guest' && <TeamModal
+          onClose={() => { setIsTeamModalOpen(false); setEditingMember(null); }}
+          onConfirm={(data) => {
+            if (editingMember) {
+              addActivityLog('更新成員資料', data.name, editingMember.id, 'team');
+              setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m));
+            } else {
+              const newId = 'T' + Date.now().toString().slice(-6);
+              addActivityLog('新增團隊成員', data.name, newId, 'team');
+              setTeamMembers(prev => [{ ...data, id: newId, status: 'Available', activeProjectsCount: 0, systemRole: data.systemRole || 'Staff', departmentId: data.departmentId || 'DEPT-1', updatedAt: new Date().toISOString() } as any, ...prev]);
+            }
+            setIsTeamModalOpen(false);
+            setEditingMember(null);
+          }}
+          initialData={editingMember}
+          currentUser={user!}
+        />
+      }
 
-            addActivityLog('庫存調撥', `${item.name} (${qty} ${item.unit}) from ${from} to ${to}`, item.id, 'inventory');
+      {
+        isInventoryModalOpen && user?.role !== 'Guest' && <InventoryModal
+          onClose={() => { setIsInventoryModalOpen(false); setEditingInventoryItem(null); }}
+          onConfirm={(data) => {
+            const timestamped = { ...data, updatedAt: new Date().toISOString() };
+            if (editingInventoryItem) {
+              addActivityLog('更新庫存', data.name || '', editingInventoryItem.id, 'system');
+              setInventoryItems(prev => prev.map(i => i.id === editingInventoryItem.id ? { ...i, ...timestamped } as InventoryItem : i));
+            } else {
+              const newId = 'INV' + Date.now().toString().slice(-6);
+              addActivityLog('新增庫存', data.name || '', newId, 'system');
+              setInventoryItems(prev => [{ ...timestamped, id: newId, status: 'Normal' } as InventoryItem, ...prev]);
+            }
+            setIsInventoryModalOpen(false);
+            setEditingInventoryItem(null);
+          }}
+          initialData={editingInventoryItem}
+          // Pass available locations names for suggestion
+          availableLocationNames={inventoryLocations.map(l => l.name)}
+          relatedPurchaseOrders={purchaseOrders.filter(o => o.items.some(i => i.itemId === editingInventoryItem?.id))}
+          relatedTransferLogs={activityLogs.filter(l => l.targetId === editingInventoryItem?.id && l.action === '庫存調撥')}
+        />
+      }
 
-            return {
-              ...item,
-              quantity: total,
-              locations: newLocations,
-              updatedAt: new Date().toISOString()
-            };
-          }));
-          setTransferItem(null);
-        }}
-      />}
+      {
+        isOrderManagerOpen && user?.role !== 'Guest' && <OrderManagerModal
+          onClose={() => setIsOrderManagerOpen(false)}
+          orders={purchaseOrders}
+          inventoryItems={inventoryItems}
+          locations={inventoryLocations}
+          onSaveOrder={(order) => {
+            setPurchaseOrders(prev => [order, ...prev]);
+            addActivityLog('建立採購單', order.supplier, order.id, 'system');
+          }}
+          onUpdateOrder={(order) => {
+            setPurchaseOrders(prev => prev.map(o => o.id === order.id ? order : o));
+            addActivityLog('更新採購單', order.supplier, order.id, 'system');
+          }}
+          onDeleteOrder={(orderId) => {
+            const order = purchaseOrders.find(o => o.id === orderId);
+            setPurchaseOrders(prev => prev.filter(o => o.id !== orderId));
+            addActivityLog('刪除採購單', order?.supplier || '未知廠商', orderId, 'system');
+          }}
+          onReceiveItems={(orderId, itemIdxs) => {
+            const order = purchaseOrders.find(o => o.id === orderId);
+            if (!order) return;
 
-      {isScanModalOpen && <ScanTransferModal
-        inventoryItems={inventoryItems}
-        locations={inventoryLocations}
-        onClose={() => setIsScanModalOpen(false)}
-        onConfirm={(items, toLocation) => {
-          // Batch Transfer Logic
-          setInventoryItems(prev => {
-            let newItems = [...prev];
-            const logDetails: string[] = [];
+            const updatedItems = [...order.items];
+            let somethingChanged = false;
 
-            items.forEach(transfer => {
-              const itemIndex = newItems.findIndex(i => i.id === transfer.inventoryItem.id);
-              if (itemIndex >= 0) {
-                const item = newItems[itemIndex];
-                const newLocations = [...(item.locations || [])];
+            itemIdxs.forEach(idx => {
+              if (!updatedItems[idx].received) {
+                updatedItems[idx].received = true;
+                somethingChanged = true;
 
-                // Decrease Source
-                const sourceIdx = newLocations.findIndex(l => l.name === transfer.fromLocation);
-                if (sourceIdx >= 0) {
-                  newLocations[sourceIdx] = {
-                    ...newLocations[sourceIdx],
-                    quantity: Math.max(0, newLocations[sourceIdx].quantity - transfer.quantity)
-                  };
-                }
+                // Update Inventory
+                const invItemId = updatedItems[idx].itemId;
+                const quantityToAdd = updatedItems[idx].quantity;
+                const targetWarehouseId = order.targetWarehouseId;
+                const targetWarehouseName = inventoryLocations.find(l => l.id === targetWarehouseId)?.name || '總倉庫';
 
-                // Increase Dest
-                const destIdx = newLocations.findIndex(l => l.name === toLocation);
-                if (destIdx >= 0) {
-                  newLocations[destIdx] = {
-                    ...newLocations[destIdx],
-                    quantity: newLocations[destIdx].quantity + transfer.quantity
-                  };
-                } else {
-                  newLocations.push({ name: toLocation, quantity: transfer.quantity });
-                }
+                setInventoryItems(prev => prev.map(item => {
+                  if (item.id === invItemId) {
+                    // Find if location exists
+                    const existingLocIdx = item.locations?.findIndex(l => l.name === targetWarehouseName);
+                    let newLocations = [...(item.locations || [])];
 
-                // Recalculate total
-                const total = newLocations.reduce((sum, l) => sum + (l.quantity || 0), 0);
-                newItems[itemIndex] = {
-                  ...item,
-                  quantity: total,
-                  locations: newLocations,
-                  updatedAt: new Date().toISOString()
-                };
+                    if (existingLocIdx !== undefined && existingLocIdx >= 0) {
+                      newLocations[existingLocIdx] = {
+                        ...newLocations[existingLocIdx],
+                        quantity: Number(newLocations[existingLocIdx].quantity) + quantityToAdd
+                      };
+                    } else {
+                      newLocations.push({ name: targetWarehouseName, quantity: quantityToAdd });
+                    }
 
-                logDetails.push(`${item.name} (${transfer.quantity})`);
+                    const totalQuantity = newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
+
+                    return {
+                      ...item,
+                      quantity: totalQuantity,
+                      locations: newLocations,
+                      updatedAt: new Date().toISOString()
+                    };
+                  }
+                  return item;
+                }));
               }
             });
 
-            if (logDetails.length > 0) {
-              addActivityLog('批量調撥', `轉移至 ${toLocation}: ${logDetails.join(', ')}`, 'BATCH_TRANSFER', 'inventory');
+            if (somethingChanged) {
+              const allReceived = updatedItems.every(i => i.received);
+              const updatedOrder = {
+                ...order,
+                items: updatedItems,
+                status: allReceived ? 'Completed' : 'Partial' as any
+              };
+              setPurchaseOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+              addActivityLog('採購單收貨', order.supplier, order.id, 'system');
             }
+          }}
+        />
+      }
 
-            return newItems;
-          });
-          setIsScanModalOpen(false);
-        }}
-      />}
+      {
+        isLocationManagerOpen && <LocationManagerModal
+          locations={inventoryLocations}
+          onClose={() => setIsLocationManagerOpen(false)}
+          onAdd={(data) => {
+            const newId = 'LOC' + Date.now().toString().slice(-6);
+            setInventoryLocations(prev => [...prev, { ...data, id: newId } as InventoryLocation]);
+            addActivityLog('新增倉庫', data.name, newId, 'system');
+          }}
+          onDelete={(id) => {
+            const loc = inventoryLocations.find(l => l.id === id);
+            if (loc) {
+              setInventoryLocations(prev => prev.filter(l => l.id !== id));
+              addActivityLog('移除倉庫', loc.name, id, 'system');
+            }
+          }}
+          onUpdate={(location) => {
+            setInventoryLocations(prev => prev.map(l => l.id === location.id ? location : l));
+            addActivityLog('更新倉庫資訊', location.name, location.id, 'system');
+          }}
+        />
+      }
+
+      {
+        transferItem && <TransferModal
+          item={transferItem}
+          allLocations={inventoryLocations}
+          onClose={() => setTransferItem(null)}
+          onConfirm={(from, to, qty, notes) => {
+            // Perform Transfer
+            setInventoryItems(prev => prev.map(item => {
+              if (item.id !== transferItem.id) return item;
+
+              const newLocations = [...(item.locations || [])];
+
+              // Decrease Source
+              const sourceIdx = newLocations.findIndex(l => l.name === from);
+              if (sourceIdx >= 0) {
+                newLocations[sourceIdx] = {
+                  ...newLocations[sourceIdx],
+                  quantity: Math.max(0, newLocations[sourceIdx].quantity - qty)
+                };
+              }
+
+              // Increase Dest
+              const destIdx = newLocations.findIndex(l => l.name === to);
+              if (destIdx >= 0) {
+                newLocations[destIdx] = {
+                  ...newLocations[destIdx],
+                  quantity: newLocations[destIdx].quantity + qty
+                };
+              } else {
+                newLocations.push({ name: to, quantity: qty });
+              }
+
+              // Update Item total quantity (should technically remain same, but recalc to be safe)
+              const total = newLocations.reduce((sum, l) => sum + (l.quantity || 0), 0);
+
+              addActivityLog('庫存調撥', `${item.name} (${qty} ${item.unit}) from ${from} to ${to}`, item.id, 'inventory');
+
+              return {
+                ...item,
+                quantity: total,
+                locations: newLocations,
+                updatedAt: new Date().toISOString()
+              };
+            }));
+            setTransferItem(null);
+          }}
+        />
+      }
+
+      {
+        isScanModalOpen && <ScanTransferModal
+          inventoryItems={inventoryItems}
+          locations={inventoryLocations}
+          onClose={() => setIsScanModalOpen(false)}
+          onConfirm={(items, toLocation) => {
+            // Batch Transfer Logic
+            setInventoryItems(prev => {
+              let newItems = [...prev];
+              const logDetails: string[] = [];
+
+              items.forEach(transfer => {
+                const itemIndex = newItems.findIndex(i => i.id === transfer.inventoryItem.id);
+                if (itemIndex >= 0) {
+                  const item = newItems[itemIndex];
+                  const newLocations = [...(item.locations || [])];
+
+                  // Decrease Source
+                  const sourceIdx = newLocations.findIndex(l => l.name === transfer.fromLocation);
+                  if (sourceIdx >= 0) {
+                    newLocations[sourceIdx] = {
+                      ...newLocations[sourceIdx],
+                      quantity: Math.max(0, newLocations[sourceIdx].quantity - transfer.quantity)
+                    };
+                  }
+
+                  // Increase Dest
+                  const destIdx = newLocations.findIndex(l => l.name === toLocation);
+                  if (destIdx >= 0) {
+                    newLocations[destIdx] = {
+                      ...newLocations[destIdx],
+                      quantity: newLocations[destIdx].quantity + transfer.quantity
+                    };
+                  } else {
+                    newLocations.push({ name: toLocation, quantity: transfer.quantity });
+                  }
+
+                  // Recalculate total
+                  const total = newLocations.reduce((sum, l) => sum + (l.quantity || 0), 0);
+                  newItems[itemIndex] = {
+                    ...item,
+                    quantity: total,
+                    locations: newLocations,
+                    updatedAt: new Date().toISOString()
+                  };
+
+                  logDetails.push(`${item.name} (${transfer.quantity})`);
+                }
+              });
+
+              if (logDetails.length > 0) {
+                addActivityLog('批量調撥', `轉移至 ${toLocation}: ${logDetails.join(', ')}`, 'BATCH_TRANSFER', 'inventory');
+              }
+
+              return newItems;
+            });
+            setIsScanModalOpen(false);
+          }}
+        />
+      }
 
       <VendorModal
         isOpen={isVendorModalOpen}
@@ -1829,28 +1904,30 @@ const App: React.FC = () => {
       />
 
       {/* Activity Log Side Panel Overlay */}
-      {isNotificationOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-stone-900/20 backdrop-blur-sm z-[110] animate-in fade-in duration-300"
-            onClick={() => setIsNotificationOpen(false)}
-          />
-          <div className="fixed top-0 right-0 bottom-0 w-full max-w-[400px] z-[120] shadow-2xl">
-            <NotificationPanel
-              logs={activityLogs}
-              onClose={() => setIsNotificationOpen(false)}
-              onProjectClick={(id) => {
-                setSelectedProjectId(id);
-                setIsNotificationOpen(false);
-                setActiveTab('projects');
-              }}
-              onMarkAsRead={handleMarkLogAsRead}
-              onMarkAllAsRead={handleMarkAllLogsAsRead}
+      {
+        isNotificationOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-stone-900/20 backdrop-blur-sm z-[110] animate-in fade-in duration-300"
+              onClick={() => setIsNotificationOpen(false)}
             />
-          </div>
-        </>
-      )}
-    </div>
+            <div className="fixed top-0 right-0 bottom-0 w-full max-w-[400px] z-[120] shadow-2xl">
+              <NotificationPanel
+                logs={activityLogs}
+                onClose={() => setIsNotificationOpen(false)}
+                onProjectClick={(id) => {
+                  setSelectedProjectId(id);
+                  setIsNotificationOpen(false);
+                  setActiveTab('projects');
+                }}
+                onMarkAsRead={handleMarkLogAsRead}
+                onMarkAllAsRead={handleMarkAllLogsAsRead}
+              />
+            </div>
+          </>
+        )
+      }
+    </div >
   );
 };
 

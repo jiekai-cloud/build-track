@@ -4,7 +4,11 @@
  * 此檔案定義系統中所有可用的功能模組及其配置
  */
 
-import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag } from 'lucide-react';
+import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet } from 'lucide-react';
+
+// ... (omitted enum and interface changes which are already correct) ...
+
+// ... (omitted enum and interface changes which are already correct) ...
 
 /**
  * 模組識別碼列舉
@@ -25,7 +29,9 @@ export enum ModuleId {
     AI_ASSISTANT = 'ai_assistant',    // AI 智慧助手
     CLOUD_SYNC = 'cloud_sync',        // 雲端同步
     LEADS = 'leads',                  // 會勘線索管理
-    INVENTORY = 'inventory'           // 庫存管理
+    INVENTORY = 'inventory',          // 庫存管理
+    ATTENDANCE = 'attendance',        // 考勤系統
+    PAYROLL = 'payroll'               // 薪資管理
 }
 
 /**
@@ -39,7 +45,7 @@ export interface ModuleConfig {
     isCore: boolean; // 核心模組不可關閉
     dependencies: ModuleId[]; // 依賴的其他模組
     enabled: boolean;
-    category: 'core' | 'management' | 'analytics' | 'automation'; // 模組分類
+    category: 'core' | 'management' | 'analytics' | 'automation' | 'hr'; // 模組分類
 }
 
 /**
@@ -180,6 +186,26 @@ export const ALL_MODULES: ModuleConfig[] = [
         icon: ShoppingBag,
         isCore: false,
         dependencies: [],
+        enabled: true,
+        category: 'management'
+    },
+    {
+        id: ModuleId.ATTENDANCE,
+        name: '考勤系統',
+        description: '員工打卡與工時記錄',
+        icon: Clock,
+        isCore: false,
+        dependencies: [ModuleId.TEAM],
+        enabled: true,
+        category: 'management'
+    },
+    {
+        id: ModuleId.PAYROLL,
+        name: '薪資管理',
+        description: '薪資計算與發放記錄',
+        icon: Wallet,
+        isCore: false,
+        dependencies: [ModuleId.TEAM, ModuleId.ATTENDANCE],
         enabled: true,
         category: 'management'
     }

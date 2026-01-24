@@ -282,6 +282,7 @@ export interface TeamMember {
   password?: string;
   departmentId: string;
   departmentIds?: string[]; // 支持多部門 (最多三個)
+  accessibleModules?: string[]; // 可存取的模組 ID 列表
   name: string;
   nicknames?: string[]; // 新增：多個外號 (用於 AI 辨識)
   dailyRate?: number; // 新增：日薪 (用於成本計算)
@@ -325,6 +326,7 @@ export interface User {
   role: Role;
   roleName?: string; // 自訂職稱 (e.g. 工務經理)
   department: SystemContext;
+  accessibleModules?: string[]; // 用戶個人的模組權限
 }
 
 export interface Message {
@@ -424,4 +426,32 @@ export interface PurchaseOrder {
   notes?: string;
   updatedAt?: string;
   createdAb?: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  name: string;
+  type: 'work-start' | 'work-end'; // 上班 | 下班
+  timestamp: string;
+  location: {
+    lat: number;
+    lng: number;
+    address?: string;
+  };
+  departmentId?: string;
+  photoUrl?: string; // Optional: photo verification
+}
+
+export interface PayrollRecord {
+  id: string;
+  employeeId: string;
+  month: string; // YYYY-MM
+  baseSalary: number;
+  overtimeHours: number;
+  overtimePay: number;
+  deductions: number;
+  total: number;
+  status: 'draft' | 'confirmed' | 'paid';
+  note?: string;
 }
