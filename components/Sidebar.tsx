@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag, Sparkles, Clock, Wallet } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag, Sparkles, Clock, Wallet, FileCheck } from 'lucide-react';
 import { moduleService } from '../services/moduleService';
 import { ModuleId, DEFAULT_ENABLED_MODULES } from '../moduleConfig';
 
@@ -49,7 +49,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     'analytics': ModuleId.ANALYTICS,
     'inventory': ModuleId.INVENTORY,
     'attendance': ModuleId.ATTENDANCE,
-    'payroll': ModuleId.PAYROLL
+    'payroll': ModuleId.PAYROLL,
+    'approvals': ModuleId.APPROVALS
   };
 
   const allMenuItems = [
@@ -62,6 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     { id: 'inventory', label: '庫存管理', icon: ShoppingBag, moduleId: ModuleId.INVENTORY },
     { id: 'attendance', label: '考勤打卡', icon: Clock, moduleId: ModuleId.ATTENDANCE },
     { id: 'payroll', label: '薪資管理', icon: Wallet, moduleId: ModuleId.PAYROLL },
+    { id: 'approvals', label: '簽核系統', icon: FileCheck, moduleId: ModuleId.APPROVALS },
     { id: 'analytics', label: '數據分析', icon: BarChart3, moduleId: ModuleId.ANALYTICS },
   ];
 

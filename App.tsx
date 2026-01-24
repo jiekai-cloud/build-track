@@ -24,11 +24,12 @@ import Login from './components/Login';
 import OrderManagerModal from './components/OrderManagerModal';
 import AttendanceSystem from './components/AttendanceSystem';
 import PayrollSystem from './components/PayrollSystem';
+import ApprovalSystem from './components/ApprovalSystem';
 import ModuleManager from './components/ModuleManager';
 import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download, Phone } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
-import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder, AttendanceRecord, PayrollRecord } from './types';
+import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder, AttendanceRecord, PayrollRecord, ApprovalRequest, ApprovalTemplate } from './types';
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 import { moduleService } from './services/moduleService';
 import { ModuleId, DEFAULT_ENABLED_MODULES, ALL_MODULES } from './moduleConfig';
@@ -52,6 +53,8 @@ const App: React.FC = () => {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
+  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
+  const [approvalTemplates, setApprovalTemplates] = useState<ApprovalTemplate[]>([]);
 
   // Calculate permissions dynamically
   // Calculate permissions dynamically
@@ -420,6 +423,64 @@ const App: React.FC = () => {
     alert(`${action}打卡成功！\n成員狀態已更新為：${type === 'work-start' ? '上班中' : '未上班'}\n時間：${new Date().toLocaleTimeString()}\n地點：${location.address || 'GPS ' + location.lat.toFixed(4)}`);
   };
 
+  const handleSaveApprovalRequest = (request: ApprovalRequest) => {
+    setApprovalRequests(prev => [request, ...prev]);
+    addActivityLog('提交了簽核申請', request.title, request.id, 'system');
+  };
+
+  const handleSaveApprovalTemplate = (template: ApprovalTemplate) => {
+    setApprovalTemplates(prev => {
+      const exists = prev.find(t => t.id === template.id);
+      if (exists) return prev.map(t => t.id === template.id ? template : t);
+      return [...prev, template];
+    });
+    addActivityLog('更新了簽核流程設定', template.name, template.id, 'system');
+  };
+
+  const handleDeleteApprovalTemplate = (id: string) => {
+    if (confirm('確定要刪除此簽核流程？這不會影響已提交的申請。')) {
+      const t = approvalTemplates.find(x => x.id === id);
+      setApprovalTemplates(prev => prev.filter(x => x.id !== id));
+      if (t) addActivityLog('刪除了簽核流程', t.name, id, 'system');
+    }
+  };
+
+  const handleApprovalAction = (requestId: string, action: 'approved' | 'rejected', comment?: string) => {
+    if (!user) return;
+
+    setApprovalRequests(prev => prev.map(req => {
+      if (req.id !== requestId) return req;
+
+      const template = approvalTemplates.find(t => t.id === req.templateId);
+      if (!template) return req;
+
+      const newLog = {
+        step: req.currentStep,
+        role: template.workflow[req.currentStep],
+        approverId: user.id,
+        approverName: user.name,
+        status: action,
+        comment,
+        timestamp: new Date().toISOString()
+      };
+
+      const nextStep = req.currentStep + 1;
+      const isFinished = action === 'rejected' || nextStep >= template.workflow.length;
+
+      return {
+        ...req,
+        status: action === 'rejected' ? 'rejected' : (isFinished ? 'approved' : 'pending'),
+        currentStep: isFinished ? req.currentStep : nextStep,
+        workflowLogs: [...req.workflowLogs, newLog],
+        updatedAt: new Date().toISOString(),
+        completedAt: isFinished ? new Date().toISOString() : undefined
+      };
+    }));
+
+    const actStr = action === 'approved' ? '核准' : '駁回';
+    addActivityLog(`${actStr}了簽核申請`, requestId, requestId, 'system');
+  };
+
   // Auto-redirect to Attendance page on login
   const hasRedirectedRef = React.useRef(false);
   useEffect(() => {
@@ -522,7 +583,36 @@ const App: React.FC = () => {
         storageService.getItem<InventoryLocation[]>(`${prefix}bt_locations`, [{ id: 'MAIN', name: '總倉庫', type: 'Main', isDefault: true }]),
         storageService.getItem<PurchaseOrder[]>(`${prefix}bt_orders`, []),
         storageService.getItem<AttendanceRecord[]>(`${prefix}bt_attendance`, []),
-        storageService.getItem<PayrollRecord[]>(`${prefix}bt_payroll`, [])
+        storageService.getItem<PayrollRecord[]>(`${prefix}bt_payroll`, []),
+        storageService.getItem<ApprovalRequest[]>(`${prefix}bt_approval_requests`, []),
+        storageService.getItem<ApprovalTemplate[]>(`${prefix}bt_approval_templates`, [
+          {
+            id: 'TPL-LEAVE',
+            name: '請假申請單',
+            description: '各類假別申請流程',
+            workflow: ['Manager', 'AdminStaff'],
+            formFields: [
+              { key: '假別', label: '假別類型', type: 'text', required: true },
+              { key: '開始日期', label: '開始日期', type: 'date', required: true },
+              { key: '結束日期', label: '結束日期', type: 'date', required: true },
+              { key: '原因', label: '詳細原因', type: 'text', required: true }
+            ],
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 'TPL-EXPENSE',
+            name: '費用報支申請',
+            description: '專案或行政費用報銷',
+            workflow: ['Manager', 'DeptAdmin', 'AdminStaff'],
+            formFields: [
+              { key: '項目', label: '報支項目', type: 'text', required: true },
+              { key: '金額', label: '報支金額', type: 'number', required: true },
+              { key: '日期', label: '發生日期', type: 'date', required: true },
+              { key: '備註', label: '備註說明', type: 'text', required: false }
+            ],
+            updatedAt: new Date().toISOString()
+          }
+        ])
       ]);
 
       setCustomers(customersData);
@@ -539,6 +629,8 @@ const App: React.FC = () => {
       setPurchaseOrders(purchaseOrdersData);
       setAttendanceRecords(attendanceData);
       setPayrollRecords(payrollData);
+      setApprovalRequests(approvalRequestsData);
+      setApprovalTemplates(approvalTemplatesData);
       setActivityLogs(logsData);
 
       setInitialSyncDone(true);
@@ -596,10 +688,10 @@ const App: React.FC = () => {
   }, [loadSystemData]);
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
-  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords });
+  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates });
   React.useEffect(() => {
-    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords };
-  }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords]);
+    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates };
+  }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates]);
 
   const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
     if (!user) return;
@@ -652,6 +744,8 @@ const App: React.FC = () => {
         purchaseOrders: purchaseOrders,
         attendance: attendanceRecords,
         payroll: payrollRecords,
+        approvalRequests,
+        approvalTemplates,
         activityLogs,
         lastUpdated: new Date().toISOString(),
         userEmail: user?.email
@@ -683,7 +777,7 @@ const App: React.FC = () => {
       isSyncingRef.current = false;
       setIsSyncing(false); // STOP UI SPINNER
     }
-  }, [isCloudConnected, user?.email, user?.role, projects, customers, teamMembers, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, activityLogs, updateStateWithMerge, cloudError, handleLogout]);
+  }, [isCloudConnected, user?.email, user?.role, projects, customers, teamMembers, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, activityLogs, updateStateWithMerge, cloudError, handleLogout, approvalRequests, approvalTemplates]);
 
   const handleConnectCloud = async () => {
     if (user?.role === 'Guest') return;
@@ -752,20 +846,26 @@ const App: React.FC = () => {
     if (user.role !== 'Guest') {
       const saveToIndexedDB = async () => {
         const prefix = currentDept === 'ThirdDept' ? 'dept3_' : '';
-        await Promise.all([
-          storageService.setItem(`${prefix}bt_projects`, projects),
-          storageService.setItem(`${prefix}bt_customers`, customers),
-          storageService.setItem(`${prefix}bt_team`, teamMembers),
-          storageService.setItem(`${prefix}bt_vendors`, vendors),
-          storageService.setItem(`${prefix}bt_leads`, leads),
-          storageService.setItem(`${prefix}bt_inventory`, inventoryItems),
-          storageService.setItem(`${prefix}bt_locations`, inventoryLocations),
-          storageService.setItem(`${prefix}bt_orders`, purchaseOrders),
-          storageService.setItem(`${prefix}bt_attendance`, attendanceRecords),
-          storageService.setItem(`${prefix}bt_payroll`, payrollRecords),
-          storageService.setItem(`${prefix}bt_logs`, activityLogs.slice(0, 50))
-        ]);
-        setLastLocalSave(new Date().toLocaleTimeString());
+        try {
+          await Promise.all([
+            storageService.setItem(`${prefix}bt_projects`, projects),
+            storageService.setItem(`${prefix}bt_customers`, customers),
+            storageService.setItem(`${prefix}bt_team`, teamMembers),
+            storageService.setItem(`${prefix}bt_vendors`, vendors),
+            storageService.setItem(`${prefix}bt_leads`, leads),
+            storageService.setItem(`${prefix}bt_inventory`, inventoryItems),
+            storageService.setItem(`${prefix}bt_locations`, inventoryLocations),
+            storageService.setItem(`${prefix}bt_orders`, purchaseOrders),
+            storageService.setItem(`${prefix}bt_attendance`, attendanceRecords),
+            storageService.setItem(`${prefix}bt_payroll`, payrollRecords),
+            storageService.setItem(`${prefix}bt_approval_requests`, approvalRequests),
+            storageService.setItem(`${prefix}bt_approval_templates`, approvalTemplates),
+            storageService.setItem(`${prefix}bt_logs`, activityLogs.slice(0, 50))
+          ]);
+          setLastLocalSave(new Date().toLocaleTimeString());
+        } catch (e) {
+          console.error('Auto-save failed', e);
+        }
       };
       saveToIndexedDB();
     }
@@ -777,7 +877,7 @@ const App: React.FC = () => {
         handleCloudSync();
       }, 3000);
     }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, currentDept]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, currentDept, approvalRequests, approvalTemplates]);
 
   // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
   useEffect(() => {
@@ -1296,6 +1396,18 @@ const App: React.FC = () => {
                   records={attendanceRecords}
                   teamMembers={teamMembers}
                   currentUser={{ ...user, accessibleModules: currentUserPermissions }}
+                />
+              )}
+              {activeTab === 'approvals' && moduleService.isModuleEnabled(ModuleId.APPROVALS) && (
+                <ApprovalSystem
+                  requests={approvalRequests}
+                  templates={approvalTemplates}
+                  teamMembers={teamMembers}
+                  currentUser={{ ...user, accessibleModules: currentUserPermissions } as any}
+                  onSaveRequest={handleSaveApprovalRequest}
+                  onSaveTemplate={handleSaveApprovalTemplate}
+                  onDeleteTemplate={handleDeleteApprovalTemplate}
+                  onAction={handleApprovalAction}
                 />
               )}
               {activeTab === 'dashboard' && !isCloudConnected && user.role !== 'Guest' && (

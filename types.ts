@@ -456,3 +456,42 @@ export interface PayrollRecord {
   status: 'draft' | 'confirmed' | 'paid';
   note?: string;
 }
+
+export interface ApprovalTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  workflow: string[]; // Role names or IDs
+  formFields: {
+    key: string;
+    label: string;
+    type: 'text' | 'number' | 'date' | 'boolean';
+    required?: boolean;
+  }[];
+  updatedAt: string;
+}
+
+export interface ApprovalRequest {
+  id: string;
+  templateId: string;
+  templateName: string;
+  requesterId: string;
+  requesterName: string;
+  title: string;
+  formData: Record<string, any>;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  currentStep: number;
+  workflowLogs: {
+    step: number;
+    role: string;
+    approverId?: string;
+    approverName?: string;
+    status: 'approved' | 'rejected';
+    comment?: string;
+    timestamp: string;
+  }[];
+  attachments?: string[];
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}

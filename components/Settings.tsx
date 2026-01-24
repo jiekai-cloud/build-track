@@ -380,6 +380,18 @@ const Settings: FC<SettingsProps> = ({
                                   <span className="text-[10px] font-bold">薪資 ({restoreData.payroll.length})</span>
                                 </label>
                               )}
+                              {restoreData.approvalRequests && (
+                                <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
+                                  <input type="checkbox" checked={restoreOptions.approvalRequests} onChange={(e) => setRestoreOptions({ ...restoreOptions, approvalRequests: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
+                                  <span className="text-[10px] font-bold">簽核申請 ({restoreData.approvalRequests.length})</span>
+                                </label>
+                              )}
+                              {restoreData.approvalTemplates && (
+                                <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
+                                  <input type="checkbox" checked={restoreOptions.approvalTemplates} onChange={(e) => setRestoreOptions({ ...restoreOptions, approvalTemplates: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
+                                  <span className="text-[10px] font-bold">簽核流程 ({restoreData.approvalTemplates.length})</span>
+                                </label>
+                              )}
                             </div>
                           </div>
 
@@ -387,7 +399,7 @@ const Settings: FC<SettingsProps> = ({
                             <button
                               onClick={() => {
                                 setRestoreData(null);
-                                setRestoreOptions({ projects: true, dispatch: true, customers: true, vendors: true, teamMembers: true, inventory: true, attendance: true, payroll: true, leads: true });
+                                setRestoreOptions({ projects: true, dispatch: true, customers: true, vendors: true, teamMembers: true, inventory: true, attendance: true, payroll: true, leads: true, approvalRequests: true, approvalTemplates: true });
                               }}
                               className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-600 py-3 rounded-xl text-xs font-black transition-colors"
                             >
@@ -411,6 +423,8 @@ const Settings: FC<SettingsProps> = ({
                                   }
                                   if (restoreOptions.attendance && restoreData.attendance) { dataToRestore.attendance = restoreData.attendance; restoredItems.push(`考勤`); }
                                   if (restoreOptions.payroll && restoreData.payroll) { dataToRestore.payroll = restoreData.payroll; restoredItems.push(`薪資`); }
+                                  if (restoreOptions.approvalRequests && restoreData.approvalRequests) { dataToRestore.approvalRequests = restoreData.approvalRequests; restoredItems.push(`簽核申請`); }
+                                  if (restoreOptions.approvalTemplates && restoreData.approvalTemplates) { dataToRestore.approvalTemplates = restoreData.approvalTemplates; restoredItems.push(`簽核流程`); }
 
                                   if (Object.keys(dataToRestore).length === 0) return alert('請至少選擇一項');
 

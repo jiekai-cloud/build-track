@@ -4,7 +4,7 @@
  * 此檔案定義系統中所有可用的功能模組及其配置
  */
 
-import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet } from 'lucide-react';
+import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet, FileCheck } from 'lucide-react';
 
 // ... (omitted enum and interface changes which are already correct) ...
 
@@ -31,7 +31,8 @@ export enum ModuleId {
     LEADS = 'leads',                  // 會勘線索管理
     INVENTORY = 'inventory',          // 庫存管理
     ATTENDANCE = 'attendance',        // 考勤系統
-    PAYROLL = 'payroll'               // 薪資管理
+    PAYROLL = 'payroll',               // 薪資管理
+    APPROVALS = 'approvals'           // 簽核系統
 }
 
 /**
@@ -206,6 +207,16 @@ export const ALL_MODULES: ModuleConfig[] = [
         icon: Wallet,
         isCore: false,
         dependencies: [ModuleId.TEAM, ModuleId.ATTENDANCE],
+        enabled: true,
+        category: 'management'
+    },
+    {
+        id: ModuleId.APPROVALS,
+        name: '簽核系統',
+        description: '自定義簽核流程、表單與申請審核',
+        icon: FileCheck,
+        isCore: false,
+        dependencies: [ModuleId.TEAM],
         enabled: true,
         category: 'management'
     }
