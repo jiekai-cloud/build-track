@@ -58,7 +58,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
     onUpdateDefectRecords
   } = props;
   const [newComment, setNewComment] = useState('');
-  const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep' | 'defects'>('logs');
+  const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep' | 'defects' | 'labor'>('logs');
   const [selectedImage, setSelectedImage] = useState<ProjectFile | null>(null);
   const [isReportMode, setIsReportMode] = useState(false);
   const [isCompletionReportMode, setIsCompletionReportMode] = useState(false);
@@ -615,6 +615,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
             { id: 'tasks', label: '待辦任務', icon: CheckCircle2 },
             { id: 'schedule', label: '施工排程', icon: CalendarDays },
             { id: 'financials', label: '帳務管理', icon: DollarSign },
+            { id: 'labor', label: '出工統計', icon: ClipboardList },
             { id: 'prep', label: '施工前準備', icon: Construction },
             { id: 'map', label: '案場定位', icon: Navigation },
             { id: 'photos', label: '照片庫', icon: ImageIcon },
@@ -2212,6 +2213,179 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                       );
                     })()}
                   </div>
+                </div>
+              )}
+
+              {activeView === 'labor' && (
+                <div className="space-y-6 animate-in fade-in">
+                  {(() => {
+                    const totalManDays = (project.workAssignments || []).reduce((sum, a) => sum + Number(a.days), 0);
+                    const expected = project.expectedManDays || 0;
+                    const percentage = expected > 0 ? Math.round((totalManDays / expected) * 100) : 0;
+
+                    // Group by date
+                    const dailyWork = (project.workAssignments || []).reduce((acc, curr) => {
+                      const date = curr.date;
+                      if (!acc[date]) acc[date] = 0;
+                      acc[date] += Number(curr.days);
+                      return acc;
+                    }, {} as Record<string, number>);
+
+                    const dailyEntries = Object.entries(dailyWork).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
+
+                    return (
+                      <>
+                        <div className="bg-white rounded-3xl border border-stone-200 p-6 shadow-sm">
+                          <div className="flex justify-between items-start mb-6">
+                            <div>
+                              <h3 className="text-xl font-black text-stone-900 flex items-center gap-2">
+                                <ClipboardList className="text-blue-600" /> 出工統計與預算管控
+                              </h3>
+                              <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mt-1">Labor Statistics & Control</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  const newExpected = prompt('請輸入預期總工數 (Man-Days):', expected.toString());
+                                  if (newExpected !== null) {
+                                    const num = parseFloat(newExpected);
+                                    if (!isNaN(num)) {
+                                      onEdit({ ...project, expectedManDays: num });
+                                    }
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl text-[10px] font-black transition-all"
+                              >
+                                修改預期工數
+                              </button>
+                              <button
+                                onClick={() => {
+                                  // Dynamic Import html2canvas to avoid build errors if not present
+                                  // Assuming user has it or I need to install it. 
+                                  // Since I cannot install, I'll rely on global window.html2canvas or simpler print
+                                  // Actually, I'll assume standard environment. 
+                                  // If html2canvas is not available, alerting user.
+                                  // For now, let's use a simple print trick or just the code structure.
+                                  // Re-using the logic from Chart but for Table.
+
+                                  const table = document.getElementById('labor-stats-table');
+                                  if (!table) return;
+
+                                  // @ts-ignore
+                                  if (window.html2canvas) {
+                                    // @ts-ignore
+                                    window.html2canvas(table, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+                                      const a = document.createElement('a');
+                                      a.href = canvas.toDataURL('image/jpeg', 0.9);
+                                      a.download = `出工統計表-${project.name}.jpg`;
+                                      a.click();
+                                    });
+                                  } else {
+                                    // Fallback: Load script dynamically
+                                    const script = document.createElement('script');
+                                    script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+                                    script.onload = () => {
+                                      // @ts-ignore
+                                      window.html2canvas(table, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+                                        const a = document.createElement('a');
+                                        a.href = canvas.toDataURL('image/jpeg', 0.9);
+                                        a.download = `出工統計表-${project.name}.jpg`;
+                                        a.click();
+                                      });
+                                    };
+                                    document.body.appendChild(script);
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-slate-900 text-white hover:bg-black rounded-xl text-[10px] font-black transition-all flex items-center gap-2"
+                              >
+                                <DownloadCloud size={12} /> 匯出報表
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                              <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mb-1">預期總工數</p>
+                              <p className="text-2xl font-black text-stone-700">{expected > 0 ? expected : '未設定'}</p>
+                            </div>
+                            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                              <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-1">目前累計工數</p>
+                              <p className="text-2xl font-black text-blue-600">{totalManDays}</p>
+                            </div>
+                            <div className={`p-4 rounded-2xl border ${percentage > 100 ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${percentage > 100 ? 'text-rose-400' : 'text-emerald-400'}`}>累計出工比</p>
+                              <p className={`text-2xl font-black ${percentage > 100 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                {expected > 0 ? `${percentage}%` : '-'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div id="labor-stats-table" className="border border-stone-200 rounded-xl overflow-hidden bg-white">
+                            {/* Header for Export */}
+                            <div className="bg-stone-100 p-4 border-b border-stone-200 flex justify-between items-center">
+                              <div>
+                                <h4 className="font-black text-lg text-stone-800">{project.name}</h4>
+                                <p className="text-xs text-stone-500 font-bold">工號：{project.id} | 地點：{project.location?.address || '無'}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs font-bold text-stone-600">統計日期：{new Date().toLocaleDateString()}</p>
+                                <p className="text-[10px] text-stone-400 uppercase tracking-widest">System Generated</p>
+                              </div>
+                            </div>
+
+                            {/* Summary Row */}
+                            <div className="grid grid-cols-3 border-b border-stone-200 bg-stone-50 text-center divide-x divide-stone-200">
+                              <div className="p-3">
+                                <span className="block text-[10px] text-stone-400 font-black uppercase tracking-widest">預期總工數</span>
+                                <span className="font-black text-xl text-stone-800">{expected || '-'}</span>
+                              </div>
+                              <div className="p-3">
+                                <span className="block text-[10px] text-blue-400 font-black uppercase tracking-widest">目前累計</span>
+                                <span className="font-black text-xl text-blue-600">{totalManDays}</span>
+                              </div>
+                              <div className="p-3">
+                                <span className="block text-[10px] text-stone-400 font-black uppercase tracking-widest">執行率</span>
+                                <span className={`font-black text-xl ${percentage > 100 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                  {expected > 0 ? `${percentage}%` : '-'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <table className="w-full text-sm text-left">
+                              <thead className="bg-stone-50 text-stone-500 font-bold border-b border-stone-200">
+                                <tr>
+                                  <th className="px-6 py-3 text-center whitespace-nowrap">日期</th>
+                                  <th className="px-6 py-3 text-center whitespace-nowrap">工數</th>
+                                  <th className="px-6 py-3 text-left w-full">出工明細 (人員)</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-stone-100">
+                                {dailyEntries.map(([date, days]) => {
+                                  const workers = (project.workAssignments || [])
+                                    .filter(a => a.date === date)
+                                    .map(a => a.memberName)
+                                    .join(', ');
+
+                                  return (
+                                    <tr key={date} className="hover:bg-stone-50/50">
+                                      <td className="px-6 py-3 text-center font-mono text-stone-600 font-bold">{new Date(date).toLocaleDateString()}</td>
+                                      <td className="px-6 py-3 text-center font-black text-stone-800 text-lg">{days}</td>
+                                      <td className="px-6 py-3 text-stone-600 font-bold text-xs">{workers}</td>
+                                    </tr>
+                                  );
+                                })}
+                                {dailyEntries.length === 0 && (
+                                  <tr>
+                                    <td colSpan={3} className="px-6 py-8 text-center text-stone-300 font-bold">尚無派工紀錄</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 

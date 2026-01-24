@@ -189,6 +189,7 @@ export interface Project {
   budget: number;
   spent: number;
   progress: number;
+  expectedManDays?: number; // 預期工數
   status: ProjectStatus;
   tasks: Task[];
   phases: ProjectPhase[];

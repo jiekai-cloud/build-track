@@ -34,6 +34,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
     endDate: '',
     address: '',
     year: '', // 新增：年度類別 (2024, 2025, 2026)
+    expectedManDays: '', // 新增：預期工數
     id: '', // 新增：可編輯的案件編號
   });
 
@@ -57,6 +58,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         endDate: initialData.endDate,
         address: initialData.location?.address || '',
         year: initialData.year || '', // 載入年度類別
+        expectedManDays: initialData.expectedManDays?.toString() || '',
         id: initialData.id || '', // 載入現有編號
       });
     }
@@ -77,6 +79,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
       ...formData,
       budget: Number(formData.budget),
       progress: Number(formData.progress),
+      expectedManDays: Number(formData.expectedManDays) || 0,
       introducerFeeAmount: Number(formData.introducerFeeAmount) || 0,
       location: mockLocation,
       createdDate: initialData?.createdDate || new Date().toISOString().split('T')[0]
@@ -253,6 +256,16 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
                   <option value="2026">2026 年度</option>
                 </select>
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">預期總工數 (Man-Days)</label>
+              <input
+                type="number"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold placeholder:text-slate-300"
+                placeholder="例如: 180"
+                value={formData.expectedManDays}
+                onChange={e => setFormData({ ...formData, expectedManDays: e.target.value })}
+              />
             </div>
           </div>
 
