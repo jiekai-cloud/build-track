@@ -2,7 +2,7 @@
 import React, { useState, useMemo, FC } from 'react';
 import {
   User, ChevronRight, Download, ShieldCheck,
-  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard
+  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Key
 } from 'lucide-react';
 import { Project, Customer, TeamMember, User as UserType } from '../types';
 import { BACKUP_FILENAME } from '../services/googleDriveService';
@@ -32,6 +32,21 @@ const Settings: FC<SettingsProps> = ({
   const [copied, setCopied] = useState(false);
   const [pendingData, setPendingData] = useState<any>(null);
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
+
+  // API Keys State
+  const [googleMapsKey, setGoogleMapsKey] = useState(localStorage.getItem('GOOGLE_MAPS_API_KEY') || '');
+  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('GEMINI_API_KEY') || '');
+
+  const handleSaveKeys = () => {
+    if (googleMapsKey) localStorage.setItem('GOOGLE_MAPS_API_KEY', googleMapsKey);
+    else localStorage.removeItem('GOOGLE_MAPS_API_KEY');
+
+    if (geminiKey) localStorage.setItem('GEMINI_API_KEY', geminiKey);
+    else localStorage.removeItem('GEMINI_API_KEY');
+
+    alert('API 金鑰設定已儲存！將重新整理頁面以生效。');
+    window.location.reload();
+  };
 
   const [importMode, setImportMode] = useState<'overwrite' | 'merge'>('merge');
   const isReadOnly = user.role === 'Guest';
@@ -67,6 +82,7 @@ const Settings: FC<SettingsProps> = ({
 
   const sections = [
     { id: 'profile', label: '個人帳戶', icon: User },
+    { id: 'api', label: 'API 串接', icon: Key },
     { id: 'cloud', label: '雲端同步', icon: Cloud },
     { id: 'deploy', label: '部署助手', icon: Github },
     { id: 'data', label: '資料安全', icon: ShieldCheck },
@@ -377,6 +393,55 @@ const Settings: FC<SettingsProps> = ({
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeSection === 'api' && (
+              <div className="space-y-8 animate-in slide-in-from-right-4">
+                <div className="flex items-center gap-5">
+                  <div className="p-5 rounded-[2rem] bg-indigo-50 text-indigo-600 shadow-lg">
+                    <Key size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-stone-900 uppercase tracking-tight">API 金鑰配置</h3>
+                    <p className="text-sm text-stone-500 font-medium">設定外部服務連接金鑰 (儲存於本機瀏覽器)。</p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Google Maps API Key</label>
+                    <input
+                      type="password"
+                      value={googleMapsKey}
+                      onChange={(e) => setGoogleMapsKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
+                    />
+                    <p className="text-[10px] text-stone-400 font-medium">用於顯示專案地圖與街景。需啟用 Maps JavaScript API。</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Google Gemini API Key</label>
+                    <input
+                      type="password"
+                      value={geminiKey}
+                      onChange={(e) => setGeminiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
+                    />
+                    <p className="text-[10px] text-stone-400 font-medium">用於 AI 排程、報表分析與自動化建議。</p>
+                  </div>
+
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      onClick={handleSaveKeys}
+                      className="bg-stone-900 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-stone-800 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <Check size={16} /> 保存設定並重新整理
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
