@@ -159,7 +159,17 @@ const VendorModal: React.FC<VendorModalProps> = ({ isOpen, onClose, onSave, vend
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black font-bold"
                                         value={formData.phone}
                                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                        placeholder="0912-345-678"
                                     />
+                                    {formData.phone && (
+                                        <a
+                                            href={`tel:${formData.phone}`}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors"
+                                            title="撥打電話"
+                                        >
+                                            <Phone size={14} />
+                                        </a>
+                                    )}
                                 </div>
                             </div>
 

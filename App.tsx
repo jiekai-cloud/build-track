@@ -25,7 +25,7 @@ import OrderManagerModal from './components/OrderManagerModal';
 import AttendanceSystem from './components/AttendanceSystem';
 import PayrollSystem from './components/PayrollSystem';
 import ModuleManager from './components/ModuleManager';
-import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download } from 'lucide-react';
+import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download, Phone } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
 import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder, AttendanceRecord, PayrollRecord } from './types';
@@ -1507,6 +1507,12 @@ const App: React.FC = () => {
                           <div className="flex items-center gap-2 text-xs font-medium text-stone-500">
                             <LucideUser size={14} /> {v.contact}
                           </div>
+                          {v.phone && (
+                            <a href={`tel:${v.phone}`} className="flex items-center gap-2 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
+                              {/* @ts-ignore */}
+                              <Phone size={14} /> {v.phone}
+                            </a>
+                          )}
                           <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, i) => (
                               <Sparkles key={i} size={10} className={i < v.rating ? 'text-amber-400' : 'text-stone-200'} />
