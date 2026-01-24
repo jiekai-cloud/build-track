@@ -4,7 +4,7 @@ import {
     Clock, Calendar, DollarSign, UserCheck, Users,
     ChevronRight, Download, Printer, Plus, Edit2,
     MoreVertical, CheckCircle, XCircle, AlertCircle,
-    Search, Filter, Calculator, FileText, Briefcase
+    Search, Filter, Calculator, FileText, Briefcase, MapPin, LogOut as LogOutIcon, Fingerprint as FingerprintIcon
 } from 'lucide-react';
 import { TeamMember, AttendanceRecord, PayrollRecord, Project } from '../types';
 
@@ -12,7 +12,9 @@ interface AttendanceSystemProps {
     currentUser: any;
     teamMembers: TeamMember[];
     attendanceRecords: AttendanceRecord[];
-    onClockIn: (notes?: string) => void;
+    attendanceRecords: AttendanceRecord[];
+    onClockIn: (notes?: string, location?: { lat: number; lng: number; address: string }) => void;
+    onClockOut: (notes?: string) => void;
     onClockOut: (notes?: string) => void;
     onUpdateAttendance: (record: AttendanceRecord) => void;
     onGeneratePayroll: (month: string) => void;
@@ -28,6 +30,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
     const [activeTab, setActiveTab] = useState<'attendance' | 'payroll'>('attendance');
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
     // Clock
     useEffect(() => {
@@ -72,8 +75,8 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                                    ? 'bg-white text-stone-900 shadow-sm'
-                                    : 'text-stone-400 hover:text-stone-600'
+                                ? 'bg-white text-stone-900 shadow-sm'
+                                : 'text-stone-400 hover:text-stone-600'
                                 }`}
                         >
                             <tab.icon size={16} />
@@ -100,20 +103,64 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
 
                         <div className="w-full max-w-[200px] aspect-square rounded-full border-4 border-stone-800 p-2 mb-8 relative z-10">
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (isClockedOut) {
                                         alert('您今日已完成打卡 (已簽退)');
                                         return;
                                     }
-                                    if (isClockedIn) onClockOut();
-                                    else onClockIn();
+                                    if (isClockedIn) {
+                                        onClockOut();
+                                    } else {
+                                        // Clock In with Location
+                                        setIsLoadingLocation(true);
+                                        if (navigator.geolocation) {
+                                            navigator.geolocation.getCurrentPosition(
+                                                async (position) => {
+                                                    const { latitude, longitude } = position.coords;
+                                                    let address = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+
+                                                    try {
+                                                        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
+                                                        const data = await resp.json();
+                                                        if (data && data.display_name) {
+                                                            address = data.display_name;
+                                                        }
+                                                    } catch (e) {
+                                                        console.error('Reverse Geocode Failed', e);
+                                                    }
+
+                                                    onClockIn(undefined, {
+                                                        lat: latitude,
+                                                        lng: longitude,
+                                                        address
+                                                    });
+                                                    setIsLoadingLocation(false);
+                                                },
+                                                (err) => {
+                                                    console.warn('Geolocation denied or failed', err);
+                                                    alert('無法獲取您的位置，將進行普通打卡。');
+                                                    onClockIn();
+                                                    setIsLoadingLocation(false);
+                                                },
+                                                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                                            );
+                                        } else {
+                                            onClockIn();
+                                            setIsLoadingLocation(false);
+                                        }
+                                    }
                                 }}
-                                disabled={isClockedOut}
-                                className={`w-full h-full rounded-full flex flex-col items-center justify-center transition-all active:scale-95 shadow-lg ${isClockedOut ? 'bg-stone-800 text-stone-500 cursor-not-allowed' :
+                                disabled={isClockedOut || isLoadingLocation}
+                                className={`w-full h-full rounded-full flex flex-col items-center justify-center transition-all active:scale-95 shadow-lg relative ${isClockedOut ? 'bg-stone-800 text-stone-500 cursor-not-allowed' :
                                         isClockedIn ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/50' :
                                             'bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-900/50'
                                     }`}
                             >
+                                {isLoadingLocation && (
+                                    <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center z-20">
+                                        <MapPin className="animate-bounce" size={32} />
+                                    </div>
+                                )}
                                 {isClockedOut ? (
                                     <>
                                         <CheckCircle size={32} className="mb-2" />
@@ -137,7 +184,14 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
                             <div className="flex justify-between w-full px-4 text-xs font-bold text-stone-400 z-10">
                                 <div>
                                     <p className="uppercase text-[10px] text-stone-600 mb-1">上班時間</p>
+                                    <p className="uppercase text-[10px] text-stone-600 mb-1">上班時間</p>
                                     <p className="text-white">{myTodayRecord.checkInTime ? new Date(myTodayRecord.checkInTime).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
+                                    {myTodayRecord.location && (
+                                        <div className="flex items-center gap-1 mt-1 text-[9px] text-emerald-400 max-w-[100px] truncate">
+                                            <MapPin size={10} />
+                                            {myTodayRecord.location.address.split(',')[0]}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="text-right">
                                     <p className="uppercase text-[10px] text-stone-600 mb-1">下班時間</p>
@@ -193,8 +247,8 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
                                                 <td className="py-4 font-bold text-stone-900">{workHours}h</td>
                                                 <td className="py-4">
                                                     <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${record.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
-                                                            record.status === 'Late' ? 'bg-amber-100 text-amber-700' :
-                                                                'bg-stone-100 text-stone-500'
+                                                        record.status === 'Late' ? 'bg-amber-100 text-amber-700' :
+                                                            'bg-stone-100 text-stone-500'
                                                         }`}>
                                                         {record.status === 'Present' ? '準時' :
                                                             record.status === 'Late' ? '遲到' :

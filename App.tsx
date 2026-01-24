@@ -1059,7 +1059,8 @@ const App: React.FC = () => {
   }
 
   // Attendance Logic
-  const handleClockIn = (notes?: string) => {
+  // Attendance Logic
+  const handleClockIn = (notes?: string, location?: { lat: number; lng: number; address: string }) => {
     if (!user) return;
     const today = new Date().toISOString().split('T')[0];
     const newRecord: AttendanceRecord = {
@@ -1069,10 +1070,11 @@ const App: React.FC = () => {
       date: today,
       checkInTime: new Date().toISOString(),
       status: 'Present',
-      notes
+      notes,
+      location
     };
     setAttendanceRecords(prev => [...prev, newRecord]);
-    alert(`上班打卡成功！時間：${new Date().toLocaleTimeString()}`);
+    alert(`上班打卡成功！時間：${new Date().toLocaleTimeString()}${location ? '\n位置已記錄。' : ''}`);
   };
 
   const handleClockOut = (notes?: string) => {
