@@ -315,8 +315,43 @@ export interface TeamMember {
   status: 'Available' | 'Busy' | 'OnLeave';
   activeProjectsCount: number;
   avatar: string;
+  salaryType?: 'Monthly' | 'Daily' | 'Hourly';
+  baseSalary?: number;
+  hourlyRate?: number;
   updatedAt?: string;
   deletedAt?: string;
+}
+
+export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Leave' | 'Holiday';
+
+export interface AttendanceRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  date: string; // YYYY-MM-DD
+  checkInTime?: string; // ISO
+  checkOutTime?: string; // ISO
+  status: AttendanceStatus;
+  notes?: string;
+  location?: { lat: number; lng: number; address: string };
+}
+
+export interface PayrollRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  month: string; // YYYY-MM
+  baseSalary: number;
+  workDays: number;
+  workHours: number;
+  overtimeHours: number;
+  overtimePay: number;
+  allowance: number; // 津貼
+  deduction: number; // 扣款
+  totalAmount: number;
+  status: 'Draft' | 'Confirmed' | 'Paid';
+  generatedAt: string;
+  notes?: string;
 }
 
 export type Role = 'SuperAdmin' | 'Admin' | 'Manager' | 'Staff' | 'Guest' | 'SyncOnly' | 'DeptAdmin';

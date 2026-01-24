@@ -23,10 +23,13 @@ import LeadToProjectModal from './components/LeadToProjectModal';
 import Login from './components/Login';
 import OrderManagerModal from './components/OrderManagerModal';
 import ModuleManager from './components/ModuleManager';
-import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download } from 'lucide-react';
+import OrderManagerModal from './components/OrderManagerModal';
+import ModuleManager from './components/ModuleManager';
+import AttendanceSystem from './components/AttendanceSystem';
+import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download, Briefcase } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
-import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder } from './types';
+import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder, AttendanceRecord, PayrollRecord } from './types';
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 import { moduleService } from './services/moduleService';
 import { ModuleId } from './moduleConfig';
@@ -48,6 +51,8 @@ const App: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
 
   useEffect(() => {
     // Seed some mock leads if empty for demo
@@ -397,7 +402,7 @@ const App: React.FC = () => {
       })));
 
       // Load other entities
-      const [customersData, initialTeamData, vendorsData, leadsData, logsData, inventoryData, locationsData, purchaseOrdersData] = await Promise.all([
+      const [customersData, initialTeamData, vendorsData, leadsData, logsData, inventoryData, locationsData, purchaseOrdersData, attendanceData, payrollData] = await Promise.all([
         storageService.getItem<Customer[]>(`${prefix}bt_customers`, []),
         storageService.getItem<TeamMember[]>(`${prefix}bt_team`, defaultTeam),
         storageService.getItem<Vendor[]>(`${prefix}bt_vendors`, []),
@@ -405,7 +410,9 @@ const App: React.FC = () => {
         storageService.getItem<any[]>(`${prefix}bt_logs`, []),
         storageService.getItem<InventoryItem[]>(`${prefix}bt_inventory`, []),
         storageService.getItem<InventoryLocation[]>(`${prefix}bt_locations`, [{ id: 'MAIN', name: '總倉庫', type: 'Main', isDefault: true }]),
-        storageService.getItem<PurchaseOrder[]>(`${prefix}bt_orders`, [])
+        storageService.getItem<PurchaseOrder[]>(`${prefix}bt_orders`, []),
+        storageService.getItem<AttendanceRecord[]>(`${prefix}bt_attendance`, []),
+        storageService.getItem<PayrollRecord[]>(`${prefix}bt_payroll`, [])
       ]);
 
       setCustomers(customersData);
@@ -420,6 +427,8 @@ const App: React.FC = () => {
       setInventoryItems(inventoryData);
       setInventoryLocations(locationsData);
       setPurchaseOrders(purchaseOrdersData);
+      setAttendanceRecords(attendanceData);
+      setPayrollRecords(payrollData);
       setActivityLogs(logsData);
 
       setInitialSyncDone(true);
@@ -632,7 +641,11 @@ const App: React.FC = () => {
           storageService.setItem(`${prefix}bt_leads`, leads),
           storageService.setItem(`${prefix}bt_inventory`, inventoryItems),
           storageService.setItem(`${prefix}bt_locations`, inventoryLocations),
+          storageService.setItem(`${prefix}bt_inventory`, inventoryItems),
+          storageService.setItem(`${prefix}bt_locations`, inventoryLocations),
           storageService.setItem(`${prefix}bt_orders`, purchaseOrders),
+          storageService.setItem(`${prefix}bt_attendance`, attendanceRecords),
+          storageService.setItem(`${prefix}bt_payroll`, payrollRecords),
           storageService.setItem(`${prefix}bt_logs`, activityLogs.slice(0, 50))
         ]);
         setLastLocalSave(new Date().toLocaleTimeString());
@@ -1310,6 +1323,20 @@ const App: React.FC = () => {
                 onScanClick={() => setIsScanModalOpen(true)}
                 onOrdersClick={() => setIsOrderManagerOpen(true)}
               />}
+
+              {activeTab === 'hr' && (
+                <AttendanceSystem
+                  currentUser={user}
+                  teamMembers={teamMembers}
+                  attendanceRecords={attendanceRecords}
+                  onClockIn={handleClockIn}
+                  onClockOut={handleClockOut}
+                  onUpdateAttendance={(updated) => setAttendanceRecords(prev => prev.map(r => r.id === updated.id ? updated : r))}
+                  onGeneratePayroll={handleGeneratePayroll}
+                  payrollRecords={payrollRecords}
+                  onUpdatePayroll={(updated) => setPayrollRecords(prev => prev.map(p => p.id === updated.id ? updated : p))}
+                />
+              )}
 
               {activeTab === 'vendors' && moduleService.isModuleEnabled(ModuleId.VENDORS) && (
                 <div className="p-4 lg:p-8 space-y-6">
