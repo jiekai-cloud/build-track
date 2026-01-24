@@ -184,6 +184,49 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 </div>
             </div>
 
+            {/* Company Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                            <DollarSign size={24} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">全公司本月月薪估計</p>
+                            <p className="text-2xl font-black text-stone-900 tabular-nums">
+                                ${payrollData.reduce((acc, d) => acc + (d.days * (d.member?.dailyRate || 0)), 0).toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                            <Calendar size={24} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">本月累計總人天</p>
+                            <p className="text-2xl font-black text-stone-900 tabular-nums">
+                                {payrollData.reduce((acc, d) => acc + d.days, 0)} <span className="text-sm text-stone-400 uppercase">人天</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600">
+                            <Clock size={24} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">全公司本月總工時</p>
+                            <p className="text-2xl font-black text-stone-900 tabular-nums">
+                                {payrollData.reduce((acc, d) => acc + d.hours, 0).toFixed(1)} <span className="text-sm text-stone-400 uppercase">HR</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {activeTab === 'payroll' && (
                 <div className="space-y-6 animate-in slide-in-from-right-4">
                     {/* Controls */}
