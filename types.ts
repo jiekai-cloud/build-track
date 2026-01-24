@@ -122,6 +122,7 @@ export interface PaymentStage {
   label: string;
   amount: number;
   date: string;
+  expectedReleaseDate?: string; // 預計放款日期
   notes: string;
   vendorId?: string;
   status: 'pending' | 'paid';

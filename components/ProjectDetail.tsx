@@ -1151,6 +1151,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                             <tr className="bg-stone-50/50">
                               <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">階段名稱</th>
                               <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">預計收款日</th>
+                              <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">預計放款日</th>
                               <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-right">金額</th>
                               <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">狀態</th>
                               {!isReadOnly && <th className="px-6 py-3 text-[9px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100 text-center">操作</th>}
@@ -1179,6 +1180,18 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                                     onChange={(e) => {
                                       const newDate = e.target.value;
                                       onUpdatePayments((project.payments || []).map(pay => pay.id === p.id ? { ...pay, date: newDate } : pay));
+                                    }}
+                                    className="bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-200 rounded px-1 -ml-1 text-stone-500 w-[110px]"
+                                  />
+                                </td>
+                                <td className="px-6 py-4 text-xs font-bold text-stone-500">
+                                  <input
+                                    type="date"
+                                    value={p.expectedReleaseDate || ''}
+                                    disabled={isReadOnly}
+                                    onChange={(e) => {
+                                      const newDate = e.target.value;
+                                      onUpdatePayments((project.payments || []).map(pay => pay.id === p.id ? { ...pay, expectedReleaseDate: newDate } : pay));
                                     }}
                                     className="bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-200 rounded px-1 -ml-1 text-stone-500 w-[110px]"
                                   />
