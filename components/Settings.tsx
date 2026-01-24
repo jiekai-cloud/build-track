@@ -2,8 +2,9 @@
 import React, { useState, useMemo, FC } from 'react';
 import {
   User, ChevronRight, Download, ShieldCheck,
-  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Key
+  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Key, Activity
 } from 'lucide-react';
+import SystemHealth from './SystemHealth';
 import { Project, Customer, TeamMember, User as UserType } from '../types';
 import { BACKUP_FILENAME } from '../services/googleDriveService';
 
@@ -82,6 +83,7 @@ const Settings: FC<SettingsProps> = ({
 
   const sections = [
     { id: 'profile', label: '個人帳戶', icon: User },
+    { id: 'health', label: '系統診斷', icon: Activity },
     { id: 'api', label: 'API 串接', icon: Key },
     { id: 'cloud', label: '雲端同步', icon: Cloud },
     { id: 'deploy', label: '部署助手', icon: Github },
@@ -394,6 +396,10 @@ const Settings: FC<SettingsProps> = ({
                   </div>
                 )}
               </div>
+            )}
+
+            {activeSection === 'health' && (
+              <SystemHealth projects={projects} customers={customers} teamMembers={teamMembers} />
             )}
 
             {activeSection === 'api' && (

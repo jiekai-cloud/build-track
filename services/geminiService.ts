@@ -391,18 +391,18 @@ export const scanBusinessCard = async (base64Image: string) => {
 /**
  * 智慧發票收據辨識 - 提取支出資訊
  */
-export const scanReceipt = async (base64Image: string) => {
+export const scanReceipt = async (base64Data: string, mimeType: string = 'image/jpeg') => {
   const ai = getAI();
   try {
     const response = await callAIWithFallback({
       contents: [
         {
           inlineData: {
-            mimeType: "image/jpeg",
-            data: base64Image
+            mimeType: mimeType,
+            data: base64Data
           }
         },
-        `妳是專業的財務單據辨識專家。妳能從發票或收據照片中精準辨認各個欄位。
+        `妳是專業的財務單據辨識專家。妳能從發票或收據照片(或PDF)中精準辨認各個欄位。
         請辨識這張收據上的支出資訊，並僅回傳 JSON 格式數據。
         
         回傳格式必須包含以下欄位：
@@ -431,14 +431,14 @@ export const scanReceipt = async (base64Image: string) => {
 /**
  * 智慧報價單分析 - 提取材料明細 (價格由用戶後續輸入)
  */
-export const analyzeQuotationItems = async (base64Image: string) => {
+export const analyzeQuotationItems = async (base64Data: string, mimeType: string = 'image/jpeg') => {
   try {
     const response = await callAIWithFallback({
       contents: [
         {
           inlineData: {
-            mimeType: "image/jpeg",
-            data: base64Image
+            mimeType: mimeType,
+            data: base64Data
           }
         },
         `妳是專業的工程估價單分析師。請分析這張「廠商報價單」或「材料單」，並列出所有獨立的品項。
@@ -521,15 +521,16 @@ export const analyzeProjectFinancials = async (project: Project) => {
 /**
  * 解析報價單/合約影像為施工排程
  */
-export const parseScheduleFromImage = async (base64Image: string, startDate: string, workOnHolidays: boolean) => {
+export const parseScheduleFromImage = async (base64Data: string, startDate: string, workOnHolidays: boolean, mimeType: string = 'image/jpeg') => {
   try {
-    const prompt = `妳是專業的工程排程規劃師。請讀取這張報價單或合約內容，分析出「施工項目」以及合理的「預計工期」。
+    const prompt = `妳是專業的工程排程規劃師。請讀取這張報價單或合約內容(或PDF文件)，分析出「施工項目」以及合理的「預計工期」。
     
     排程條件：
     1. 專案開始日期：${startDate}
     2. 假日施工：${workOnHolidays ? '是 (包含週末與假日)' : '否 (僅週一至週五施工，遇假日順延)'}
     
     請根據項目性質，自動推估合理的起訖日期。請注意，如果不可假日施工，工期計算必須跳過週末。
+    針對 PDF 文件，請務必讀取所有頁面的內容，不要只讀第一頁。
     
     請直接回傳一個 JSON 陣列，不包含 Markdown 標記，也不要包含 \`\`\`json 等字樣。
     陣列中每個物件包含：
@@ -543,8 +544,8 @@ export const parseScheduleFromImage = async (base64Image: string, startDate: str
       contents: [
         {
           inlineData: {
-            mimeType: "image/jpeg",
-            data: base64Image
+            mimeType: mimeType,
+            data: base64Data
           }
         },
         prompt

@@ -391,7 +391,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
         const base64Data = base64String.split(',')[1] || base64String;
 
         try {
-          const newPhases = await parseScheduleFromImage(base64Data, scheduleStartDate, workOnHolidays);
+          const newPhases = await parseScheduleFromImage(base64Data, scheduleStartDate, workOnHolidays, file.type);
           if (newPhases && newPhases.length > 0) {
             const phasesWithIds = newPhases.map((p: any) => ({
               ...p,
@@ -1258,7 +1258,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                                 type="file"
                                 className="hidden"
                                 ref={quotationInputRef}
-                                accept="image/*"
+                                accept="image/*,.pdf,application/pdf"
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
@@ -1267,7 +1267,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                                     reader.onload = async (event) => {
                                       try {
                                         const base64 = (event.target?.result as string).split(',')[1];
-                                        const items = await analyzeQuotationItems(base64);
+                                        const items = await analyzeQuotationItems(base64, file.type);
                                         if (items && items.length > 0) {
                                           const newExpenses = items.map((item: any) => ({
                                             id: `EXP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -1322,7 +1322,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                               type="file"
                               className="hidden"
                               ref={receiptInputRef}
-                              accept="image/*"
+                              accept="image/*,.pdf,application/pdf"
                               capture="environment"
                               onChange={async (e) => {
                                 const file = e.target.files?.[0];
@@ -1332,7 +1332,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                                   reader.onload = async (event) => {
                                     try {
                                       const base64 = (event.target?.result as string).split(',')[1];
-                                      const result = await scanReceipt(base64);
+                                      const result = await scanReceipt(base64, file.type);
                                       if (result) {
                                         setExpenseFormData({
                                           ...expenseFormData,
@@ -1814,7 +1814,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                                 </div>
                               </div>
 
-                              <input type="file" ref={scheduleFileInputRef} className="hidden" accept="image/*" onChange={handleScheduleUpload} />
+                              <input type="file" ref={scheduleFileInputRef} className="hidden" accept="image/*,.pdf,application/pdf" onChange={handleScheduleUpload} />
 
                               <button
                                 onClick={() => {
