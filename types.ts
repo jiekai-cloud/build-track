@@ -76,6 +76,7 @@ export interface ProjectPhase {
   progress: number;
   startDate: string;
   endDate: string;
+  duration?: number; // 工期 (天)
 }
 
 export interface ProjectFinancials {
@@ -216,6 +217,7 @@ export interface Project {
   cloudFolderId?: string; // Google Drive 專案資料夾 ID
   cloudFolderLink?: string; // Google Drive 專案資料夾連結
   year?: string; // 新增：手動指定的年度類別 (2024, 2025, 2026)
+  skipDates?: string[]; // 不施工日期 (YYYY-MM-DD)
   statusChangedAt?: string; // 狀態變更時間 (用於逾期計算)
   updatedAt?: string;
   deletedAt?: string;
