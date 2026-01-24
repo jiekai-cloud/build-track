@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Search, Loader2, HardHat, Store, Hammer, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, Search, Loader2, HardHat, Store, Hammer, ExternalLink, Utensils, ShoppingBasket } from 'lucide-react';
 import { searchNearbyResources } from '../services/geminiService';
 
 interface MapLocationProps {
@@ -97,7 +97,8 @@ const MapLocation: React.FC<MapLocationProps> = ({ address, lat = 25.0330, lng =
                     {[
                         { id: 'hardware', label: '五金材料', icon: Hammer },
                         { id: 'hardware_store', label: '水電材料', icon: Store },
-                        { id: 'contractor', label: '臨時工班', icon: HardHat },
+                        { id: 'food', label: '便當店', icon: Utensils },
+                        { id: 'convenience_store', label: '便利商店', icon: ShoppingBasket },
                         { id: 'parking', label: '附近車位', icon: MapPin },
                     ].map(type => (
                         <button
