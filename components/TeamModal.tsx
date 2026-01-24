@@ -49,7 +49,11 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        ...initialData,
+        // Ensure accessibleModules is always an array, never undefined, so we don't fall back to defaults inadvertently
+        accessibleModules: initialData.accessibleModules || DEFAULT_ENABLED_MODULES
+      });
     }
   }, [initialData]);
 
