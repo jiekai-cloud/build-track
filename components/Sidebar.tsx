@@ -61,10 +61,24 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     { id: 'inventory', label: '庫存管理', icon: ShoppingBag, moduleId: ModuleId.INVENTORY },
   ];
 
-  // Filter menu items based on enabled modules
-  const menuItems = allMenuItems.filter(item =>
-    enabledModules.includes(item.moduleId)
-  );
+  // Filter menu items based on enabled modules AND user permissions
+  const menuItems = allMenuItems.filter(item => {
+    // 1. Check Global Module Config
+    const isModuleEnabled = enabledModules.includes(item.moduleId);
+    if (!isModuleEnabled) return false;
+
+    // 2. Check User Permission
+    // SuperAdmin gets everything
+    if (user.role === 'SuperAdmin') return true;
+
+    // If allowedModules is set, must be in list
+    if (user.allowedModules && Array.isArray(user.allowedModules) && user.allowedModules.length > 0) {
+      return user.allowedModules.includes(item.id);
+    }
+
+    // Default: Allow if no specific restriction (Backward Compatibility)
+    return true;
+  });
 
   const bottomItems = [
     { id: 'settings', label: '設定', icon: Settings },

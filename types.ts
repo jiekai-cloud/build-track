@@ -315,6 +315,7 @@ export interface TeamMember {
   status: 'Available' | 'Busy' | 'OnLeave';
   activeProjectsCount: number;
   avatar: string;
+  allowedModules?: string[]; // New: Module-level permissions
   salaryType?: 'Monthly' | 'Daily' | 'Hourly';
   baseSalary?: number;
   hourlyRate?: number;

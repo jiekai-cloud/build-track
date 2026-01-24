@@ -430,6 +430,63 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                     </ul>
                   </div>
                 </div>
+
+                {/* Module Permissions */}
+                <div className="pt-4 border-t border-stone-200">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                    可存取的子系統 (Access Control)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: 'dashboard', label: '總覽面板' },
+                      { id: 'projects', label: '專案管理' },
+                      { id: 'dispatch', label: '派工紀錄' },
+                      { id: 'customers', label: '客戶資料' },
+                      { id: 'team', label: '團隊成員' },
+                      { id: 'vendors', label: '廠商管理' },
+                      { id: 'hr', label: '人資管理' },
+                      { id: 'analytics', label: '數據分析' },
+                      { id: 'inventory', label: '庫存管理' },
+                    ].map(mod => {
+                      const currentModules = formData.allowedModules || [];
+                      // Default to checked if array is empty/undefined (legacy behavior), OR if explicitly included
+                      // Better logic: If undefined, default to ALL checked for visualization, but save clearly.
+                      // Actually, let's treat undefined as ALL. So check if it's undefined OR includes.
+                      // Wait, if I uncheck one, it becomes a filtered list.
+                      // Let's initialize `allowedModules` in state if it's undefined to contain all IDs.
+                      const isChecked = currentModules.includes(mod.id) || (currentModules.length === 0 && !initialData?.allowedModules);
+
+                      return (
+                        <label key={mod.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${isChecked ? 'bg-white border-orange-200 shadow-sm' : 'bg-transparent border-transparent hover:bg-slate-100'
+                          }`}>
+                          <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isChecked ? 'bg-orange-500 border-orange-500' : 'bg-slate-200 border-slate-300'
+                            }`}>
+                            {isChecked && <Sparkles size={12} className="text-white" />}
+                          </div>
+                          <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={isChecked}
+                            onChange={() => {
+                              const allIds = ['dashboard', 'projects', 'dispatch', 'customers', 'team', 'vendors', 'hr', 'analytics', 'inventory'];
+                              // If currently undefined/empty, assumes ALL are active. So clicking one to toggle OFF means we start with ALL minus that one.
+                              let newModules = [...currentModules];
+                              if (newModules.length === 0) newModules = allIds;
+
+                              if (isChecked) {
+                                newModules = newModules.filter(id => id !== mod.id);
+                              } else {
+                                newModules.push(mod.id);
+                              }
+                              setFormData({ ...formData, allowedModules: newModules });
+                            }}
+                          />
+                          <span className={`text-xs font-bold ${isChecked ? 'text-stone-800' : 'text-stone-400'}`}>{mod.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           )}

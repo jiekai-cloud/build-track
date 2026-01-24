@@ -38,7 +38,7 @@ import { storageService } from './services/storageService';
 // Build Trigger: 2026-01-05 Module System Integration
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('hr'); // Default to HR (Attendance)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewingDeptId, setViewingDeptId] = useState<string>('all');
   const [currentDept, setCurrentDept] = useState<SystemContext>('FirstDept');
