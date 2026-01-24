@@ -32,7 +32,8 @@ const MapLocation: React.FC<MapLocationProps> = ({ address, lat = 25.0330, lng =
 
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || (typeof window !== 'undefined' ? localStorage.getItem('GOOGLE_MAPS_API_KEY') : '');
+    // Priority: Local Storage > Env Var > Hardcoded Fallback
+    const apiKey = (typeof window !== 'undefined' ? localStorage.getItem('GOOGLE_MAPS_API_KEY') : '') || process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyAyzTWbM4BCrbyT32hoUT2kpe2vNIm95xc';
     const hasApiKey = apiKey && apiKey !== 'undefined' && apiKey !== '';
 
     return (
