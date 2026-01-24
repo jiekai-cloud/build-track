@@ -14,10 +14,13 @@ interface TeamListProps {
   onEditClick: (member: TeamMember) => void;
   onDeleteClick: (id: string) => void;
   departments: Department[];
+  departments: Department[];
   projects: Project[];
+  currentUserRole?: string;
 }
 
-const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onAddClick, onEditClick, onDeleteClick }) => {
+const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onAddClick, onEditClick, onDeleteClick, currentUserRole }) => {
+  const canManage = ['SuperAdmin', 'Admin', 'DeptAdmin', 'Manager'].includes(currentUserRole || '');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('all');
   const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');
@@ -93,13 +96,15 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
             {isAnalyzing ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} className="text-orange-500" />}
             {isAnalyzing ? '分析中...' : 'AI 負載分析'}
           </button>
-          <button
-            onClick={onAddClick}
-            className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-100 active:scale-95 font-bold text-xs"
-          >
-            <UserPlus size={18} />
-            新增成員
-          </button>
+          {canManage && (
+            <button
+              onClick={onAddClick}
+              className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-100 active:scale-95 font-bold text-xs"
+            >
+              <UserPlus size={18} />
+              新增成員
+            </button>
+          )}
         </div>
       </div>
 
@@ -164,7 +169,7 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
               <div className="col-span-3 text-[11px] font-black text-slate-400 uppercase tracking-widest">聯繫方式</div>
               <div className="col-span-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">目前負載</div>
               <div className="col-span-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">狀態</div>
-              <div className="col-span-1 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">操作</div>
+              {canManage && <div className="col-span-1 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">操作</div>}
             </div>
 
             <div className="divide-y divide-slate-100">
@@ -246,22 +251,24 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
                     </div>
 
                     {/* 操作按鈕 */}
-                    <div className="col-span-1 flex justify-end items-center gap-1">
-                      <button
-                        onClick={() => onEditClick(member)}
-                        className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
-                        title="編輯成員"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => onDeleteClick(member.id)}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                        title="刪除成員"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    {canManage && (
+                      <div className="col-span-1 flex justify-end items-center gap-1">
+                        <button
+                          onClick={() => onEditClick(member)}
+                          className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
+                          title="編輯成員"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => onDeleteClick(member.id)}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                          title="刪除成員"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

@@ -1388,6 +1388,7 @@ const App: React.FC = () => {
                 members={filteredData.teamMembers}
                 departments={MOCK_DEPARTMENTS}
                 projects={filteredData.projects}
+                currentUserRole={user.role}
                 onAddClick={() => { setEditingMember(null); setIsTeamModalOpen(true); }}
                 onEditClick={(m) => { setEditingMember(m); setIsTeamModalOpen(true); }}
                 onDeleteClick={(id) => {
