@@ -47,6 +47,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
 
         let totalDays = 0;
         let totalHours = 0;
+        let todayHours = 0; // New metric
 
         Object.entries(recordsByDate).forEach(([date, dayRecs]) => {
             // Sort by time
@@ -56,23 +57,43 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
             const hasStart = dayRecs.some(r => r.type === 'work-start');
             if (hasStart) totalDays++;
 
-            // Calculate hours (First Start to Last End)
-            const start = dayRecs.find(r => r.type === 'work-start');
-            // Find last end that is AFTER start
-            const end = [...dayRecs].reverse().find(r => r.type === 'work-end');
+            // Calculate hours (Pair Start-End logic)
+            // Iterate through records to find pairs
+            let dailyDuration = 0;
+            let currentStart: number | null = null;
 
-            if (start && end && new Date(end.timestamp) > new Date(start.timestamp)) {
-                const duration = new Date(end.timestamp).getTime() - new Date(start.timestamp).getTime();
-                totalHours += duration / (1000 * 60 * 60);
+            dayRecs.forEach(r => {
+                const time = new Date(r.timestamp).getTime();
+                if (r.type === 'work-start') {
+                    if (currentStart === null) currentStart = time;
+                } else if (r.type === 'work-end') {
+                    if (currentStart !== null) {
+                        dailyDuration += (time - currentStart);
+                        currentStart = null;
+                    }
+                }
+            });
+
+            // If it's TODAY and still clocked in (currentStart is not null), add time until NOW
+            if (date === today && currentStart !== null) {
+                dailyDuration += (currentTime.getTime() - currentStart);
+            }
+
+            const h = dailyDuration / (1000 * 60 * 60);
+            totalHours += h;
+
+            if (date === today) {
+                todayHours = h;
             }
         });
 
         return {
             days: totalDays,
             hours: totalHours.toFixed(1),
+            todayHours: todayHours.toFixed(1), // Export today's hours
             groupedRecords: Object.entries(recordsByDate).sort((a, b) => b[0].localeCompare(a[0])) // Sort dates desc
         };
-    }, [records, currentUser.id]);
+    }, [records, currentUser.id, currentTime]); // Add currentTime dependency for real-time update
 
     const getLocation = async () => {
         setLoadingLocation(true);
@@ -169,37 +190,55 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                 </div>
 
                 <div className="text-right">
-                    <div className="text-5xl font-black text-stone-800 tracking-tighter tabular-nums">
+                    <div className="text-5xl font-black text-stone-800 tracking-tighter tabular-nums text-right">
                         {currentTime.toLocaleTimeString('zh-TW', { hour12: false })}
                     </div>
-                    <div className={`mt-2 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold ${isOnDuty
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-stone-100 text-stone-500'
-                        }`}>
-                        <span className={`w-2 h-2 rounded-full ${isOnDuty ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'}`} />
-                        {isOnDuty ? '工作中' : '未打卡 / 已下班'}
+                    <div className="flex justify-end gap-2 mt-2">
+                        <button
+                            onClick={() => window.dispatchEvent(new CustomEvent('TRIGGER_CLOUD_SYNC'))}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-white/50 hover:bg-white text-stone-500 hover:text-orange-600 transition-all border border-transparent hover:border-orange-200"
+                            title="手動同步資料"
+                        >
+                            <Loader2 size={12} className="opacity-70" /> 同步
+                        </button>
+                        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold ${isOnDuty
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-stone-100 text-stone-500'
+                            }`}>
+                            <span className={`w-2 h-2 rounded-full ${isOnDuty ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'}`} />
+                            {isOnDuty ? '工作中' : '未打卡'}
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Monthly Stats Cards */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm flex items-center gap-4">
                     <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500">
                         <Calendar size={24} />
                     </div>
                     <div>
-                        <p className="text-xs font-black text-stone-400 uppercase tracking-widest">本月工作天數</p>
+                        <p className="text-xs font-black text-stone-400 uppercase tracking-widest">本月天數</p>
                         <p className="text-2xl font-black text-stone-800 tabular-nums">{stats.days} <span className="text-sm text-stone-400">天</span></p>
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500">
+                        <Clock size={24} />
+                    </div>
+                    <div>
+                        <p className="text-xs font-black text-stone-400 uppercase tracking-widest">今日工時</p>
+                        <p className="text-2xl font-black text-stone-800 tabular-nums">{stats.todayHours} <span className="text-sm text-stone-400">hr</span></p>
+                    </div>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm flex items-center gap-4 col-span-2 md:col-span-1">
                     <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500">
                         <Clock size={24} />
                     </div>
                     <div>
-                        <p className="text-xs font-black text-stone-400 uppercase tracking-widest">本月累計工時</p>
-                        <p className="text-2xl font-black text-stone-800 tabular-nums">{stats.hours} <span className="text-sm text-stone-400">小時</span></p>
+                        <p className="text-xs font-black text-stone-400 uppercase tracking-widest">本月累計</p>
+                        <p className="text-2xl font-black text-stone-800 tabular-nums">{stats.hours} <span className="text-sm text-stone-400">hr</span></p>
                     </div>
                 </div>
             </div>
