@@ -337,12 +337,12 @@ const App: React.FC = () => {
   const handleClockRecord = (type: 'work-start' | 'work-end', location: { lat: number; lng: number; address?: string }) => {
     if (!user) return;
 
-    // Find matching team member to get correct employeeId
-    const member = teamMembers.find(m => m.name === user.name) || { employeeId: user.id || 'UNKNOWN' };
+    // User ID is reliable enough. TeamMember lookup is secondary.
+    const employeeId = user.id;
 
     const newRecord: AttendanceRecord = {
       id: crypto.randomUUID(),
-      employeeId: member.employeeId,
+      employeeId: employeeId,
       name: user.name,
       type,
       timestamp: new Date().toISOString(),
@@ -355,6 +355,20 @@ const App: React.FC = () => {
     const action = type === 'work-start' ? '上班' : '下班';
     alert(`${action}打卡成功！\n時間：${new Date().toLocaleTimeString()}\n地點：${location.address || 'GPS ' + location.lat.toFixed(4)}`);
   };
+
+  // Auto-redirect to Attendance page on login
+  const hasRedirectedRef = React.useRef(false);
+  useEffect(() => {
+    if (user && !isInitializing && !hasRedirectedRef.current) {
+      if (currentUserPermissions.includes(ModuleId.ATTENDANCE)) {
+        setActiveTab('attendance');
+        hasRedirectedRef.current = true;
+      }
+    }
+    if (!user) {
+      hasRedirectedRef.current = false;
+    }
+  }, [user, isInitializing, currentUserPermissions]);
 
   const autoConnectCloud = useCallback(async () => {
     try {

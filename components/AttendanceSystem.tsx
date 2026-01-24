@@ -102,8 +102,8 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                         {currentTime.toLocaleTimeString('zh-TW', { hour12: false })}
                     </div>
                     <div className={`mt-2 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold ${isOnDuty
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-stone-100 text-stone-500'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-stone-100 text-stone-500'
                         }`}>
                         <span className={`w-2 h-2 rounded-full ${isOnDuty ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'}`} />
                         {isOnDuty ? '工作中' : '未打卡 / 已下班'}
@@ -113,9 +113,9 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
 
             {/* Location Status */}
             <div className={`p-4 rounded-xl border flex items-center gap-3 transition-colors ${loadingLocation ? 'bg-blue-50 border-blue-100 text-blue-700' :
-                    locationError ? 'bg-rose-50 border-rose-100 text-rose-700' :
-                        location ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                            'bg-stone-50 border-stone-200 text-stone-600'
+                locationError ? 'bg-rose-50 border-rose-100 text-rose-700' :
+                    location ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                        'bg-stone-50 border-stone-200 text-stone-600'
                 }`}>
                 {loadingLocation ? (
                     <Loader2 className="animate-spin" />
@@ -209,7 +209,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                                     </div>
                                     <div className="text-xs text-stone-400 font-mono flex items-center gap-1">
                                         <MapPin size={10} />
-                                        {record.location.lat.toFixed(4)}, {record.location.lng.toFixed(4)}
+                                        {record.location ? `${record.location.lat.toFixed(4)}, ${record.location.lng.toFixed(4)}` : '未記錄位置'}
                                     </div>
                                 </div>
                             </div>

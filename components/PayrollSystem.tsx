@@ -54,7 +54,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records, teamMembers, cur
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500 flex items-center gap-1">
                                         <MapPin size={12} />
-                                        {record.location.lat.toFixed(4)}, {record.location.lng.toFixed(4)}
+                                        {record.location ? `${record.location.lat.toFixed(4)}, ${record.location.lng.toFixed(4)}` : '未知位置'}
                                     </td>
                                 </tr>
                             ))}
