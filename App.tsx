@@ -1365,6 +1365,11 @@ const App: React.FC = () => {
                         if (parsed.teamMembers) setTeamMembers(parsed.teamMembers);
                         if (parsed.vendors) setVendors(parsed.vendors);
                         if (parsed.leads) setLeads(parsed.leads);
+                        if (parsed.inventory) setInventoryItems(parsed.inventory);
+                        if (parsed.locations) setInventoryLocations(parsed.locations);
+                        if (parsed.purchaseOrders) setPurchaseOrders(parsed.purchaseOrders);
+                        if (parsed.attendance) setAttendanceRecords(parsed.attendance);
+                        if (parsed.payroll) setPayrollRecords(parsed.payroll);
                       } else {
                         // Safe Merge Mode
                         if (parsed.projects) setProjects(prev => mergeData(prev, parsed.projects));
@@ -1372,6 +1377,11 @@ const App: React.FC = () => {
                         if (parsed.teamMembers) setTeamMembers(prev => mergeData(prev, parsed.teamMembers || []));
                         if (parsed.vendors) setVendors(prev => mergeData(prev, parsed.vendors || []));
                         if (parsed.leads) setLeads(prev => mergeData(prev, parsed.leads || []));
+                        if (parsed.inventory) setInventoryItems(prev => mergeData(prev, parsed.inventory || []));
+                        if (parsed.locations) setInventoryLocations(prev => mergeData(prev, parsed.locations || []));
+                        if (parsed.purchaseOrders) setPurchaseOrders(prev => mergeData(prev, parsed.purchaseOrders || []));
+                        if (parsed.attendance) setAttendanceRecords(prev => mergeData(prev, parsed.attendance || []));
+                        if (parsed.payroll) setPayrollRecords(prev => mergeData(prev, parsed.payroll || []));
                       }
                       alert('資料匯入成功！');
                     } catch (e: any) {
@@ -1382,7 +1392,18 @@ const App: React.FC = () => {
                   isCloudConnected={isCloudConnected}
                   onConnectCloud={handleConnectCloud}
                   onDownloadBackup={() => {
-                    googleDriveService.exportAsFile({ projects, customers, teamMembers, vendors });
+                    googleDriveService.exportAsFile({
+                      projects,
+                      customers,
+                      teamMembers,
+                      vendors,
+                      leads,
+                      inventory: inventoryItems,
+                      locations: inventoryLocations,
+                      purchaseOrders,
+                      attendance: attendanceRecords,
+                      payroll: payrollRecords
+                    });
                   }}
                   onRestoreLocalBackup={async () => {
                     try {

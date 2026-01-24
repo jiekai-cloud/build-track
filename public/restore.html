@@ -177,6 +177,22 @@
                     <div style="font-size: 12px; color: #999; margin-top: 5px;">⚠️ 預設不勾選，以保留您最新的專案資料</div>
                 </div>
             </label>
+
+            <label class="option">
+                <input type="checkbox" id="restore_inventory" checked>
+                <div class="option-content">
+                    <div class="option-title">庫存資料</div>
+                    <div class="option-count" id="count_inventory">載入中...</div>
+                </div>
+            </label>
+
+            <label class="option">
+                <input type="checkbox" id="restore_attendance" checked>
+                <div class="option-content">
+                    <div class="option-title">考勤薪資</div>
+                    <div class="option-count" id="count_attendance">載入中...</div>
+                </div>
+            </label>
         </div>
 
         <button class="btn" id="restoreBtn" onclick="restore()">
@@ -201,6 +217,8 @@
                 document.getElementById('count_team').textContent = `${backupData.teamMembers?.length || 0} 位成員`;
                 document.getElementById('count_leads').textContent = `${backupData.leads?.length || 0} 個潛客`;
                 document.getElementById('count_projects').textContent = `${backupData.projects?.length || 0} 個專案`;
+                document.getElementById('count_inventory').textContent = `${backupData.inventory?.length || 0} 項庫存`;
+                document.getElementById('count_attendance').textContent = `${backupData.attendance?.length || 0} 筆打卡`;
 
             } catch (error) {
                 alert('無法載入備份檔案: ' + error.message);
@@ -217,7 +235,9 @@
                 vendors: document.getElementById('restore_vendors').checked,
                 team: document.getElementById('restore_team').checked,
                 leads: document.getElementById('restore_leads').checked,
-                projects: document.getElementById('restore_projects').checked
+                projects: document.getElementById('restore_projects').checked,
+                inventory: document.getElementById('restore_inventory').checked,
+                attendance: document.getElementById('restore_attendance').checked
             };
 
             if (!Object.values(selected).some(v => v)) {
@@ -274,6 +294,19 @@
                 if (selected.projects) {
                     await save('bt_projects', backupData.projects || []);
                     restored.push(`專案：${backupData.projects?.length || 0} 個`);
+                }
+
+                if (selected.inventory) {
+                    await save('bt_inventory', backupData.inventory || []);
+                    if (backupData.locations) await save('bt_inventory_locations', backupData.locations);
+                    if (backupData.purchaseOrders) await save('bt_purchase_orders', backupData.purchaseOrders);
+                    restored.push(`庫存與地點：${backupData.inventory?.length || 0} 項`);
+                }
+
+                if (selected.attendance) {
+                    await save('bt_attendance_records', backupData.attendance || []);
+                    if (backupData.payroll) await save('bt_payroll_records', backupData.payroll);
+                    restored.push(`考勤與薪資：${backupData.attendance?.length || 0} 筆`);
                 }
 
                 status.innerHTML = `
