@@ -71,9 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     if (!enabledModules.includes(item.moduleId)) return false;
 
     // 2. Check user role/permissions
-    if (user.role === 'SuperAdmin') return true;
-
-    // For specific modules, check accessibleModules list
+    // CRITICAL: We now check accessibleModules even for SuperAdmin if they have explicit settings in App.tsx
     const userModules = user.accessibleModules || DEFAULT_ENABLED_MODULES;
     return userModules.includes(item.moduleId);
   });

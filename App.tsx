@@ -56,9 +56,15 @@ const App: React.FC = () => {
   // Calculate permissions dynamically
   const currentUserPermissions = useMemo(() => {
     if (!user) return [];
-    if (user.role === 'SuperAdmin') return ALL_MODULES.map(m => m.id);
-
     const member = teamMembers.find(m => m.employeeId === user.id);
+
+    // If SuperAdmin has specific modules defined, use them. Otherwise default to ALL.
+    if (user.role === 'SuperAdmin') {
+      return (member?.accessibleModules && member.accessibleModules.length > 0)
+        ? member.accessibleModules
+        : ALL_MODULES.map(m => m.id);
+    }
+
     // If no specific permissions set, modify this default behavior as needed. 
     // Currently fallback to DEFAULT_ENABLED_MODULES
     return member?.accessibleModules || DEFAULT_ENABLED_MODULES;
