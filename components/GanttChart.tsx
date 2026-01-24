@@ -88,14 +88,17 @@ const GanttChart: React.FC<GanttChartProps> = ({ phases }) => {
     const padding = 86400000 * 2;
     const domainMax = totalDuration + (padding * 2);
 
+    // Dynamic height calculation: 60px per item or min 500px
+    const chartHeight = Math.max(500, data.length * 68);
+
     return (
-        <div className="h-[400px] w-full bg-white rounded-2xl overflow-hidden" id="gantt-chart-container">
+        <div style={{ height: chartHeight }} className="w-full bg-white rounded-2xl overflow-hidden" id="gantt-chart-container">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={data}
                     layout="vertical"
-                    margin={{ top: 40, right: 30, left: 40, bottom: 20 }}
-                    barSize={20}
+                    margin={{ top: 40, right: 30, left: 20, bottom: 20 }}
+                    barSize={24}
                 >
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#f1f5f9" />
                     <XAxis
@@ -115,8 +118,8 @@ const GanttChart: React.FC<GanttChartProps> = ({ phases }) => {
                         type="category"
                         axisLine={false}
                         tickLine={false}
-                        width={100}
-                        tick={{ fontSize: 11, fontWeight: 800, fill: '#1c1917' }}
+                        width={240}
+                        tick={{ fontSize: 11, fontWeight: 800, fill: '#1c1917', width: 230 }}
                     />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
 
