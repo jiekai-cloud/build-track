@@ -20,7 +20,7 @@ const STABLE_MODEL = 'gemini-2.0-flash-exp';
 const EXPERIMENTAL_MODEL = 'gemini-2.0-flash-thinking-exp';
 
 // Always use an named parameter for apiKey and fetch from process.env.API_KEY
-const getAI = () => {
+export const getAI = () => {
   const savedKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
   // Vite environment variables or process.env (fallback)
   const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
