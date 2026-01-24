@@ -1058,6 +1058,95 @@ const App: React.FC = () => {
     );
   }
 
+  // Attendance Logic
+  const handleClockIn = (notes?: string) => {
+    if (!user) return;
+    const today = new Date().toISOString().split('T')[0];
+    const newRecord: AttendanceRecord = {
+      id: `ATT-${Date.now()}`,
+      userId: user.employeeId || 'unknown',
+      userName: user.name,
+      date: today,
+      checkInTime: new Date().toISOString(),
+      status: 'Present',
+      notes
+    };
+    setAttendanceRecords(prev => [...prev, newRecord]);
+    alert(`上班打卡成功！時間：${new Date().toLocaleTimeString()}`);
+  };
+
+  const handleClockOut = (notes?: string) => {
+    if (!user) return;
+    const today = new Date().toISOString().split('T')[0];
+    setAttendanceRecords(prev => prev.map(r => {
+      if (r.userId === user.employeeId && r.date === today && !r.checkOutTime) {
+        return { ...r, checkOutTime: new Date().toISOString() };
+      }
+      return r;
+    }));
+    alert(`下班打卡成功！時間：${new Date().toLocaleTimeString()}`);
+  };
+
+  const handleGeneratePayroll = (month: string) => {
+    // Generate draft payroll for all currently active staff
+    const staff = teamMembers.filter(m => m.status !== 'OnLeave' && !m.deletedAt);
+
+    const newRecords: PayrollRecord[] = staff.map(member => {
+      // Calculate attendance for this month
+      const monthlyAttendance = attendanceRecords.filter(r => r.userId === member.employeeId && r.date.startsWith(month));
+
+      let workDays = 0;
+      let workHours = 0;
+
+      monthlyAttendance.forEach(r => {
+        if (r.checkInTime && r.checkOutTime) {
+          workDays += 1; // Simplification
+          const hours = (new Date(r.checkOutTime).getTime() - new Date(r.checkInTime).getTime()) / (1000 * 60 * 60);
+          workHours += hours;
+        }
+      });
+
+      // Basic calculation logic
+      let basePay = member.baseSalary || 30000;
+      let total = basePay;
+
+      if (member.salaryType === 'Hourly') {
+        basePay = member.hourlyRate || 180;
+        total = Math.floor(basePay * workHours);
+      } else if (member.salaryType === 'Daily') {
+        basePay = member.dailyRate || 1500;
+        total = Math.floor(basePay * workDays);
+      }
+
+      return {
+        id: `PAY-${month}-${member.employeeId}`,
+        userId: member.employeeId,
+        userName: member.name,
+        month,
+        baseSalary: basePay,
+        workDays,
+        workHours: Number(workHours.toFixed(1)),
+        overtimeHours: 0,
+        overtimePay: 0,
+        allowance: 0,
+        deduction: 0,
+        totalAmount: total,
+        status: 'Draft',
+        generatedAt: new Date().toISOString()
+      } as PayrollRecord;
+    });
+
+    // Merge or Overwrite? Let's overwrite drafts, keep paid ones
+    setPayrollRecords(prev => {
+      const existingPaid = prev.filter(p => p.month === month && p.status === 'Paid');
+      const others = prev.filter(p => p.month !== month);
+      // Filter out drafts that are being regenerated
+      return [...others, ...existingPaid, ...newRecords.filter(n => !existingPaid.some(e => e.userId === n.userId))];
+    });
+
+    alert(`已為 ${month} 月份生成 ${newRecords.length} 筆薪資試算單！`);
+  };
+
   return (
     <div className="flex h-screen w-screen bg-[#fafaf9] overflow-hidden">
       {/* Mobile Sidebar Backdrop */}
