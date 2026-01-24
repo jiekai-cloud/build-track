@@ -67,8 +67,8 @@ class CloudFileService {
     /**
      * 上傳檔案至雲端並取得公開連結
      */
-    async uploadFile(file: File): Promise<{ id: string; url: string } | null> {
-        const parentId = await this.getOrCreateFolder();
+    async uploadFile(file: File, destinationFolderId?: string): Promise<{ id: string; url: string } | null> {
+        const parentId = destinationFolderId || await this.getOrCreateFolder();
         if (!parentId) return null;
 
         try {

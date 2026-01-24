@@ -229,6 +229,85 @@ class GoogleDriveService {
       return null;
     }
   }
+
+  async createFolder(name: string, parentId?: string): Promise<{ id: string, webViewLink: string } | null> {
+    try {
+      const metadata: any = {
+        name,
+        mimeType: 'application/vnd.google-apps.folder',
+      };
+      if (parentId) {
+        metadata.parents = [parentId];
+      }
+
+      const body = JSON.stringify(metadata);
+      const url = 'https://www.googleapis.com/drive/v3/files?fields=id,webViewLink';
+
+      const response = await this.fetchWithAuth(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body
+      });
+
+      if (!response.ok) {
+        console.error('Create Folder Failed:', await response.text());
+        return null;
+      }
+      return await response.json();
+    } catch (e) {
+      console.error('Create Folder Exception:', e);
+      return null;
+    }
+  }
+
+  async searchFolder(name: string): Promise<any> {
+    try {
+      const q = `mimeType='application/vnd.google-apps.folder' and name='${name}' and trashed=false`;
+      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,webViewLink)`;
+      const response = await this.fetchWithAuth(url);
+      const data = await response.json();
+      return data.files && data.files.length > 0 ? data.files[0] : null;
+    } catch (e) {
+      console.error('Search Folder Error:', e);
+      return null;
+    }
+  }
+
+  async ensureProjectFolder(projectName: string): Promise<{ id: string, webViewLink: string } | null> {
+    if (!this.isInitialized) await this.init();
+
+    // 1. Try to find existing folder
+    const existing = await this.searchFolder(projectName);
+    if (existing) return existing;
+
+    // 2. Create new if not exists
+    return await this.createFolder(projectName);
+  }
+
+  async createSubFolders(parentId: string, subFolders: string[]) {
+    for (const folder of subFolders) {
+      await this.createFolder(folder, parentId);
+    }
+  }
+
+  async listFiles(folderId: string): Promise<any[]> {
+    if (!this.isInitialized) await this.init();
+    try {
+      const q = `'${folderId}' in parents and trashed=false`;
+      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,webViewLink,webContentLink,thumbnailLink,createdTime,size)&orderBy=createdTime desc`;
+
+      const response = await this.fetchWithAuth(url);
+      if (!response.ok) return [];
+
+      const data = await response.json();
+      return data.files || [];
+    } catch (e) {
+      console.error('List Files Error:', e);
+      return [];
+    }
+  }
 }
 
 export const googleDriveService = new GoogleDriveService();

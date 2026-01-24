@@ -212,6 +212,8 @@ export interface Project {
   files?: ProjectFile[];
   contractUrl?: string; // 合約或報價單
   defectRecords?: DefectRecord[]; // 缺失改善紀錄
+  cloudFolderId?: string; // Google Drive 專案資料夾 ID
+  cloudFolderLink?: string; // Google Drive 專案資料夾連結
   year?: string; // 新增：手動指定的年度類別 (2024, 2025, 2026)
   statusChangedAt?: string; // 狀態變更時間 (用於逾期計算)
   updatedAt?: string;

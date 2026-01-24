@@ -1543,7 +1543,35 @@ const App: React.FC = () => {
           const generatedId = `${prefix}${yearShort}${month}${sequence.toString().padStart(3, '0')}`;
           const finalId = data.id || generatedId;
           addActivityLog('建立新專案', data.name, finalId, 'project');
+
+          // 1. Create Local Project Immediately
           setProjects(prev => [{ ...data, id: finalId, status: ProjectStatus.NEGOTIATING, statusChangedAt: new Date().toISOString(), progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [], updatedAt: new Date().toISOString() } as any, ...prev]);
+
+          // 2. Background: Create Cloud Folder Structure
+          if (isCloudConnected) {
+            (async () => {
+              try {
+                const folderName = `${finalId} ${data.name}`;
+                const projectFolder = await googleDriveService.ensureProjectFolder(folderName);
+                if (projectFolder) {
+                  // Create Subfolders
+                  const subfolders = ['現場照片', '報價單', '合約', '完工照'];
+                  await googleDriveService.createSubFolders(projectFolder.id, subfolders);
+
+                  // Update Project with Cloud Folder Info
+                  setProjects(prev => prev.map(p => p.id === finalId ? {
+                    ...p,
+                    cloudFolderId: projectFolder.id,
+                    cloudFolderLink: projectFolder.webViewLink,
+                    updatedAt: new Date().toISOString()
+                  } : p));
+                  console.log('[System] Project Cloud Folder Created:', folderName);
+                }
+              } catch (e) {
+                console.error('Failed to create project cloud folder', e);
+              }
+            })();
+          }
         }
         setIsModalOpen(false);
       }} initialData={editingProject} teamMembers={teamMembers} />}

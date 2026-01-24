@@ -13,6 +13,7 @@ import GanttChart from './GanttChart';
 import MapLocation from './MapLocation';
 import DefectImprovement from './DefectImprovement';
 import { cloudFileService } from '../services/cloudFileService';
+import { googleDriveService } from '../services/googleDriveService';
 
 const PHOTO_CATEGORIES = [
   { id: 'all', label: '全部照片', icon: Layers },
@@ -312,6 +313,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
     supplier: ''
   });
 
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !onUpdateFiles) return;
 
@@ -321,7 +323,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
 
     try {
       for (const file of files) {
-        const result = await cloudFileService.uploadFile(file);
+        const result = await cloudFileService.uploadFile(file, project.cloudFolderId);
         if (result) {
           newFiles.push({
             id: result.id,
@@ -344,6 +346,37 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  // Auto-scan Cloud Folder
+  React.useEffect(() => {
+    if (!project.cloudFolderId) return;
+
+    const scanCloudFiles = async () => {
+      const driveFiles = await googleDriveService.listFiles(project.cloudFolderId!);
+      if (driveFiles && driveFiles.length > 0) {
+        const existingIds = new Set((project.files || []).map(f => f.id));
+        const newFiles: ProjectFile[] = driveFiles
+          .filter(df => !existingIds.has(df.id))
+          .map(df => ({
+            id: df.id,
+            url: df.webViewLink,
+            name: df.name,
+            type: df.mimeType?.includes('image') ? 'image' : df.mimeType?.includes('video') ? 'video' : 'other', // Default to other if unknown
+            category: 'cloud_sync', // Mark as synced
+            uploadedAt: df.createdTime,
+            uploadedBy: 'Cloud Sync',
+            size: Number(df.size)
+          }));
+
+        if (newFiles.length > 0 && onUpdateFiles) {
+          console.log('[AutoScan] Found new files:', newFiles.length);
+          onUpdateFiles([...(project.files || []), ...newFiles]);
+        }
+      }
+    };
+
+    scanCloudFiles();
+  }, [project.cloudFolderId, project.files]);
 
   const handleScheduleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
