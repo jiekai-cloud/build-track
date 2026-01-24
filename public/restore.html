@@ -189,10 +189,11 @@
     <script>
         let backupData = null;
 
-        // 載入備份資料並顯示數量
         async function loadBackup() {
             try {
-                const res = await fetch('/backup_JW2601003.json');
+                // 使用精簡的備份檔案
+                const res = await fetch('./essential_backup.json');
+                if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                 backupData = await res.json();
 
                 document.getElementById('count_customers').textContent = `${backupData.customers?.length || 0} 個客戶`;

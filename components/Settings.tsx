@@ -344,6 +344,41 @@ const Settings: FC<SettingsProps> = ({
                         </button>
                       </div>
 
+                      {/* Restore Data from Backup */}
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-[10px] text-blue-500 font-bold mb-2">從備份恢復：</p>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const confirmed = confirm('確定要從備份檔案恢復客戶、廠商和團隊成員資料嗎？\n\n⚠️ 此操作會與現有資料合併。');
+                              if (!confirmed) return;
+
+                              // Load backup file
+                              const response = await fetch('./essential_backup.json');
+                              if (!response.ok) throw new Error('無法載入備份檔案');
+
+                              const backupData = await response.json();
+
+                              // Import the data using merge mode
+                              onImportData({
+                                customers: backupData.customers || [],
+                                vendors: backupData.vendors || [],
+                                teamMembers: backupData.teamMembers || [],
+                                leads: backupData.leads || []
+                              }, 'merge');
+
+                              alert(`✅ 恢復完成！\n\n客戶：${backupData.customers?.length || 0} 個\n廠商：${backupData.vendors?.length || 0} 個\n團隊成員：${backupData.teamMembers?.length || 0} 位\n潛客：${backupData.leads?.length || 0} 個`);
+                            } catch (error) {
+                              alert('恢復失敗：' + (error as Error).message);
+                            }
+                          }}
+                          className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Database size={14} />
+                          恢復客戶、廠商、團隊成員
+                        </button>
+                      </div>
+
                       {/* Selective Import Handling */}
                     </div>
                   )}
