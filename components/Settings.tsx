@@ -32,6 +32,13 @@ const Settings: FC<SettingsProps> = ({
   const [copied, setCopied] = useState(false);
   const [pendingData, setPendingData] = useState<any>(null);
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
+  const [restoreData, setRestoreData] = useState<any>(null);
+  const [restoreOptions, setRestoreOptions] = useState({
+    customers: true,
+    vendors: true,
+    teamMembers: true,
+    leads: true
+  });
 
   const [importMode, setImportMode] = useState<'overwrite' | 'merge'>('merge');
   const isReadOnly = user.role === 'Guest';
@@ -347,36 +354,133 @@ const Settings: FC<SettingsProps> = ({
                       {/* Restore Data from Backup */}
                       <div className="mt-4 pt-4 border-t border-gray-100">
                         <p className="text-[10px] text-blue-500 font-bold mb-2">從備份恢復：</p>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const confirmed = confirm('確定要從備份檔案恢復客戶、廠商和團隊成員資料嗎？\n\n⚠️ 此操作會與現有資料合併。');
-                              if (!confirmed) return;
 
-                              // Load backup file
-                              const response = await fetch('./essential_backup.json');
-                              if (!response.ok) throw new Error('無法載入備份檔案');
+                        {!restoreData ? (
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept=".json"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  try {
+                                    const jsonStr = event.target?.result as string;
+                                    const parsed = JSON.parse(jsonStr);
+                                    setRestoreData(parsed);
+                                  } catch (err) {
+                                    alert('檔案解析失敗：請確認上傳的是有效的 .json 備份檔');
+                                  }
+                                };
+                                reader.readAsText(file);
+                                e.target.value = '';
+                              }}
+                            />
+                            <button className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 pointer-events-none">
+                              <Database size={14} />
+                              選擇備份檔案
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={restoreOptions.customers}
+                                  onChange={(e) => setRestoreOptions({ ...restoreOptions, customers: e.target.checked })}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-xs font-bold">客戶資料 ({restoreData.customers?.length || 0} 個)</span>
+                              </label>
 
-                              const backupData = await response.json();
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={restoreOptions.vendors}
+                                  onChange={(e) => setRestoreOptions({ ...restoreOptions, vendors: e.target.checked })}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-xs font-bold">廠商資料 ({restoreData.vendors?.length || 0} 個)</span>
+                              </label>
 
-                              // Import the data using merge mode
-                              onImportData({
-                                customers: backupData.customers || [],
-                                vendors: backupData.vendors || [],
-                                teamMembers: backupData.teamMembers || [],
-                                leads: backupData.leads || []
-                              }, 'merge');
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={restoreOptions.teamMembers}
+                                  onChange={(e) => setRestoreOptions({ ...restoreOptions, teamMembers: e.target.checked })}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-xs font-bold">團隊成員 ({restoreData.teamMembers?.length || 0} 位)</span>
+                              </label>
 
-                              alert(`✅ 恢復完成！\n\n客戶：${backupData.customers?.length || 0} 個\n廠商：${backupData.vendors?.length || 0} 個\n團隊成員：${backupData.teamMembers?.length || 0} 位\n潛客：${backupData.leads?.length || 0} 個`);
-                            } catch (error) {
-                              alert('恢復失敗：' + (error as Error).message);
-                            }
-                          }}
-                          className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Database size={14} />
-                          恢復客戶、廠商、團隊成員
-                        </button>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={restoreOptions.leads}
+                                  onChange={(e) => setRestoreOptions({ ...restoreOptions, leads: e.target.checked })}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-xs font-bold">潛在客戶 ({restoreData.leads?.length || 0} 個)</span>
+                              </label>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setRestoreData(null);
+                                  setRestoreOptions({ customers: true, vendors: true, teamMembers: true, leads: true });
+                                }}
+                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg text-xs font-bold transition-colors"
+                              >
+                                取消
+                              </button>
+                              <button
+                                onClick={() => {
+                                  try {
+                                    const dataToRestore: any = {};
+                                    let restoredItems: string[] = [];
+
+                                    if (restoreOptions.customers && restoreData.customers) {
+                                      dataToRestore.customers = restoreData.customers;
+                                      restoredItems.push(`客戶：${restoreData.customers.length} 個`);
+                                    }
+                                    if (restoreOptions.vendors && restoreData.vendors) {
+                                      dataToRestore.vendors = restoreData.vendors;
+                                      restoredItems.push(`廠商：${restoreData.vendors.length} 個`);
+                                    }
+                                    if (restoreOptions.teamMembers && restoreData.teamMembers) {
+                                      dataToRestore.teamMembers = restoreData.teamMembers;
+                                      restoredItems.push(`團隊成員：${restoreData.teamMembers.length} 位`);
+                                    }
+                                    if (restoreOptions.leads && restoreData.leads) {
+                                      dataToRestore.leads = restoreData.leads;
+                                      restoredItems.push(`潛客：${restoreData.leads.length} 個`);
+                                    }
+
+                                    if (Object.keys(dataToRestore).length === 0) {
+                                      alert('請至少選擇一項要恢復的資料');
+                                      return;
+                                    }
+
+                                    onImportData(dataToRestore, 'merge');
+                                    alert(`✅ 恢復完成！\n\n${restoredItems.join('\n')}`);
+                                    setRestoreData(null);
+                                    setRestoreOptions({ customers: true, vendors: true, teamMembers: true, leads: true });
+                                  } catch (error) {
+                                    alert('恢復失敗：' + (error as Error).message);
+                                  }
+                                }}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1"
+                              >
+                                <RotateCcw size={14} />
+                                開始恢復
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Selective Import Handling */}
