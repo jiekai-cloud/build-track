@@ -121,6 +121,23 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
         getLocation();
     }, []);
 
+    // Safe helpers
+    const safeDate = (iso: string) => {
+        try {
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return '無效時間';
+            return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+        } catch {
+            return '無效格式';
+        }
+    };
+
+    const safeLocation = (loc: any) => {
+        if (!loc) return null;
+        if (typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return null;
+        return `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+    };
+
     const handleClockAction = (type: 'work-start' | 'work-end') => {
         if (!location) {
             getLocation();
@@ -136,7 +153,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                 <LocationModal
                     location={viewingRecord.location}
                     onClose={() => setViewingRecord(null)}
-                    title={`${new Date(viewingRecord.timestamp).toLocaleTimeString()} 打卡位置`}
+                    title={`${safeDate(viewingRecord.timestamp)} 打卡位置`}
                 />
             )}
 
@@ -279,30 +296,33 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                                     <div className="h-px flex-1 bg-stone-100"></div>
                                 </div>
                                 <div className="relative border-l-2 border-stone-100 ml-3 space-y-6 py-2">
-                                    {dayRecords.map((record) => (
-                                        <div key={record.id} className="relative pl-8">
-                                            <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white shadow-sm ${record.type === 'work-start' ? 'bg-emerald-500' : 'bg-indigo-500'
-                                                }`} />
-                                            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-                                                <div>
-                                                    <span className={`font-black text-sm px-2 py-0.5 rounded mr-2 ${record.type === 'work-start' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
-                                                        }`}>
-                                                        {record.type === 'work-start' ? '上班' : '下班'}
-                                                    </span>
-                                                    <span className="font-bold text-stone-800 text-lg">
-                                                        {new Date(record.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    className={`text-xs text-stone-400 font-mono flex items-center gap-1 ${record.location ? 'cursor-pointer hover:text-orange-500 hover:underline' : ''}`}
-                                                    onClick={() => record.location && setViewingRecord(record)}
-                                                >
-                                                    <MapPin size={10} />
-                                                    {record.location ? `${record.location.lat.toFixed(4)}, ${record.location.lng.toFixed(4)}` : '未記錄位置'}
+                                    {dayRecords.map((record) => {
+                                        const locString = safeLocation(record.location);
+                                        return (
+                                            <div key={record.id} className="relative pl-8">
+                                                <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white shadow-sm ${record.type === 'work-start' ? 'bg-emerald-500' : 'bg-indigo-500'
+                                                    }`} />
+                                                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                                                    <div>
+                                                        <span className={`font-black text-sm px-2 py-0.5 rounded mr-2 ${record.type === 'work-start' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
+                                                            }`}>
+                                                            {record.type === 'work-start' ? '上班' : '下班'}
+                                                        </span>
+                                                        <span className="font-bold text-stone-800 text-lg">
+                                                            {safeDate(record.timestamp)}
+                                                        </span>
+                                                    </div>
+                                                    <div
+                                                        className={`text-xs text-stone-400 font-mono flex items-center gap-1 ${locString ? 'cursor-pointer hover:text-orange-500 hover:underline' : ''}`}
+                                                        onClick={() => locString && setViewingRecord(record)}
+                                                    >
+                                                        <MapPin size={10} />
+                                                        {locString || '未記錄位置'}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </div>
                         ))}

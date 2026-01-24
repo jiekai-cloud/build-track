@@ -15,12 +15,32 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
     // Robust data filtering
     const validRecords = Array.isArray(records) ? records.filter(r => r && r.timestamp && r.id) : [];
 
-    const sortedRecords = [...validRecords].sort((a, b) => {
+    // Safe helpers (Paranoid Mode)
+    const safeDate = (iso: string) => {
         try {
-            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-        } catch (e) {
-            return 0;
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return '無效時間';
+            return d.toLocaleString('zh-TW', { hour12: false });
+        } catch {
+            return '無效格式';
         }
+    };
+
+    const safeLocation = (loc: any) => {
+        if (!loc) return null;
+        if (typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return null;
+        return `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+    };
+
+    const safeName = (name: any) => {
+        if (typeof name !== 'string') return '未知';
+        return name;
+    };
+
+    const sortedRecords = [...validRecords].sort((a, b) => {
+        const tA = new Date(a.timestamp).getTime();
+        const tB = new Date(b.timestamp).getTime();
+        return (isNaN(tB) ? 0 : tB) - (isNaN(tA) ? 0 : tA);
     });
 
     return (
@@ -30,7 +50,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 <LocationModal
                     location={viewingLocation.location}
                     onClose={() => setViewingLocation(null)}
-                    title={`${viewingLocation.name} - ${viewingLocation.type === 'work-start' ? '上班' : '下班'}打卡位置`}
+                    title={`${safeName(viewingLocation.name)} - 打卡位置`}
                 />
             )}
 
@@ -53,36 +73,40 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-100">
-                            {sortedRecords.map((record) => (
-                                <tr key={record.id} className="hover:bg-stone-50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center font-bold text-stone-600 text-xs">
-                                                {record.name ? record.name.substring(0, 1) : '?'}
+                            {sortedRecords.map((record) => {
+                                const locString = safeLocation(record.location);
+                                const displayName = safeName(record.name);
+                                return (
+                                    <tr key={record.id} className="hover:bg-stone-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center font-bold text-stone-600 text-xs">
+                                                    {displayName.substring(0, 1)}
+                                                </div>
+                                                <span className="font-bold text-stone-700">{displayName}</span>
                                             </div>
-                                            <span className="font-bold text-stone-700">{record.name || '未知員工'}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 py-1 rounded text-xs font-bold ${record.type === 'work-start' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
-                                            }`}>
-                                            {record.type === 'work-start' ? '上班' : '下班'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-stone-600">
-                                        {record.timestamp ? new Date(record.timestamp).toLocaleString('zh-TW') : '時間無效'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
-                                        <div
-                                            className={`flex items-center gap-1 ${record.location ? 'cursor-pointer hover:text-orange-500 hover:underline' : ''}`}
-                                            onClick={() => record.location && setViewingLocation(record)}
-                                        >
-                                            <MapPin size={12} />
-                                            {record.location ? `${record.location.lat.toFixed(4)}, ${record.location.lng.toFixed(4)}` : '未知位置'}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${record.type === 'work-start' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
+                                                }`}>
+                                                {record.type === 'work-start' ? '上班' : '下班'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-stone-600">
+                                            {safeDate(record.timestamp)}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
+                                            <div
+                                                className={`flex items-center gap-1 ${locString ? 'cursor-pointer hover:text-orange-500 hover:underline' : ''}`}
+                                                onClick={() => locString && setViewingLocation(record)}
+                                            >
+                                                <MapPin size={12} />
+                                                {locString || '未知位置'}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                             {sortedRecords.length === 0 && (
                                 <tr>
                                     <td colSpan={4} className="px-6 py-12 text-center text-stone-400">尚無打卡紀錄</td>
