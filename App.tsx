@@ -59,16 +59,19 @@ const App: React.FC = () => {
     // Case-insensitive match for robustness
     const member = teamMembers.find(m => m.employeeId.toLowerCase() === user.id.toLowerCase());
 
-    // If SuperAdmin has specific modules defined, use them. Otherwise default to ALL.
-    if (user.role === 'SuperAdmin') {
-      return (member?.accessibleModules && member.accessibleModules.length > 0)
-        ? member.accessibleModules
-        : ALL_MODULES.map(m => m.id);
+    // If specific permissions are set (array exists), use them strictly.
+    // This allows even SuperAdmin to have restricted modules if explicitly configured (e.g. empty array).
+    if (member?.accessibleModules) {
+      return member.accessibleModules;
     }
 
-    // If no specific permissions set, modify this default behavior as needed. 
-    // Currently fallback to DEFAULT_ENABLED_MODULES
-    return member?.accessibleModules || DEFAULT_ENABLED_MODULES;
+    // Fallback ONLY if accessibleModules is undefined (legacy data or new user default)
+    // SuperAdmin gets everything by default if not configured.
+    if (user.role === 'SuperAdmin') {
+      return ALL_MODULES.map(m => m.id);
+    }
+
+    return DEFAULT_ENABLED_MODULES;
   }, [user, teamMembers]);
 
   useEffect(() => {
