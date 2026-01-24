@@ -54,27 +54,23 @@ const App: React.FC = () => {
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
 
   // Calculate permissions dynamically
+  // Calculate permissions dynamically
   const currentUserPermissions = useMemo(() => {
     if (!user) return [];
-    // 1. Try matching by Employee ID (Case-insensitive)
-    // 2. Fallback to matching by Email (Case-insensitive)
+
+    // Strict Match: ID -> Email -> Name
     const member = teamMembers.find(m =>
       m.employeeId.toLowerCase() === user.id.toLowerCase() ||
-      (m.email && user.email && m.email.toLowerCase() === user.email.toLowerCase())
+      (m.email && user.email && m.email.toLowerCase() === user.email.toLowerCase()) ||
+      (m.name && user.name && m.name.toLowerCase() === user.name.toLowerCase())
     );
 
-    // If specific permissions are set (array exists), use them strictly.
-    // This allows even SuperAdmin to have restricted modules if explicitly configured (e.g. empty array).
-    if (member?.accessibleModules) {
+    // If we found a member and they have specific modules configured (even empty array), use it
+    if (member && Array.isArray(member.accessibleModules)) {
       return member.accessibleModules;
     }
 
-    // Fallback ONLY if accessibleModules is undefined (legacy data or new user default)
-    // SuperAdmin gets everything by default if not configured.
-    if (user.role === 'SuperAdmin') {
-      return ALL_MODULES.map(m => m.id);
-    }
-
+    // Default Fallback
     return DEFAULT_ENABLED_MODULES;
   }, [user, teamMembers]);
 
