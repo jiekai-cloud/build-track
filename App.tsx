@@ -1486,6 +1486,7 @@ const App: React.FC = () => {
                   records={attendanceRecords}
                   teamMembers={teamMembers}
                   currentUser={{ ...user, accessibleModules: currentUserPermissions }}
+                  approvalRequests={approvalRequests}
                 />
               )}
               {activeTab === 'approvals' && moduleService.isModuleEnabled(ModuleId.APPROVALS) && (
