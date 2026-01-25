@@ -26,6 +26,7 @@ import AttendanceSystem from './components/AttendanceSystem';
 import PayrollSystem from './components/PayrollSystem';
 import ApprovalSystem from './components/ApprovalSystem';
 import ModuleManager from './components/ModuleManager';
+import OnboardingTour from './components/OnboardingTour';
 import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download, Phone } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
@@ -143,6 +144,7 @@ const App: React.FC = () => {
   const [initialSyncDone, setInitialSyncDone] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [aiApiKey, setAiApiKey] = useState(localStorage.getItem('GEMINI_API_KEY') || '');
   const [isMasterTab, setIsMasterTab] = useState(false);
   const tabId = useMemo(() => Math.random().toString(36).substring(7), []);
@@ -177,6 +179,23 @@ const App: React.FC = () => {
     setIsAISettingsOpen(false);
     alert('AI 金鑰已儲存，服務將在下次解析時生效。');
     window.location.reload();
+  };
+
+  // Trigger Onboarding for new users or upon login
+  useEffect(() => {
+    if (user && !isInitializing) {
+      const hasCompleted = localStorage.getItem('bt_onboarding_completed') === 'true';
+      if (!hasCompleted) {
+        // Delay a bit to let the dashboard render
+        const timer = setTimeout(() => setIsOnboardingOpen(true), 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user, isInitializing]);
+
+  const handleCloseOnboarding = () => {
+    setIsOnboardingOpen(false);
+    localStorage.setItem('bt_onboarding_completed', 'true');
   };
 
   // Sync User Session with Team Data (Auto-update role/info if changed in TeamModal)
@@ -1503,6 +1522,7 @@ const App: React.FC = () => {
                 onRetrySync={handleCloudSync}
                 onConvertLead={handleConvertLead}
                 onProjectClick={(id) => { setSelectedProjectId(id); setActiveTab('projects'); }}
+                onStartTour={() => setIsOnboardingOpen(true)}
               />}
               {activeTab === 'projects' && moduleService.isModuleEnabled(ModuleId.PROJECTS) && <ProjectList
                 projects={filteredData.projects}
@@ -1738,7 +1758,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
               )}
-              {activeTab === 'help' && <HelpCenter />}
+              {activeTab === 'help' && <HelpCenter onStartTour={() => setIsOnboardingOpen(true)} />}
             </div>
           )}
         </div>
@@ -2233,6 +2253,7 @@ const App: React.FC = () => {
           </>
         )
       }
+      <OnboardingTour isOpen={isOnboardingOpen} onClose={handleCloseOnboarding} />
     </div >
   );
 };

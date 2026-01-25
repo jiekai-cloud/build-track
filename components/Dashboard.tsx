@@ -23,9 +23,10 @@ interface DashboardProps {
   onRetrySync?: () => void;
   onConvertLead?: (leadId: string) => void;
   onProjectClick: (projectId: string) => void;
+  onStartTour?: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError, lastCloudSync, isMasterTab, onRetrySync, onConvertLead, onProjectClick }) => {
+const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError, lastCloudSync, isMasterTab, onRetrySync, onConvertLead, onProjectClick, onStartTour }) => {
   const [lastSync, setLastSync] = useState(new Date());
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -285,6 +286,13 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
           >
             {isAnalyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             AI 營運診斷
+          </button>
+          <button
+            onClick={onStartTour}
+            className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black hover:bg-indigo-100 transition-all border border-indigo-100"
+          >
+            <Zap size={14} />
+            快速導覽
           </button>
         </div>
       </header>

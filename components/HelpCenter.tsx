@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { 
-  HelpCircle, Search, BookOpen, MessageSquare, 
-  Settings, ShieldCheck, Zap, ChevronRight, 
+import {
+  HelpCircle, Search, BookOpen, MessageSquare,
+  Settings, ShieldCheck, Zap, ChevronRight,
   ExternalLink, PlayCircle, Bot, Mail, X, CheckCircle2, ArrowRight,
   Info, Sparkles, Send, Loader2, Navigation, MessageCircle
 } from 'lucide-react';
@@ -18,10 +18,14 @@ interface GuideMessage {
   text: string;
 }
 
-const HelpCenter: React.FC = () => {
+interface HelpCenterProps {
+  onStartTour?: () => void;
+}
+
+const HelpCenter: React.FC<HelpCenterProps> = ({ onStartTour }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTutorial, setSelectedTutorial] = useState<TutorialContent | null>(null);
-  
+
   // 智慧引導模式狀態
   const [isAIGuideOpen, setIsAIGuideOpen] = useState(false);
   const [guideInput, setGuideInput] = useState('');
@@ -134,31 +138,31 @@ const HelpCenter: React.FC = () => {
   };
 
   const categories = [
-    { 
-      id: 'getting-started', 
-      title: '新手入門', 
-      icon: PlayCircle, 
+    {
+      id: 'getting-started',
+      title: '新手入門',
+      icon: PlayCircle,
       desc: '了解 生活品質工程管理系統 的核心流程與基本操作設定。',
       items: ['建立第一個工程案件', '匯入舊有客戶資料', '設定 AI 助理性格']
     },
-    { 
-      id: 'project-mgmt', 
-      title: '專案管理', 
-      icon: BookOpen, 
+    {
+      id: 'project-mgmt',
+      title: '專案管理',
+      icon: BookOpen,
       desc: '如何追蹤施工進度、管理階段任務與工務提醒。',
       items: ['編輯施工階段', '任務指派與優先順序', '進度條自動計算規則']
     },
-    { 
-      id: 'financial', 
-      title: '預算與分析', 
-      icon: Zap, 
+    {
+      id: 'financial',
+      title: '預算與分析',
+      icon: Zap,
       desc: '掌握案場成本結構、毛利預估與預警機制。',
       items: ['設定預算警戒值', '匯出 CSV 報表技巧', '解讀財務雷達圖']
     },
-    { 
-      id: 'security', 
-      title: '資料安全', 
-      icon: ShieldCheck, 
+    {
+      id: 'security',
+      title: '資料安全',
+      icon: ShieldCheck,
       desc: '關於 Google 登入、備份與本地資料清除說明。',
       items: ['OAuth Client ID 設定', '重置系統資料的影響', '離線模式運作機制']
     }
@@ -184,7 +188,7 @@ const HelpCenter: React.FC = () => {
             請簡短、明確地回答。若問題與系統無關，請禮貌地引導回系統操作。`
         }
       });
-      
+
       setGuideMessages(prev => [...prev, { role: 'ai', text: response.text || "抱歉，我現在無法回答這個問題。" }]);
     } catch (err) {
       setGuideMessages(prev => [...prev, { role: 'ai', text: "連線異常，請稍後再試，或查看下方的常見問題解答。" }]);
@@ -197,8 +201,8 @@ const HelpCenter: React.FC = () => {
     if (!searchQuery.trim()) return categories;
     return categories.map(cat => ({
       ...cat,
-      items: cat.items.filter(item => 
-        item.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      items: cat.items.filter(item =>
+        item.toLowerCase().includes(searchQuery.toLowerCase()) ||
         cat.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
     })).filter(cat => cat.items.length > 0);
@@ -218,24 +222,31 @@ const HelpCenter: React.FC = () => {
           <HelpCircle size={32} className="text-white" />
         </div>
         <h1 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">您需要什麼協助？</h1>
-        
+
         <div className="max-w-2xl mx-auto relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
-          <input 
-            type="text" 
-            placeholder="搜尋關鍵字，或在右下角開啟智慧引導..." 
+          <input
+            type="text"
+            placeholder="搜尋關鍵字，或在右下角開啟智慧引導..."
             className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200 rounded-[2rem] shadow-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-bold text-black"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
-        <button 
+        <button
           onClick={() => setIsAIGuideOpen(true)}
           className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg active:scale-95"
         >
           <Sparkles size={16} className="text-orange-400" />
           開啟 AI 智慧操作引導
+        </button>
+        <button
+          onClick={onStartTour}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-indigo-200 text-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-md active:scale-95"
+        >
+          <Zap size={16} />
+          重新開啟系統導覽
         </button>
       </section>
 
@@ -251,8 +262,8 @@ const HelpCenter: React.FC = () => {
                 <h3 className="text-xl font-bold text-slate-900">{cat.title}</h3>
                 <div className="space-y-2 pt-2 border-t border-slate-50 mt-4">
                   {cat.items.map((item, idx) => (
-                    <button 
-                      key={idx} 
+                    <button
+                      key={idx}
                       onClick={() => handleItemClick(item)}
                       className="flex items-center justify-between w-full text-left p-3 hover:bg-blue-50 rounded-xl transition-all group/item border border-transparent hover:border-blue-100"
                     >
@@ -278,7 +289,7 @@ const HelpCenter: React.FC = () => {
             <div className="p-8 space-y-6">
               {selectedTutorial.steps.map((step, i) => (
                 <div key={i} className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 font-black text-sm">{i+1}</div>
+                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 font-black text-sm">{i + 1}</div>
                   <div>
                     <h4 className="font-black text-slate-900 text-sm mb-1">{step.title}</h4>
                     <p className="text-xs text-slate-500 leading-relaxed font-medium">{step.desc}</p>
@@ -311,26 +322,25 @@ const HelpCenter: React.FC = () => {
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar">
               {guideMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-5 rounded-3xl ${
-                    msg.role === 'user' 
-                      ? 'bg-blue-600 text-white rounded-tr-none shadow-xl' 
+                  <div className={`max-w-[85%] p-5 rounded-3xl ${msg.role === 'user'
+                      ? 'bg-blue-600 text-white rounded-tr-none shadow-xl'
                       : 'bg-white/5 text-slate-200 border border-white/5 rounded-tl-none'
-                  }`}>
+                    }`}>
                     <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                   </div>
                 </div>
               ))}
               {isTyping && (
-                 <div className="flex justify-start">
-                   <div className="bg-white/5 border border-white/5 p-4 rounded-3xl rounded-tl-none flex items-center gap-2">
-                     <Loader2 size={16} className="text-blue-500 animate-spin" />
-                     <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest italic">思考中...</span>
-                   </div>
-                 </div>
+                <div className="flex justify-start">
+                  <div className="bg-white/5 border border-white/5 p-4 rounded-3xl rounded-tl-none flex items-center gap-2">
+                    <Loader2 size={16} className="text-blue-500 animate-spin" />
+                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest italic">思考中...</span>
+                  </div>
+                </div>
               )}
               <div ref={guideEndRef} />
             </div>
@@ -338,15 +348,15 @@ const HelpCenter: React.FC = () => {
             <div className="p-8 bg-black/40 border-t border-white/5">
               <form onSubmit={handleGuideSubmit} className="flex gap-4">
                 <div className="flex-1 relative">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="問我任何關於系統操作的問題..."
                     className="w-full bg-white/5 border border-white/10 rounded-2xl pl-6 pr-14 py-5 text-sm text-white font-bold placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-blue-600/50 transition-all"
                     value={guideInput}
                     onChange={(e) => setGuideInput(e.target.value)}
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={!guideInput.trim() || isTyping}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-20 transition-all active:scale-90"
                   >
