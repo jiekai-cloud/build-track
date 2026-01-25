@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { User, AttendanceRecord, TeamMember } from '../types';
-import { MapPin, Clock, LogIn, LogOut, AlertTriangle, CheckCircle, Navigation, Loader2, Calendar } from 'lucide-react';
+import { MapPin, Clock, LogIn, LogOut, AlertTriangle, CheckCircle, Navigation, Loader2, Calendar, Sparkles } from 'lucide-react';
 import LocationModal from './LocationModal';
+import { getAddressFromCoords } from '../services/geminiService';
 
 interface AttendanceSystemProps {
     currentUser: User;
     records: AttendanceRecord[];
     onRecord: (type: 'work-start' | 'work-end', location: { lat: number; lng: number; address?: string }) => void;
 }
-
-const GOOGLE_MAPS_API_KEY = (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY) || 'AIzaSyAyzTWbM4BCrbyT32hoUT2kpe2vNIm95xc';
 
 const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, records, onRecord }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -113,15 +112,9 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
 
                 let address = '';
 
-                // Call Google Maps Geocoding API for reverse geocoding
+                // Using Gemini-powered reverse geocoding to avoid CORS and API key restrictions
                 try {
-                    const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}&language=zh-TW`);
-                    const data = await response.json();
-                    if (data.status === 'OK' && data.results.length > 0) {
-                        address = data.results[0].formatted_address;
-                    } else {
-                        address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-                    }
+                    address = await getAddressFromCoords(latitude, longitude);
                 } catch (e) {
                     console.error('Reverse Geocoding Error:', e);
                     address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
@@ -268,7 +261,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                     {locationError && <span className="font-bold">{locationError} <button onClick={getLocation} className="underline ml-2">重試</button></span>}
                     {location && (
                         <div>
-                            <span className="font-bold block">定位成功</span>
+                            <span className="font-bold flex items-center gap-1">定位成功 <Sparkles size={10} className="text-blue-500" /></span>
                             <span className="text-xs opacity-75">{location.address || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`}</span>
                         </div>
                     )}

@@ -707,3 +707,28 @@ export const refineSiteNotes = async (notes: string) => {
     return handleAIError(error, "日誌文字優化");
   }
 };
+
+/**
+ * 智慧逆向地理編碼 - 將經緯度轉換為地址
+ * 利用 Gemini 的地圖能力來解析座標
+ */
+export const getAddressFromCoords = async (lat: number, lng: number) => {
+  try {
+    const response = await callAIWithFallback({
+      contents: [{
+        parts: [{
+          text: `妳是精準的地理資訊助手。請告訴我座標 [${lat}, ${lng}] 對應的台灣詳細地址。
+          請僅回傳地址文字，不含排除任何其他說明。`
+        }]
+      }],
+      config: {
+        tools: [{ googleSearch: {} }] // Using search as a fallback for geocoding knowledge
+      }
+    }, "逆向地理編碼");
+
+    return response.text.trim();
+  } catch (error) {
+    console.warn("Gemini Geocoding 失敗:", error);
+    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  }
+};
