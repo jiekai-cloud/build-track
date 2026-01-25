@@ -25,7 +25,7 @@ const getAI = () => {
   const isInvalid = (k: string | null | undefined) => !k || k === 'PLACEHOLDER_API_KEY' || k === 'undefined' || k === '';
 
   // Priority: localStorage > env > hardcoded
-  let key = 'AIzaSyDM5F-SFvUSAFDVDEMtbr2c-0Ndw3QZuJY'; // Default Fallback Key
+  let key = ''; // Removed leaked hardcoded key for security
   if (!isInvalid(envKey)) key = envKey! as string;
   if (!isInvalid(savedKey)) key = savedKey!;
 
@@ -58,9 +58,9 @@ const handleAIError = (error: any, context: string, modelUsed: string) => {
     return "QUOTA_EXCEEDED";
   }
 
-  // 404 代表模型不存在或未被授權
-  if (errorMsg.includes("404") || errorMsg.includes("not found")) {
-    return "MODEL_NOT_FOUND";
+  // 403 PERMISSION_DENIED: Often means leaked or disabled key
+  if (errorMsg.includes("403") || errorMsg.includes("PERMISSION_DENIED") || errorMsg.includes("leaked")) {
+    return "KEY_INVALID";
   }
 
   // 503 Service Unavailable
@@ -103,8 +103,12 @@ async function callAIWithFallback(payload: any, context: string) {
         continue;
       }
 
-      if (status === "MODEL_NOT_FOUND") {
-        console.warn(`[AI] 模型 ${modelId} 不存在，嘗試下一個備援模型...`);
+      if (status === "MODEL_NOT_FOUND" || status === "KEY_INVALID") {
+        const msg = status === "KEY_INVALID" ? "您的 API 金鑰已失效 (外洩) 或權限不足" : `模型 ${modelId} 不存在`;
+        console.warn(`[AI] ${msg}，嘗試下一個備援模型...`);
+        if (status === "KEY_INVALID" && modelId === FALLBACK_MODELS[FALLBACK_MODELS.length - 1]) {
+          alert("⚠️ AI 服務金鑰失效：Google 已封鎖目前外洩的 API Key。請點擊右上角「AI 服務」配置您個人的金鑰以恢復功能。");
+        }
         continue;
       }
 
