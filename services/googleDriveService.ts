@@ -52,21 +52,25 @@ class GoogleDriveService {
     });
   }
 
-  async authenticate(prompt: 'none' | 'consent' = 'none') {
+  async authenticate(prompt: 'none' | 'consent' = 'none', isBackground: boolean = false) {
+    if (isBackground && prompt === 'consent') {
+      throw new Error('AUTH_INTERACTION_REQUIRED');
+    }
     return new Promise<string>((resolve, reject) => {
       if (!this.tokenClient) {
         // 如果尚未初始化，先執行預設初始化
-        this.init().then(() => this.requestToken(prompt, resolve, reject)).catch(reject);
+        this.init().then(() => this.requestToken(prompt, resolve, reject, isBackground)).catch(reject);
       } else {
-        this.requestToken(prompt, resolve, reject);
+        this.requestToken(prompt, resolve, reject, isBackground);
       }
     });
   }
 
-  private requestToken(prompt: string, resolve: any, reject: any) {
+  private requestToken(prompt: string, resolve: any, reject: any, isBackground: boolean = false) {
     this.tokenClient.callback = (response: any) => {
       if (response.error) {
         if (prompt === 'none') {
+          if (isBackground) return reject(new Error('AUTH_INTERACTION_REQUIRED'));
           return this.authenticate('consent').then(resolve).catch(reject);
         }
         return reject(response);
@@ -77,9 +81,9 @@ class GoogleDriveService {
     this.tokenClient.requestAccessToken({ prompt: prompt === 'none' ? '' : 'consent' });
   }
 
-  private async fetchWithAuth(url: string, options: RequestInit = {}) {
+  private async fetchWithAuth(url: string, options: RequestInit = {}, isBackground: boolean = false) {
     if (!this.accessToken) {
-      await this.authenticate();
+      await this.authenticate('none', isBackground);
     }
 
     let res = await fetch(url, {
@@ -92,7 +96,7 @@ class GoogleDriveService {
 
     if (res.status === 401) {
       this.accessToken = null;
-      await this.authenticate('consent');
+      await this.authenticate(isBackground ? 'none' : 'consent', isBackground);
       res = await fetch(url, {
         ...options,
         headers: {
@@ -104,25 +108,13 @@ class GoogleDriveService {
     return res;
   }
 
-  async findBackupFile() {
+  async getFileMetadata(isBackground: boolean = false) {
     try {
-      const url = `https://www.googleapis.com/drive/v3/files?q=name='${this.currentFilename}' and trashed=false&fields=files(id,name)`;
-      const response = await this.fetchWithAuth(url);
-      const data = await response.json();
-      return data.files && data.files.length > 0 ? data.files[0] : null;
-    } catch (e) {
-      console.error('Find File Error:', e);
-      return null;
-    }
-  }
-
-  async getFileMetadata() {
-    try {
-      const existingFile = await this.findBackupFile();
+      const existingFile = await this.findBackupFile(isBackground);
       if (!existingFile) return null;
       // Add timestamp to prevent caching
       const url = `https://www.googleapis.com/drive/v3/files/${existingFile.id}?fields=id,name,modifiedTime,size&_=${Date.now()}`;
-      const response = await this.fetchWithAuth(url);
+      const response = await this.fetchWithAuth(url, {}, isBackground);
       if (!response.ok) return null;
       return await response.json();
     } catch (e) {
@@ -131,7 +123,19 @@ class GoogleDriveService {
     }
   }
 
-  async saveToCloud(data: any) {
+  async findBackupFile(isBackground: boolean = false) {
+    try {
+      const url = `https://www.googleapis.com/drive/v3/files?q=name='${this.currentFilename}' and trashed=false&fields=files(id,name)`;
+      const response = await this.fetchWithAuth(url, {}, isBackground);
+      const data = await response.json();
+      return data.files && data.files.length > 0 ? data.files[0] : null;
+    } catch (e) {
+      console.error('Find File Error:', e);
+      return null;
+    }
+  }
+
+  async saveToCloud(data: any, isBackground: boolean = false) {
     if (!this.isInitialized) await this.init();
     this.lastErrorStatus = null;
     try {
@@ -170,14 +174,14 @@ class GoogleDriveService {
         method = 'PATCH';
       }
 
-      console.log(`[Drive] Syncing: ${method} to ${this.currentFilename}`);
+      console.log(`[Drive] Syncing: ${method} to ${this.currentFilename} (BG: ${isBackground})`);
       const response = await this.fetchWithAuth(url, {
         method,
         body,
         headers: {
           // 注意：fetch 會自動處理 Blob 的 Content-Length，但我們需要手動設定 Content-Type 的 boundary
         }
-      });
+      }, isBackground);
 
       if (!response.ok) {
         this.lastErrorStatus = `${response.status}`;
@@ -215,13 +219,13 @@ class GoogleDriveService {
     return this.lastErrorStatus;
   }
 
-  async loadFromCloud(): Promise<any | null> {
+  async loadFromCloud(isBackground: boolean = false): Promise<any | null> {
     if (!this.isInitialized) await this.init();
     try {
-      const existingFile = await this.findBackupFile();
+      const existingFile = await this.findBackupFile(isBackground);
       if (!existingFile) return null;
       const url = `https://www.googleapis.com/drive/v3/files/${existingFile.id}?alt=media`;
-      const response = await this.fetchWithAuth(url);
+      const response = await this.fetchWithAuth(url, {}, isBackground);
       if (!response.ok) return null;
       return await response.json();
     } catch (err) {

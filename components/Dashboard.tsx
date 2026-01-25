@@ -9,7 +9,7 @@ import {
   AlertCircle, Clock, CheckCircle2, DollarSign, ArrowUpRight,
   ArrowDownRight, Activity, ShieldAlert, Zap, ExternalLink,
   Sparkles, Phone, MapPin, FileWarning, CalendarDays, AlertTriangle,
-  Layers, Target, ArrowRight, Briefcase, Loader2, Download, X
+  Layers, Target, ArrowRight, Briefcase, Loader2, Download, X, RefreshCw
 } from 'lucide-react';
 import { Project, ProjectStatus, Lead } from '../types';
 import DefectExportModal from './DefectExportModal';
@@ -17,11 +17,15 @@ import DefectExportModal from './DefectExportModal';
 interface DashboardProps {
   projects: Project[];
   leads?: Lead[];
+  cloudError?: string | null;
+  lastCloudSync?: string | null;
+  isMasterTab?: boolean;
+  onRetrySync?: () => void;
   onConvertLead?: (leadId: string) => void;
   onProjectClick: (projectId: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLead, onProjectClick }) => {
+const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError, lastCloudSync, isMasterTab, onRetrySync, onConvertLead, onProjectClick }) => {
   const [lastSync, setLastSync] = useState(new Date());
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -253,7 +257,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
               <span className="text-[10px] font-black uppercase tracking-widest">Scale Optimized</span>
             </div>
           </div>
-          <p className="text-stone-500 text-xs font-medium">數據規模：{projects.length} 案場 | 最後運算：{lastSync ? lastSync.toLocaleTimeString() : 'N/A'}</p>
+          <p className="text-stone-500 text-xs font-medium">
+            雲端：{lastCloudSync || '未同步'} |
+            狀態：{isMasterTab ? '系統主控 (Master)' : '觀察模式 (Secondary)'}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-stone-200 shadow-sm">
@@ -281,6 +288,26 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], onConvertLe
           </button>
         </div>
       </header>
+
+      {cloudError === '需要重新驗證' && (
+        <div className="bg-amber-600 text-white p-6 rounded-[2rem] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 animate-pulse">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+              <ShieldAlert size={32} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black">雲端同步已暫停</h3>
+              <p className="text-xs font-bold text-amber-100 mt-1">偵測到安全性授權過期，請點擊右側按鈕手動同步以恢復自動連線。</p>
+            </div>
+          </div>
+          <button
+            onClick={onRetrySync}
+            className="w-full md:w-auto px-8 py-4 bg-white text-amber-600 rounded-2xl font-black shadow-lg hover:bg-stone-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            <RefreshCw size={18} /> 立即手動同步
+          </button>
+        </div>
+      )}
 
       {/* AI Portfolio Modal */}
       {showAIModal && portfolioAnalysis && (

@@ -144,6 +144,33 @@ const App: React.FC = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
   const [aiApiKey, setAiApiKey] = useState(localStorage.getItem('GEMINI_API_KEY') || '');
+  const [isMasterTab, setIsMasterTab] = useState(false);
+  const tabId = useMemo(() => Math.random().toString(36).substring(7), []);
+
+  // Elect Master Tab to handle sync and prevent conflicts
+  useEffect(() => {
+    const electMaster = () => {
+      const now = Date.now();
+      const lockKey = 'bt_sync_lock';
+      const lockData = JSON.parse(localStorage.getItem(lockKey) || '{}');
+
+      // If no master or current master is stale (> 8s) or is us, we take/keep the lead
+      if (!lockData.id || (now - lockData.timestamp > 8000) || lockData.id === tabId) {
+        localStorage.setItem(lockKey, JSON.stringify({ id: tabId, timestamp: now }));
+        if (!isMasterTab) setIsMasterTab(true);
+      } else {
+        if (isMasterTab) setIsMasterTab(false);
+      }
+    };
+
+    electMaster();
+    const interval = setInterval(electMaster, 5000);
+    window.addEventListener('beforeunload', () => {
+      const lockData = JSON.parse(localStorage.getItem('bt_sync_lock') || '{}');
+      if (lockData.id === tabId) localStorage.removeItem('bt_sync_lock');
+    });
+    return () => clearInterval(interval);
+  }, [tabId, isMasterTab]);
 
   const saveAiApiKey = () => {
     localStorage.setItem('GEMINI_API_KEY', aiApiKey);
@@ -202,30 +229,37 @@ const App: React.FC = () => {
 
         // If remote is newer, we want to update the object, but PRESERVE deep arrays if it's a project
         if (remoteTime > localTime) {
-          // Special handling for Projects
-          if ('dailyLogs' in localItem || 'comments' in localItem) {
+          // Special handling for Projects and Approvals (Objects with nested arrays)
+          if ('dailyLogs' in localItem || 'workflowLogs' in localItem) {
             const l = localItem as any;
             const r = remoteItem as any;
 
             // Combine arrays without duplicates
             const combine = (arr1: any[] = [], arr2: any[] = []) => {
               const map = new Map();
-              [...arr1, ...arr2].forEach(x => { if (x.id) map.set(x.id, x); });
+              [...arr1, ...arr2].forEach(x => { if (x.id || x.timestamp || x.step) map.set(x.id || (x.timestamp + (x.step || '')), x); });
               return Array.from(map.values()).sort((a, b) =>
-                new Date(b.timestamp || b.date || 0).getTime() - new Date(a.timestamp || a.date || 0).getTime()
+                new Date(b.timestamp || b.date || b.createdAt || 0).getTime() - new Date(a.timestamp || a.date || a.createdAt || 0).getTime()
               );
             };
 
-            merged[localIndex] = {
-              ...remoteItem,
-              dailyLogs: combine(l.dailyLogs, r.dailyLogs),
-              comments: combine(l.comments, r.comments),
-              files: combine(l.files, r.files),
-              expenses: combine(l.expenses, r.expenses),
-              payments: combine(l.payments, r.payments),
-              checklist: combine(l.checklist, r.checklist),
-              workAssignments: combine(l.workAssignments, r.workAssignments)
-            } as any;
+            if ('dailyLogs' in localItem) {
+              merged[localIndex] = {
+                ...remoteItem,
+                dailyLogs: combine(l.dailyLogs, r.dailyLogs),
+                comments: combine(l.comments, r.comments),
+                files: combine(l.files, r.files),
+                expenses: combine(l.expenses, r.expenses),
+                payments: combine(l.payments, r.payments),
+                checklist: combine(l.checklist, r.checklist),
+                workAssignments: combine(l.workAssignments, r.workAssignments)
+              } as any;
+            } else if ('workflowLogs' in localItem) {
+              merged[localIndex] = {
+                ...remoteItem,
+                workflowLogs: combine(l.workflowLogs, r.workflowLogs)
+              } as any;
+            }
           } else {
             merged[localIndex] = remoteItem;
           }
@@ -243,42 +277,20 @@ const App: React.FC = () => {
     // Filter out null/undefined or malformed project objects first
     const validProjects = projects.filter(p => p && typeof p === 'object' && (p.id || p.name));
 
-    // 0. ID CORRECTION: Enforce correct IDs for specific projects
+    // 0. ID CORRECTION: Removed aggressive remapping rules to prevent sync oscillation.
     let processed = validProjects.map(p => {
-      // Rules for Zhishan and Guishan REMOVED to respect user's manual settings.
-
-      // Rule 3: Fix Guangfu North (004)
-      if (p.name.includes('光復北路') || p.id === 'BNI2601908') return { ...p, id: 'BNI2601004' };
-      // Rule 4: Fix Guangfu South (005)
-      if (p.name.includes('光復南路') || p.id === 'OC2601909') return { ...p, id: 'OC2601005' };
-      return p;
-    });
-
-    // NOTE: Removed automatic ID migration/formatting logic to strictily respect user defined IDs.
-
-    processed = processed.map(p => {
       let updatedProject = { ...p };
-
-      // CRITICAL FIX: If ID became "JW2601907" or legacy match, remap it to "JW2601003"
-      if (updatedProject.id === 'JW2601907' || updatedProject.name.includes('樹林區三龍街')) updatedProject.id = 'JW2601003';
 
       // MIGRATION: Fix legacy status '驗收中' to new '施工完成、待驗收'
       if (updatedProject.status === '驗收中' as any) updatedProject.status = ProjectStatus.INSPECTION;
 
-      return updatedProject;
-    });
+      // Ensure fundamental arrays exist to prevent merge errors
+      if (!updatedProject.dailyLogs) updatedProject.dailyLogs = [];
+      if (!updatedProject.comments) updatedProject.comments = [];
+      if (!updatedProject.files) updatedProject.files = [];
+      if (!updatedProject.phases) updatedProject.phases = [];
 
-    // REPAIR: Safely restore incorrectly shortened IDs to user's desired format
-    // BNI24... -> BNI2024...
-    // BNI25... -> BNI2025...
-    processed = processed.map(p => {
-      if (p.id.startsWith('BNI24')) {
-        return { ...p, id: p.id.replace('BNI24', 'BNI2024') };
-      }
-      if (p.id.startsWith('BNI25')) {
-        return { ...p, id: p.id.replace('BNI25', 'BNI2025') };
-      }
-      return p;
+      return updatedProject;
     });
 
     // Deduplicate and Deep Merge projects by ID
@@ -351,6 +363,12 @@ const App: React.FC = () => {
     }
     if (cloudData.payroll) {
       setPayrollRecords(prev => mergeData(prev, cloudData.payroll || []));
+    }
+    if (cloudData.approvalRequests) {
+      setApprovalRequests(prev => mergeData(prev, cloudData.approvalRequests || []));
+    }
+    if (cloudData.approvalTemplates) {
+      setApprovalTemplates(prev => mergeData(prev, cloudData.approvalTemplates || []));
     }
     // Activity logs 採取單純合併去重
     setActivityLogs(prev => {
@@ -682,10 +700,21 @@ const App: React.FC = () => {
       } catch (e) {
         setIsInitializing(false);
       }
-      return () => clearTimeout(safetyTimeout);
+
+      // Add Global Event Listeners for Manual Sync/Restore (from Sidebar)
+      const onManualSync = () => handleCloudSync();
+      const onManualRestore = () => handleCloudRestore();
+      window.addEventListener('TRIGGER_CLOUD_SYNC', onManualSync);
+      window.addEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
+
+      return () => {
+        clearTimeout(safetyTimeout);
+        window.removeEventListener('TRIGGER_CLOUD_SYNC', onManualSync);
+        window.removeEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
+      };
     };
     startup();
-  }, [loadSystemData]);
+  }, [loadSystemData, handleCloudSync]);
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
   const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates });
@@ -724,35 +753,36 @@ const App: React.FC = () => {
       }
 
       // 在存檔前先檢查雲端是否有更新
-      const metadata = await googleDriveService.getFileMetadata();
+      const metadata = await googleDriveService.getFileMetadata(true);
       if (metadata && lastRemoteModifiedTime.current && metadata.modifiedTime !== lastRemoteModifiedTime.current) {
         console.log('[Sync] Detected newer cloud version, merging before save...');
-        const cloudData = await googleDriveService.loadFromCloud();
+        const cloudData = await googleDriveService.loadFromCloud(true);
         if (cloudData) {
           updateStateWithMerge(cloudData);
+          lastRemoteModifiedTime.current = metadata.modifiedTime;
         }
       }
 
       const success = await googleDriveService.saveToCloud({
-        projects,
-        customers,
-        teamMembers,
-        vendors,
-        leads,
-        inventory: inventoryItems,
-        locations: inventoryLocations,
-        purchaseOrders: purchaseOrders,
-        attendance: attendanceRecords,
-        payroll: payrollRecords,
-        approvalRequests,
-        approvalTemplates,
-        activityLogs,
+        projects: dataRef.current.projects,
+        customers: dataRef.current.customers,
+        teamMembers: dataRef.current.teamMembers,
+        vendors: dataRef.current.vendors,
+        leads: dataRef.current.leads,
+        inventory: dataRef.current.inventoryItems,
+        locations: dataRef.current.inventoryLocations,
+        purchaseOrders: dataRef.current.purchaseOrders,
+        attendance: dataRef.current.attendanceRecords,
+        payroll: dataRef.current.payrollRecords,
+        approvalRequests: dataRef.current.approvalRequests,
+        approvalTemplates: dataRef.current.approvalTemplates,
+        activityLogs: dataRef.current.activityLogs,
         lastUpdated: new Date().toISOString(),
         userEmail: user?.email
-      });
+      }, true);
 
       if (success) {
-        const newMetadata = await googleDriveService.getFileMetadata();
+        const newMetadata = await googleDriveService.getFileMetadata(true);
         if (newMetadata) lastRemoteModifiedTime.current = newMetadata.modifiedTime;
         setLastCloudSync(new Date().toLocaleTimeString());
         setCloudError(null);
@@ -769,10 +799,14 @@ const App: React.FC = () => {
         setCloudError(`同步失敗(${status || '?'})`);
         if (isSyncing) alert(`上傳失敗 (${status})，請檢查網路或稍後再試。`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Cloud sync failed:', e);
-      setCloudError('同步發生錯誤');
-      if (isSyncing) alert('同步發生錯誤，請檢查網路連線。');
+      if (e.message === 'AUTH_INTERACTION_REQUIRED') {
+        setCloudError('需要重新驗證');
+      } else {
+        setCloudError('同步發生錯誤');
+      }
+      if (isSyncing && e.message !== 'AUTH_INTERACTION_REQUIRED') alert('同步發生錯誤，請檢查網路連線。');
     } finally {
       isSyncingRef.current = false;
       setIsSyncing(false); // STOP UI SPINNER
@@ -810,7 +844,7 @@ const App: React.FC = () => {
           storageService.setItem('bt_team', teamData),
           storageService.setItem('bt_customers', cloudData.customers || []),
           storageService.setItem('bt_vendors', cloudData.vendors || []),
-          storageService.setItem('bt_vendors', cloudData.vendors || []),
+          storageService.setItem('bt_leads', cloudData.leads || []),
           storageService.setItem('bt_inventory', cloudData.inventory || []),
           storageService.setItem('bt_locations', cloudData.locations || []),
           storageService.setItem('bt_orders', cloudData.purchaseOrders || []),
@@ -827,10 +861,28 @@ const App: React.FC = () => {
           }, 800);
         }
       } else {
-        await handleCloudSync();
       }
     } catch (err: any) {
       setCloudError('驗證失敗');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCloudRestore = async () => {
+    try {
+      setIsSyncing(true);
+      const cloudData = await googleDriveService.loadFromCloud(false);
+      if (cloudData) {
+        updateStateWithMerge(cloudData);
+        const metadata = await googleDriveService.getFileMetadata(false);
+        if (metadata) lastRemoteModifiedTime.current = metadata.modifiedTime;
+        alert('✅ 已從雲端強制同步最新數據。');
+      } else {
+        alert('❌ 雲端無可用數據。');
+      }
+    } catch (e) {
+      alert('還原失敗，請檢查網路。');
     } finally {
       setIsSyncing(false);
     }
@@ -871,26 +923,26 @@ const App: React.FC = () => {
     }
 
     // 智慧雲端自動同步 (當資料變更後 10 秒才觸發)
-    if (isCloudConnected && !cloudError && user.role !== 'Guest') {
+    if (isCloudConnected && !cloudError && user.role !== 'Guest' && isMasterTab) {
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
       syncTimeoutRef.current = setTimeout(() => {
         handleCloudSync();
-      }, 3000);
+      }, 10000);
     }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, currentDept, approvalRequests, approvalTemplates]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, currentDept, approvalRequests, approvalTemplates, isMasterTab]);
 
   // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
   useEffect(() => {
-    if (!isCloudConnected || user?.role === 'Guest' || !initialSyncDone) return;
+    if (!isCloudConnected || user?.role === 'Guest' || !initialSyncDone || !isMasterTab) return;
 
     const heartbeat = setInterval(async () => {
       if (isSyncingRef.current) return;
 
       try {
-        const metadata = await googleDriveService.getFileMetadata();
+        const metadata = await googleDriveService.getFileMetadata(true);
         if (metadata && metadata.modifiedTime !== lastRemoteModifiedTime.current) {
-          console.log('[Heartbeat] Cloud data updated by another user, syncing...');
-          const cloudData = await googleDriveService.loadFromCloud();
+          console.log('[Heartbeat] Cloud data updated by another user or tab, syncing...');
+          const cloudData = await googleDriveService.loadFromCloud(true);
           if (cloudData) {
             updateStateWithMerge(cloudData);
             lastRemoteModifiedTime.current = metadata.modifiedTime;
@@ -903,7 +955,7 @@ const App: React.FC = () => {
     }, 45000);
 
     return () => clearInterval(heartbeat);
-  }, [isCloudConnected, user?.role, initialSyncDone, updateStateWithMerge]);
+  }, [isCloudConnected, user?.role, initialSyncDone, updateStateWithMerge, isMasterTab]);
 
   const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
     if (user?.role === 'Guest') return;
@@ -1426,6 +1478,10 @@ const App: React.FC = () => {
               {activeTab === 'dashboard' && moduleService.isModuleEnabled(ModuleId.DASHBOARD) && <Dashboard
                 projects={filteredData.projects}
                 leads={leads}
+                cloudError={cloudError}
+                lastCloudSync={lastCloudSync}
+                isMasterTab={isMasterTab}
+                onRetrySync={handleCloudSync}
                 onConvertLead={handleConvertLead}
                 onProjectClick={(id) => { setSelectedProjectId(id); setActiveTab('projects'); }}
               />}
