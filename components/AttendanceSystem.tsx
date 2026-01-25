@@ -9,6 +9,8 @@ interface AttendanceSystemProps {
     onRecord: (type: 'work-start' | 'work-end', location: { lat: number; lng: number; address?: string }) => void;
 }
 
+const GOOGLE_MAPS_API_KEY = (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY) || 'AIzaSyAyzTWbM4BCrbyT32hoUT2kpe2vNIm95xc';
+
 const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, records, onRecord }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [location, setLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
@@ -109,16 +111,20 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
             async (position) => {
                 const { latitude, longitude } = position.coords;
 
-                // Try to get address using Google Maps API if available via reverse geocoding
-                // Or just use coords
-                let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)} `;
+                let address = '';
 
-                // Simple mock reverse geocode if no API
+                // Call Google Maps Geocoding API for reverse geocoding
                 try {
-                    // Optional: Call Google Maps Geocoding API here if key exists
-                    // For now, we store coordinates
+                    const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}&language=zh-TW`);
+                    const data = await response.json();
+                    if (data.status === 'OK' && data.results.length > 0) {
+                        address = data.results[0].formatted_address;
+                    } else {
+                        address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                    }
                 } catch (e) {
-                    console.error(e);
+                    console.error('Reverse Geocoding Error:', e);
+                    address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
                 }
 
                 setLocation({ lat: latitude, lng: longitude, address });
@@ -155,6 +161,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
 
     const safeLocation = (loc: any) => {
         if (!loc) return null;
+        if (loc.address) return loc.address;
         if (typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return null;
         return `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
     };
@@ -262,7 +269,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                     {location && (
                         <div>
                             <span className="font-bold block">定位成功</span>
-                            <span className="text-xs opacity-75">緯度: {location.lat.toFixed(6)}, 經度: {location.lng.toFixed(6)}</span>
+                            <span className="text-xs opacity-75">{location.address || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`}</span>
                         </div>
                     )}
                 </div>
