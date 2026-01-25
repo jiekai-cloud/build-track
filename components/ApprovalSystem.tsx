@@ -112,12 +112,14 @@ const ApprovalSystem: React.FC<ApprovalSystemProps> = ({
                     >
                         <History size={14} /> 我的申請
                     </button>
-                    <button
-                        onClick={() => setActiveTab('templates')}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${activeTab === 'templates' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-indigo-600'}`}
-                    >
-                        <Settings size={14} /> 流程設定
-                    </button>
+                    {['SuperAdmin', 'Admin', 'DeptAdmin', 'Manager', 'AdminStaff'].includes(currentUser.role) && (
+                        <button
+                            onClick={() => setActiveTab('templates')}
+                            className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${activeTab === 'templates' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-indigo-600'}`}
+                        >
+                            <Settings size={14} /> 流程設定
+                        </button>
+                    )}
                 </div>
             </div>
 
