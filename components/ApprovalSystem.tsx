@@ -375,6 +375,21 @@ const ApprovalSystem: React.FC<ApprovalSystemProps> = ({
                                             onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
                                         />
                                     )}
+                                    {field.type === 'teamMember' && (
+                                        <select
+                                            required={field.required}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold"
+                                            value={formData[field.key] || ''}
+                                            onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
+                                        >
+                                            <option value="">請選擇團隊成員...</option>
+                                            {teamMembers.map(member => (
+                                                <option key={member.id} value={member.name}>
+                                                    {member.name} - {member.role}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
                             ))}
 
@@ -608,6 +623,7 @@ const ApprovalSystem: React.FC<ApprovalSystemProps> = ({
                                                 <option value="text">文字輸入</option>
                                                 <option value="number">數字</option>
                                                 <option value="date">日期</option>
+                                                <option value="teamMember">團隊成員</option>
                                             </select>
                                             <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 pb-2">
                                                 <input type="checkbox" checked={field.required} onChange={e => {

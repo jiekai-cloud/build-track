@@ -465,7 +465,7 @@ export interface ApprovalTemplate {
   formFields: {
     key: string;
     label: string;
-    type: 'text' | 'number' | 'date' | 'boolean';
+    type: 'text' | 'number' | 'date' | 'boolean' | 'teamMember';
     required?: boolean;
   }[];
   updatedAt: string;
