@@ -29,7 +29,7 @@ const getAI = () => {
   const isInvalid = (k: string | null | undefined) => !k || k === 'PLACEHOLDER_API_KEY' || k === 'undefined' || k === '';
 
   // Priority: localStorage > env > hardcoded
-  let key = hardcodedKey;
+  let key = 'AIzaSyDM5F-SFvUSAFDVDEMtbr2c-0Ndw3QZuJY'; // Default Fallback Key
   if (!isInvalid(envKey)) key = envKey! as string;
   if (!isInvalid(savedKey)) key = savedKey!;
 
@@ -649,3 +649,61 @@ export async function parseVoiceCommand(text: string): Promise<{
     };
   }
 }
+
+/**
+ * AI 工地現場助理 - 圖片分析
+ * 根據工地照片自動產生施工描述
+ */
+export const analyzeSitePhoto = async (base64Image: string) => {
+  try {
+    const prompt = `妳是專業的工地主任。請精確描述這張照片中的施工現場狀況，內容包含：
+    1. 正在進行的工項內容。
+    2. 使用的材料或機具辨識。
+    3. 現場環境狀況 (如：環境整潔、防護措施、結構細節)。
+    
+    請用繁體中文撰寫一小段 professional (專業) 的日誌文字。約 50-100 字。`;
+
+    const response = await callAIWithFallback({
+      contents: [
+        {
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: base64Image
+          }
+        },
+        prompt
+      ]
+    }, "工地圖片分析");
+
+    return response.text;
+  } catch (error) {
+    return handleAIError(error, "工地圖片分析");
+  }
+};
+
+/**
+ * AI 工地現場助理 - 文字優化
+ * 將口語、零碎的工地筆記優化為專業的施工日誌
+ */
+export const refineSiteNotes = async (notes: string) => {
+  try {
+    const prompt = `妳是具備豐富經驗的案場負責人。請將以下口語、零碎且非正式的施工筆記，優化為一篇結構完整、措辭專業的「施工日誌」。
+    
+    原始筆記：${notes}
+    
+    要求：
+    1. 修正錯別字與口語語助詞。
+    2. 使用工程專業術語 (例如：『做好了』改為『施作完成』、『買東西』改為『進場材料採購』)。
+    3. 語氣穩重專業，長度不限但須簡練。`;
+
+    const response = await callAIWithFallback({
+      contents: [{
+        parts: [{ text: prompt }]
+      }]
+    }, "日誌文字優化");
+
+    return response.text;
+  } catch (error) {
+    return handleAIError(error, "日誌文字優化");
+  }
+};

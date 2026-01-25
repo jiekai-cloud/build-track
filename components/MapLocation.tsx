@@ -32,8 +32,8 @@ const MapLocation: React.FC<MapLocationProps> = ({ address, lat = 25.0330, lng =
 
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-    const hasApiKey = apiKey && apiKey !== 'undefined' && apiKey !== '';
+    const apiKey = (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY) || process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyAyzTWbM4BCrbyT32hoUT2kpe2vNIm95xc';
+    const hasApiKey = apiKey && apiKey !== 'undefined' && apiKey !== '' && apiKey !== 'PLACEHOLDER';
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

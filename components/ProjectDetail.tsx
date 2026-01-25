@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, Plus, Minus, ZoomOut, AlertTriangle, Wallet
 } from 'lucide-react';
 import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage } from '../types';
-import { suggestProjectSchedule, searchNearbyResources, analyzeProjectFinancials, parseScheduleFromImage, generatePreConstructionPrep, scanReceipt, analyzeQuotationItems } from '../services/geminiService';
+import { suggestProjectSchedule, searchNearbyResources, analyzeProjectFinancials, parseScheduleFromImage, generatePreConstructionPrep, scanReceipt, analyzeQuotationItems, analyzeSitePhoto, refineSiteNotes } from '../services/geminiService';
 import GanttChart from './GanttChart';
 import MapLocation from './MapLocation';
 import DefectImprovement from './DefectImprovement';
@@ -245,6 +245,53 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
   const [logPhotos, setLogPhotos] = useState<string[]>([]);
   const [isUploadingLog, setIsUploadingLog] = useState(false);
   const logFileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isRefiningNotes, setIsRefiningNotes] = useState(false);
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+
+  const handleRefineNotes = async () => {
+    if (!logContent.trim()) return;
+    setIsRefiningNotes(true);
+    try {
+      const refined = await refineSiteNotes(logContent);
+      if (refined) {
+        setLogContent(refined);
+      }
+    } catch (err) {
+      console.error('優化日誌失敗:', err);
+      alert('AI 優化失敗，請檢查金鑰或網路連線');
+    } finally {
+      setIsRefiningNotes(false);
+    }
+  };
+
+  const handleAnalyzePhoto = async (photoUrl: string) => {
+    setIsAnalyzingPhoto(true);
+    try {
+      // 由於 Gemini 需要 base64，我們需要先抓取圖片轉成 base64
+      const response = await fetch(photoUrl);
+      const blob = await response.blob();
+      const reader = new FileReader();
+
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => {
+          const res = reader.result as string;
+          resolve(res.split(',')[1]);
+        };
+        reader.readAsDataURL(blob);
+      });
+
+      const analysis = await analyzeSitePhoto(base64);
+      if (analysis) {
+        setLogContent(prev => prev ? `${prev}\n\n[AI 分析]\n${analysis}` : analysis);
+      }
+    } catch (err) {
+      console.error('分析照片失敗:', err);
+      alert('AI 分析照片失敗');
+    } finally {
+      setIsAnalyzingPhoto(false);
+    }
+  };
 
   const handleDeleteAssignment = (assignmentId: string) => {
     if (window.confirm('確定要刪除這筆派工紀錄嗎？此動作無法復原。')) {
@@ -753,17 +800,28 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                     setLogContent('');
                     setLogPhotos([]);
                   }} className="space-y-4">
-                    <textarea
-                      value={logContent}
-                      onChange={(e) => setLogContent(e.target.value)}
-                      required
-                      placeholder="輸入討論內容或紀錄..."
-                      className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-4 py-3 text-xs font-bold text-stone-900 outline-none focus:ring-2 focus:ring-blue-600/20 placeholder:text-stone-300 resize-none h-32"
-                    ></textarea>
+                    <div className="relative">
+                      <textarea
+                        value={logContent}
+                        onChange={(e) => setLogContent(e.target.value)}
+                        required
+                        placeholder="輸入討論內容或紀錄... (您也可以輸入口語筆記後點擊 AI 優化)"
+                        className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-4 py-3 text-xs font-bold text-stone-900 outline-none focus:ring-2 focus:ring-blue-600/20 placeholder:text-stone-300 resize-none h-32"
+                      ></textarea>
+                      <button
+                        type="button"
+                        onClick={handleRefineNotes}
+                        disabled={isRefiningNotes || !logContent.trim()}
+                        className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-indigo-700 transition-all disabled:opacity-50 shadow-md group"
+                      >
+                        {isRefiningNotes ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} className="group-hover:rotate-12 transition-transform" />}
+                        {isRefiningNotes ? 'AI 優化中' : 'AI 專業優化'}
+                      </button>
+                    </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[9px] font-black text-stone-400 uppercase tracking-widest ml-1">現場照片 (可多選)</label>
+                        <label className="text-[9px] font-black text-stone-400 uppercase tracking-widest ml-1">現場照片 (點擊 AI 分析內容)</label>
                         <span className="text-[9px] text-stone-400">{logPhotos.length} 張照片</span>
                       </div>
 
@@ -771,13 +829,24 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                         {logPhotos.map((url, idx) => (
                           <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-stone-200 group">
                             <img src={url} alt={`Photo ${idx}`} className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setLogPhotos(prev => prev.filter((_, i) => i !== idx))}
-                              className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X size={10} />
-                            </button>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleAnalyzePhoto(url)}
+                                disabled={isAnalyzingPhoto}
+                                title="AI 分析這張照片"
+                                className="bg-indigo-600 text-white p-1 rounded-md hover:bg-indigo-700 transition-colors"
+                              >
+                                <Sparkles size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setLogPhotos(prev => prev.filter((_, i) => i !== idx))}
+                                className="bg-rose-600 text-white p-1 rounded-md hover:bg-rose-700 transition-colors"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
                           </div>
                         ))}
                         <button
