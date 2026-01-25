@@ -591,7 +591,7 @@ const App: React.FC = () => {
       })));
 
       // Load other entities
-      const [customersData, initialTeamData, vendorsData, leadsData, logsData, inventoryData, locationsData, purchaseOrdersData, attendanceData, payrollData] = await Promise.all([
+      const [customersData, initialTeamData, vendorsData, leadsData, logsData, inventoryData, locationsData, purchaseOrdersData, attendanceData, payrollData, approvalRequestsData, approvalTemplatesData] = await Promise.all([
         storageService.getItem<Customer[]>(`${prefix}bt_customers`, []),
         storageService.getItem<TeamMember[]>(`${prefix}bt_team`, defaultTeam),
         storageService.getItem<Vendor[]>(`${prefix}bt_vendors`, []),
@@ -671,50 +671,7 @@ const App: React.FC = () => {
     }
   }, [normalizeProjects, autoConnectCloud]);
 
-  // Startup Effect
-  useEffect(() => {
-    const startup = async () => {
-      const safetyTimeout = setTimeout(() => {
-        setIsInitializing(false);
-        console.warn('啟動超時：進入自動跳過模式');
-      }, 5000);
 
-      try {
-        const savedUser = localStorage.getItem('bt_user');
-        if (savedUser) {
-          try {
-            const parsedUser = JSON.parse(savedUser);
-            setUser(parsedUser);
-            const dept = parsedUser.department || 'FirstDept';
-            setCurrentDept(dept);
-            setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
-            loadSystemData(dept);
-          } catch (e) {
-            console.error('Saved user parse error', e);
-            localStorage.removeItem('bt_user');
-            setIsInitializing(false);
-          }
-        } else {
-          setIsInitializing(false);
-        }
-      } catch (e) {
-        setIsInitializing(false);
-      }
-
-      // Add Global Event Listeners for Manual Sync/Restore (from Sidebar)
-      const onManualSync = () => handleCloudSync();
-      const onManualRestore = () => handleCloudRestore();
-      window.addEventListener('TRIGGER_CLOUD_SYNC', onManualSync);
-      window.addEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
-
-      return () => {
-        clearTimeout(safetyTimeout);
-        window.removeEventListener('TRIGGER_CLOUD_SYNC', onManualSync);
-        window.removeEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
-      };
-    };
-    startup();
-  }, [loadSystemData, handleCloudSync]);
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
   const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates });
@@ -850,6 +807,8 @@ const App: React.FC = () => {
           storageService.setItem('bt_orders', cloudData.purchaseOrders || []),
           storageService.setItem('bt_attendance', cloudData.attendance || []),
           storageService.setItem('bt_payroll', cloudData.payroll || []),
+          storageService.setItem('bt_approval_requests', cloudData.approvalRequests || []),
+          storageService.setItem('bt_approval_templates', cloudData.approvalTemplates || []),
           storageService.setItem('bt_logs', cloudData.activityLogs || [])
         ]);
 
@@ -957,6 +916,60 @@ const App: React.FC = () => {
     return () => clearInterval(heartbeat);
   }, [isCloudConnected, user?.role, initialSyncDone, updateStateWithMerge, isMasterTab]);
 
+  // Startup Effect
+  const hasStartedRef = React.useRef(false);
+  useEffect(() => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+
+    let safetyTimeout: any;
+
+    const startup = async () => {
+      safetyTimeout = setTimeout(() => {
+        setIsInitializing(false);
+        console.warn('啟動超時：進入自動跳過模式');
+      }, 5000);
+
+      try {
+        const savedUser = localStorage.getItem('bt_user');
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+            const dept = parsedUser.department || 'FirstDept';
+            setCurrentDept(dept);
+            setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
+            loadSystemData(dept);
+          } catch (e) {
+            console.error('Saved user parse error', e);
+            localStorage.removeItem('bt_user');
+            setIsInitializing(false);
+          }
+        } else {
+          setIsInitializing(false);
+        }
+      } catch (e) {
+        setIsInitializing(false);
+      }
+    };
+    startup();
+
+    return () => clearTimeout(safetyTimeout);
+  }, [loadSystemData]);
+
+  // Dedicated useEffect for Manual Sync/Restore Listeners (Decoupled from Startup)
+  useEffect(() => {
+    const onManualSync = () => handleCloudSync();
+    const onManualRestore = () => handleCloudRestore();
+    window.addEventListener('TRIGGER_CLOUD_SYNC', onManualSync);
+    window.addEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
+
+    return () => {
+      window.removeEventListener('TRIGGER_CLOUD_SYNC', onManualSync);
+      window.removeEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
+    };
+  }, [handleCloudSync, handleCloudRestore]);
+
   const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
     if (user?.role === 'Guest') return;
     const project = projects.find(p => p.id === projectId);
@@ -997,8 +1010,14 @@ const App: React.FC = () => {
               storageService.setItem('bt_customers', cloudData.customers || []),
               storageService.setItem('bt_team', cloudData.teamMembers || []),
               storageService.setItem('bt_vendors', cloudData.vendors || []),
+              storageService.setItem('bt_leads', cloudData.leads || []),
               storageService.setItem('bt_inventory', cloudData.inventory || []),
-              storageService.setItem('bt_locations', cloudData.locations || [])
+              storageService.setItem('bt_locations', cloudData.locations || []),
+              storageService.setItem('bt_orders', cloudData.purchaseOrders || []),
+              storageService.setItem('bt_attendance', cloudData.attendance || []),
+              storageService.setItem('bt_payroll', cloudData.payroll || []),
+              storageService.setItem('bt_approval_requests', cloudData.approvalRequests || []),
+              storageService.setItem('bt_approval_templates', cloudData.approvalTemplates || [])
             ]);
             alert('✅ 雲端還原成功！\n\n所有本地資料已強制覆蓋為雲端版本。頁面將重新整理。');
             window.location.reload();
