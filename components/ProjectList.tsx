@@ -381,6 +381,11 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
       const matchYear = yearFilter === 'all' || pYear === yearFilter;
 
+      // DEBUG: Print parsing result for first few items or if filter is active
+      if (yearFilter !== 'all') {
+        console.log(`Debug Year Parse: ID=${p.id}, Parsed=${pYear}, Match=${matchYear}`);
+      }
+
       return matchSearch && matchStatus && matchDeleted && matchYear;
     });
 
