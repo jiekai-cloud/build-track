@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, forwardRef, useImperativeHandle } from 'react';
 import { Project, TeamMember, AttendanceRecord, ProjectStatus, User } from '../types';
 import { Briefcase, Calendar, Plus, Search, Filter, ArrowUpRight, TrendingUp, DollarSign, Users, AlertTriangle, Wallet, LayoutGrid, List, FileSpreadsheet, RotateCcw, XCircle, Pencil, Trash2 } from 'lucide-react';
 
 // Ag-Grid Imports
 import { AgGridReact } from 'ag-grid-react';
-import { ColDef, ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+import { ColDef, ModuleRegistry, AllCommunityModule, IFilterParams } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
@@ -107,6 +107,49 @@ const CardView = ({ projects, isReadOnly, onDetailClick, onEditClick, onDeleteCl
   );
 };
 
+// Custom Year Filter Component
+const YearFilter = forwardRef((props: IFilterParams, ref) => {
+  const [year, setYear] = useState('All');
+
+  useImperativeHandle(ref, () => ({
+    isFilterActive() {
+      return year !== 'All';
+    },
+    doesFilterPass(params: any) {
+      return params.data.calculatedYear == year;
+    },
+    getModel() {
+      return { value: year };
+    },
+    setModel(model: any) {
+      setYear(model ? model.value : 'All');
+    }
+  }));
+
+  const onChange = (event: any) => {
+    setYear(event.target.value);
+    props.filterChangedCallback();
+  }
+
+  return (
+    <div className="p-4 w-[200px] flex flex-col gap-2">
+      <div className="text-[10px] font-black text-stone-400 uppercase tracking-widest">選擇年份 Select Year</div>
+      <select
+        value={year}
+        onChange={onChange}
+        className="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs font-bold outline-none cursor-pointer hover:border-blue-500 transition-colors"
+        onPointerDown={(e) => e.stopPropagation()} // Prevent grid sorting when clicking
+      >
+        <option value="All">全部年份 (All)</option>
+        <option value="2026">2026 年度</option>
+        <option value="2025">2025 年度</option>
+        <option value="2024">2024 年度</option>
+        <option value="others">其他</option>
+      </select>
+    </div>
+  );
+});
+
 // Sub-component: Ag-Grid Table View (Replaced)
 const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick }: any) => {
   const columnDefs: ColDef<ProjectWithFinancials>[] = [
@@ -157,7 +200,7 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick }: any)
       headerName: "年度",
       field: "calculatedYear",
       width: 100,
-      filter: true,
+      filter: YearFilter,
       cellClass: "font-mono font-bold text-stone-500 text-xs flex justify-center items-center"
     },
     {
