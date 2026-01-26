@@ -358,23 +358,28 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
       let pYear = 'others';
 
-      // 1. Try to match full 4-digit year in ID (e.g. BNI2024001 -> 2024)
-      const yearFullMatch = p.id.match(/(20\d{2})/);
-
-      if (yearFullMatch) {
-        pYear = yearFullMatch[1];
+      // 0. Priority: Manual "Attributed Year" field
+      if (p.year && p.year.trim() !== '') {
+        pYear = p.year;
       } else {
-        // 2. Try to match 2-digit year after letters (e.g. JW2601003 -> 26 -> 2026)
-        const yearShortMatch = p.id.match(/^[A-Za-z]+(\d{2})/);
-        if (yearShortMatch) {
-          pYear = `20${yearShortMatch[1]}`;
-        } else if (p.startDate) {
-          pYear = p.startDate.split('-')[0];
+        // 1. Try to match full 4-digit year in ID (e.g. BNI2024001 -> 2024)
+        const yearFullMatch = p.id.match(/(20\d{2})/);
+
+        if (yearFullMatch) {
+          pYear = yearFullMatch[1];
         } else {
-          // Handle both createdAt and createdDate (legacy data)
-          const d = p.createdAt || (p as any).createdDate;
-          if (d) {
-            pYear = new Date(d).getFullYear().toString();
+          // 2. Try to match 2-digit year after letters (e.g. JW2601003 -> 26 -> 2026)
+          const yearShortMatch = p.id.match(/^[A-Za-z]+(\d{2})/);
+          if (yearShortMatch) {
+            pYear = `20${yearShortMatch[1]}`;
+          } else if (p.startDate) {
+            pYear = p.startDate.split('-')[0];
+          } else {
+            // Handle both createdAt and createdDate (legacy data)
+            const d = p.createdAt || (p as any).createdDate;
+            if (d) {
+              pYear = new Date(d).getFullYear().toString();
+            }
           }
         }
       }
@@ -383,7 +388,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
       // DEBUG: Print parsing result for first few items or if filter is active
       if (yearFilter !== 'all') {
-        console.log(`Debug Year Parse: ID=${p.id}, Parsed=${pYear}, Match=${matchYear}`);
+        console.log(`Debug Year Parse: ID=${p.id}, ManualYear=${p.year}, FinalYear=${pYear}, Match=${matchYear}`);
       }
 
       return matchSearch && matchStatus && matchDeleted && matchYear;
