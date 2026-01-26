@@ -357,14 +357,26 @@ const ProjectList: React.FC<ProjectListProps> = ({
       const matchDeleted = showDeleted ? p.deletedAt : !p.deletedAt;
 
       let pYear = 'others';
-      // Priority 1: Extract from ID (e.g. BNI26... -> 2026)
-      const idMatch = p.id.match(/[A-Za-z]+(\d{2})/);
-      if (idMatch && idMatch[1]) {
-        pYear = `20${idMatch[1]}`;
-      } else if (p.startDate) {
-        pYear = p.startDate.split('-')[0];
-      } else if (p.createdAt) {
-        pYear = new Date(p.createdAt).getFullYear().toString();
+
+      // 1. Try to match full 4-digit year in ID (e.g. BNI2024001 -> 2024)
+      const yearFullMatch = p.id.match(/(20\d{2})/);
+
+      if (yearFullMatch) {
+        pYear = yearFullMatch[1];
+      } else {
+        // 2. Try to match 2-digit year after letters (e.g. JW2601003 -> 26 -> 2026)
+        const yearShortMatch = p.id.match(/^[A-Za-z]+(\d{2})/);
+        if (yearShortMatch) {
+          pYear = `20${yearShortMatch[1]}`;
+        } else if (p.startDate) {
+          pYear = p.startDate.split('-')[0];
+        } else {
+          // Handle both createdAt and createdDate (legacy data)
+          const d = p.createdAt || (p as any).createdDate;
+          if (d) {
+            pYear = new Date(d).getFullYear().toString();
+          }
+        }
       }
 
       const matchYear = yearFilter === 'all' || pYear === yearFilter;
