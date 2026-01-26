@@ -230,6 +230,48 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick }: any)
           domLayout='autoHeight'
           rowHeight={68}
           headerHeight={50}
+          localeText={{
+            // Filter Conditions
+            contains: '包含',
+            notContains: '不包含',
+            startsWith: '開頭為',
+            endsWith: '結尾為',
+            equals: '等於',
+            notEqual: '不等於',
+            blank: '空白',
+            notBlank: '非空白',
+
+            // Number Filter
+            lessThan: '小於',
+            greaterThan: '大於',
+            lessThanOrEqual: '小於等於',
+            greaterThanOrEqual: '大於等於',
+            inRange: '範圍內',
+
+            // Date Filter
+            inRangeStart: '從',
+            inRangeEnd: '到',
+
+            // Common
+            andCondition: '且',
+            orCondition: '或',
+            applyFilter: '套用',
+            resetFilter: '重置',
+            clearFilter: '清除',
+            cancelFilter: '取消',
+            filterOoo: '過濾...',
+            empty: '沒有資料',
+            noRowsToShow: '沒有可顯示的資料',
+
+            // Menu
+            pinColumn: '凍結欄位',
+            pinLeft: '凍結至左側',
+            pinRight: '凍結至右側',
+            noPin: '取消凍結',
+            autosizeThiscolumn: '自動調整此欄寬度',
+            autosizeAllColumns: '自動調整所有欄寬度',
+            resetColumns: '重置欄位',
+          }}
         />
       </div>
     </div>
