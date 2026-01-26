@@ -196,33 +196,38 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick }: any)
   }), []);
 
   return (
-    <div className="h-full bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden ag-theme-quartz">
-      <style>{`
-        .ag-theme-quartz {
-            --ag-header-height: 48px;
-            --ag-row-height: 60px;
-            --ag-header-background-color: #fafaf9;
-            --ag-header-foreground-color: #a8a29e;
-            --ag-border-color: #e7e5e4;
-            --ag-font-family: inherit;
-            --ag-font-size: 13px;
-        }
-        .ag-header-cell-text {
-            font-weight: 900 !important;
-            letter-spacing: 0.05em;
-        }
-      `}</style>
-      <AgGridReact
-        rowData={projects}
-        columnDefs={columnDefs}
-        defaultColDef={defaultColDef}
-        onRowClicked={(e) => onDetailClick(e.data)}
-        rowClass="cursor-pointer hover:bg-orange-50/20 transition-colors"
-        animateRows={true}
-        pagination={true}
-        paginationPageSize={10}
-        suppressCellFocus={true}
-      />
+    <div className="ag-theme-quartz" style={{ height: '100%', width: '100%' }}>
+      <div className="h-full w-full bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+        <style>{`
+            .ag-theme-quartz {
+                --ag-header-height: 48px;
+                --ag-row-height: 60px;
+                --ag-header-background-color: #fafaf9;
+                --ag-header-foreground-color: #a8a29e;
+                --ag-border-color: #e7e5e4;
+                --ag-font-family: inherit;
+                --ag-font-size: 13px;
+                height: 100%;
+                width: 100%;
+            }
+            .ag-header-cell-text {
+                font-weight: 900 !important;
+                letter-spacing: 0.05em;
+            }
+        `}</style>
+        <AgGridReact
+          rowData={projects}
+          columnDefs={columnDefs}
+          defaultColDef={defaultColDef}
+          onRowClicked={(e) => onDetailClick(e.data)}
+          rowClass="cursor-pointer hover:bg-orange-50/20 transition-colors"
+          animateRows={true}
+          pagination={true}
+          paginationPageSize={15}
+          suppressCellFocus={true}
+          domLayout='normal' // Ensure it scrolls within the container
+        />
+      </div>
     </div>
   );
 };
