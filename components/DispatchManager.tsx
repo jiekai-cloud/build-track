@@ -156,19 +156,30 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-        const mapped = jsonData.map((row: any, idx: number) => {
+        // Define expected Excel structure
+        interface ExcelRow {
+          '案件編號及名稱'?: string;
+          '施工日期'?: string;
+          '申請日期'?: string;
+          '施工人員'?: string;
+          '施工進度說明'?: string;
+          '施工項目'?: string;
+          [key: string]: any; // Allow other columns
+        }
+
+        const mapped = (jsonData as ExcelRow[]).map((row, idx) => {
           // 從Excel欄位提取資料
           const projectName = row['案件編號及名稱'] || '';
           const dateStr = row['施工日期'] || row['申請日期'] || '';
           const workersStr = row['施工人員'] || '';
 
           // 嘗試解析多個施工人員（可能用逗號、頓號或空格分隔）
-          const workers = workersStr.split(/[,、，\s]+/).filter((w: string) => w.trim());
+          const workers = (workersStr as string).split(/[,、，\s]+/).filter((w: string) => w.trim());
 
           // 解析日期格式
           let parsedDate = new Date().toISOString().split('T')[0];
           if (dateStr) {
-            const dateMatch = dateStr.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+            const dateMatch = (dateStr as string).match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
             if (dateMatch) {
               parsedDate = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
             }
@@ -215,9 +226,10 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
               .map(key => row[key]);
 
             // 判斷此工人是否在任何蜘蛛人欄位中
-            const isSpiderManWork = spiderManFields.some(field => {
+            const isSpiderManWork = spiderManFields.some((field: unknown) => {
               if (!field) return false;
-              const names = field.toString().split(/[,、，\s]+/).filter((n: string) => n.trim());
+              const fieldStr = String(field);
+              const names = fieldStr.split(/[,、，\s]+/).filter((n: string) => n.trim());
               return names.some((n: string) => n.trim() === workerName.trim());
             });
 
@@ -228,7 +240,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
 
             return {
               id: `excel-${idx}-${workerIdx}-${Date.now()}`,
-              projectId: extractedId || projectName, // 優先顯示提取到的 ID
+              projectId: extractedId || projectName || '', // 優先顯示提取到的 ID
               matchedProjectId: matched?.id || '',
               date: parsedDate,
               memberName: workerName.trim(),
