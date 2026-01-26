@@ -37,6 +37,7 @@ interface ProjectWithFinancials extends Project {
     manDays: number;
     revenue: number;
   };
+  calculatedYear?: string; // Added for Ag-Grid Year Filtering
 }
 
 // Sub-component: Card View
@@ -151,6 +152,13 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick }: any)
           </div>
         );
       }
+    },
+    {
+      headerName: "年度",
+      field: "calculatedYear",
+      width: 100,
+      filter: true,
+      cellClass: "font-mono font-bold text-stone-500 text-xs flex justify-center items-center"
     },
     {
       headerName: "預算",
@@ -359,6 +367,32 @@ const ProjectList: React.FC<ProjectListProps> = ({
     });
 
     const mapped = filtered.map(project => {
+      // 0. Priority: Manual "Attributed Year" field
+      let pYear = '';  // Default empty to show everything
+      if (project.year && project.year.trim() !== '') {
+        pYear = project.year;
+      } else {
+        // 1. Try to match full 4-digit year in ID (e.g. BNI2024001 -> 2024)
+        const yearFullMatch = project.id.match(/(20\d{2})/);
+        if (yearFullMatch) {
+          pYear = yearFullMatch[1];
+        } else {
+          // 2. Try to match 2-digit year after letters (e.g. JW2601003 -> 26 -> 2026)
+          const yearShortMatch = project.id.match(/^[A-Za-z]+(\d{2})/);
+          if (yearShortMatch) {
+            pYear = `20${yearShortMatch[1]}`;
+          } else if (project.startDate) {
+            pYear = project.startDate.split('-')[0];
+          } else {
+            // Handle both createdAt and createdDate (legacy data)
+            const d = project.createdAt || (project as any).createdDate;
+            if (d) {
+              pYear = new Date(d).getFullYear().toString();
+            }
+          }
+        }
+      }
+
       // ... Attendance Logic ...
       // 1. Calculate Real-time Labor Cost from Attendance
       let attLaborCost = 0;
@@ -398,6 +432,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
       return {
         ...project,
+        calculatedYear: pYear, // Add calculated year to data item
         computedFinancials: {
           laborCost: finalLaborCost,
           materialCost,
