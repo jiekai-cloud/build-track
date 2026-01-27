@@ -435,7 +435,7 @@ const App: React.FC = () => {
       type,
       timestamp: new Date().toISOString(),
       location,
-      departmentId: user.department === 'FirstDept' ? 'DEPT-4' : 'DEPT-8'
+      departmentId: user.department === 'FirstDept' ? 'DEPT-4' : user.department === 'ThirdDept' ? 'DEPT-8' : 'DEPT-9'
     };
 
     setAttendanceRecords(prev => [...prev, newRecord]);
@@ -556,8 +556,8 @@ const App: React.FC = () => {
     console.log(`[System] Initializing context for: ${dept}`);
 
     // 1. Configure Cloud Context
-    const prefix = dept === 'ThirdDept' ? 'dept3_' : '';
-    const driveFilename = dept === 'ThirdDept' ? 'life_quality_system_data_dept3.json' : 'life_quality_system_data.json';
+    const prefix = dept === 'ThirdDept' ? 'dept3_' : dept === 'FourthDept' ? 'dept4_' : '';
+    const driveFilename = dept === 'ThirdDept' ? 'life_quality_system_data_dept3.json' : dept === 'FourthDept' ? 'life_quality_system_data_dept4.json' : 'life_quality_system_data.json';
     googleDriveService.setFilename(driveFilename);
 
     // 2. Load Local Data (IndexedDB) with Prefix
@@ -875,7 +875,7 @@ const App: React.FC = () => {
     // 定期保存至 IndexedDB (容量極大，維持完整資料)
     if (user.role !== 'Guest') {
       const saveToIndexedDB = async () => {
-        const prefix = currentDept === 'ThirdDept' ? 'dept3_' : '';
+        const prefix = currentDept === 'ThirdDept' ? 'dept3_' : currentDept === 'FourthDept' ? 'dept4_' : '';
         try {
           await Promise.all([
             storageService.setItem(`${prefix}bt_projects`, projects),
@@ -1226,8 +1226,8 @@ const App: React.FC = () => {
       // 1. 基本規則：部門相符
       if (itemDepts.includes(viewingDeptId)) return true;
 
-      // 2. 特殊規則：戰略指揮部 (DEPT-1) 的成員可以在第一/第三工程部出現
-      if (itemDepts.includes('DEPT-1') && (viewingDeptId === 'DEPT-4' || viewingDeptId === 'DEPT-8')) {
+      // 2. 特殊規則：戰略指揮部 (DEPT-1) 的成員可以在第一/第三/第四工程部出現
+      if (itemDepts.includes('DEPT-1') && (viewingDeptId === 'DEPT-4' || viewingDeptId === 'DEPT-8' || viewingDeptId === 'DEPT-9')) {
         return true;
       }
 
@@ -1270,8 +1270,8 @@ const App: React.FC = () => {
     const fullUser: User = { ...u, department: d };
     setUser(fullUser);
     setCurrentDept(d);
-    // 修正部門 ID 對應：第一工程部(DEPT-4), 第三工程部(DEPT-8)
-    const deptId = d === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4';
+    // 修正部門 ID 對應：第一工程部(DEPT-4), 第三工程部(DEPT-8), 第四工程部(DEPT-9)
+    const deptId = d === 'ThirdDept' ? 'DEPT-8' : d === 'FourthDept' ? 'DEPT-9' : 'DEPT-4';
     setViewingDeptId(u.role === 'SuperAdmin' ? 'all' : deptId);
     localStorage.setItem('bt_user', JSON.stringify(fullUser));
     // Data loading happens in background but UI is blocked by isInitializing
