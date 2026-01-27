@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AttendanceRecord, TeamMember, User, ApprovalRequest } from '../types';
-import { Calendar, User as UserIcon, MapPin, Download, Calculator, DollarSign, Clock, Filter, FileSpreadsheet, FileText, XCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, User as UserIcon, MapPin, Download, Calculator, DollarSign, Clock, Filter, FileSpreadsheet, FileText, XCircle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import LocationModal from './LocationModal';
 
 interface PayrollSystemProps {
@@ -192,6 +192,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
     const [viewingLocation, setViewingLocation] = useState<AttendanceRecord | null>(null);
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [selectedMemberDetail, setSelectedMemberDetail] = useState<{ member: TeamMember, data: PayrollData } | null>(null);
+    const [expandedMembers, setExpandedMembers] = useState<Set<string>>(new Set());
 
     // Robust data filtering
     const validRecords = Array.isArray(records) ? records.filter(r => r && r.timestamp && r.id) : [];
@@ -225,6 +226,119 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
             return (isNaN(tB) ? 0 : tB) - (isNaN(tA) ? 0 : tA);
         });
     }, [validRecords]);
+
+    // Group records by employee name and calculate daily hours
+    const recordsByMember = useMemo(() => {
+        const grouped = new Map<string, AttendanceRecord[]>();
+
+        sortedRecords.forEach(record => {
+            const memberName = safeName(record.name);
+            if (!grouped.has(memberName)) {
+                grouped.set(memberName, []);
+            }
+            grouped.get(memberName)!.push(record);
+        });
+
+        // Convert to sorted array for display with daily hours calculation
+        return Array.from(grouped.entries())
+            .map(([name, records]) => {
+                // Sort records by time (newest first)
+                const sortedRecs = records.sort((a, b) => {
+                    const tA = new Date(a.timestamp).getTime();
+                    const tB = new Date(b.timestamp).getTime();
+                    return (isNaN(tB) ? 0 : tB) - (isNaN(tA) ? 0 : tA);
+                });
+
+                // Group by date and calculate daily hours
+                const dailyGroups = new Map<string, {
+                    workStart?: AttendanceRecord;
+                    workEnd?: AttendanceRecord;
+                    hours: number;
+                }>();
+
+                sortedRecs.forEach(record => {
+                    const dateStr = record.timestamp.split('T')[0]; // YYYY-MM-DD
+
+                    if (!dailyGroups.has(dateStr)) {
+                        dailyGroups.set(dateStr, { hours: 0 });
+                    }
+
+                    const dayData = dailyGroups.get(dateStr)!;
+                    const recordTime = new Date(record.timestamp).getTime();
+
+                    if (record.type === 'work-start') {
+                        // Keep the earliest work-start of the day
+                        if (!dayData.workStart || recordTime < new Date(dayData.workStart.timestamp).getTime()) {
+                            dayData.workStart = record;
+                        }
+                    } else if (record.type === 'work-end') {
+                        // Keep the latest work-end of the day
+                        if (!dayData.workEnd || recordTime > new Date(dayData.workEnd.timestamp).getTime()) {
+                            dayData.workEnd = record;
+                        }
+                    }
+                });
+
+                // Calculate hours for each day
+                let totalMonthHours = 0;
+                const dailyRecords: Array<{
+                    date: string;
+                    records: AttendanceRecord[];
+                    hours: number;
+                }> = [];
+
+                Array.from(dailyGroups.entries())
+                    .sort((a, b) => b[0].localeCompare(a[0])) // Sort by date descending
+                    .forEach(([date, data]) => {
+                        let hours = 0;
+
+                        if (data.workStart && data.workEnd) {
+                            const startTime = new Date(data.workStart.timestamp).getTime();
+                            const endTime = new Date(data.workEnd.timestamp).getTime();
+                            hours = (endTime - startTime) / (1000 * 60 * 60); // Convert to hours
+                            if (hours < 0) hours = 0; // Handle invalid data
+                        }
+
+                        totalMonthHours += hours;
+
+                        // Get all records for this date and sort by time (ascending)
+                        const dateRecords = sortedRecs
+                            .filter(r => r.timestamp.split('T')[0] === date)
+                            .sort((a, b) => {
+                                const tA = new Date(a.timestamp).getTime();
+                                const tB = new Date(b.timestamp).getTime();
+                                return tA - tB; // Ascending order (earliest first)
+                            });
+
+                        dailyRecords.push({
+                            date,
+                            records: dateRecords,
+                            hours
+                        });
+                    });
+
+                return {
+                    name,
+                    records: sortedRecs,
+                    dailyRecords,
+                    count: records.length,
+                    totalMonthHours
+                };
+            })
+            .sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'));
+    }, [sortedRecords]);
+
+    const toggleMemberExpansion = (memberName: string) => {
+        setExpandedMembers(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(memberName)) {
+                newSet.delete(memberName);
+            } else {
+                newSet.add(memberName);
+            }
+            return newSet;
+        });
+    };
 
     // Core Payroll Calculation Logic
     const payrollData = useMemo(() => {
@@ -603,58 +717,131 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
             {activeTab === 'records' && (
                 <div className="space-y-6 animate-in slide-in-from-left-4">
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-stone-200 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-stone-50 border-b border-stone-200">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black text-stone-400 uppercase tracking-widest">員工</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black text-stone-400 uppercase tracking-widest">打卡類型</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black text-stone-400 uppercase tracking-widest">時間</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black text-stone-400 uppercase tracking-widest">地點</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-stone-100">
-                                    {sortedRecords.map((record) => {
-                                        const locString = safeLocation(record.location);
-                                        const displayName = safeName(record.name);
-                                        return (
-                                            <tr key={record.id} className="hover:bg-stone-50 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center font-bold text-stone-600 text-xs text-transform uppercase">
-                                                            {displayName.substring(0, 1)}
-                                                        </div>
-                                                        <span className="font-bold text-stone-700">{displayName}</span>
+                        <div className="p-6 space-y-3">
+                            {recordsByMember.length === 0 ? (
+                                <div className="text-center py-12 text-stone-400">尚無打卡紀錄</div>
+                            ) : (
+                                recordsByMember.map(({ name, records, count, dailyRecords, totalMonthHours }) => {
+                                    const isExpanded = expandedMembers.has(name);
+                                    const member = teamMembers.find(m => m.name === name);
+
+                                    return (
+                                        <div key={name} className="border border-stone-200 rounded-2xl overflow-hidden">
+                                            {/* Member Header - Clickable to expand/collapse */}
+                                            <button
+                                                onClick={() => toggleMemberExpansion(name)}
+                                                className="w-full px-6 py-4 bg-stone-50 hover:bg-stone-100 transition-colors flex items-center justify-between"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <img
+                                                        src={member?.avatar || `https://ui-avatars.com/api/?name=${name}&background=random`}
+                                                        alt="avatar"
+                                                        className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm"
+                                                    />
+                                                    <div className="text-left">
+                                                        <h3 className="text-lg font-black text-stone-900">{name}</h3>
+                                                        <p className="text-xs text-stone-500 font-bold">{member?.role || '員工'}</p>
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${record.type === 'work-start' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
-                                                        }`}>
-                                                        {record.type === 'work-start' ? '上班' : '下班'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-stone-600">
-                                                    {safeDate(record.timestamp)}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
-                                                    <div
-                                                        className={`flex items-center gap-1 ${locString ? 'cursor-pointer hover:text-orange-500 hover:underline' : ''}`}
-                                                        onClick={() => locString && setViewingLocation(record)}
-                                                    >
-                                                        <MapPin size={12} />
-                                                        {locString || '未知位置'}
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl">
+                                                        <span className="text-sm font-black">{totalMonthHours.toFixed(1)}</span>
+                                                        <span className="text-xs font-bold ml-1">小時</span>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                    {sortedRecords.length === 0 && (
-                                        <tr>
-                                            <td colSpan={4} className="px-6 py-12 text-center text-stone-400">尚無打卡紀錄</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                                    <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl">
+                                                        <span className="text-sm font-black">{count}</span>
+                                                        <span className="text-xs font-bold ml-1">筆記錄</span>
+                                                    </div>
+                                                    {isExpanded ? (
+                                                        <ChevronDown size={20} className="text-stone-400" />
+                                                    ) : (
+                                                        <ChevronRight size={20} className="text-stone-400" />
+                                                    )}
+                                                </div>
+                                            </button>
+
+                                            {/* Member's Records - Shown when expanded, grouped by date */}
+                                            {isExpanded && (
+                                                <div className="bg-white">
+                                                    {dailyRecords.map(({ date, records: dayRecords, hours }) => {
+                                                        const dateObj = new Date(date + 'T00:00:00');
+                                                        const formattedDate = dateObj.toLocaleDateString('zh-TW', {
+                                                            year: 'numeric',
+                                                            month: '2-digit',
+                                                            day: '2-digit',
+                                                            weekday: 'short'
+                                                        });
+
+                                                        return (
+                                                            <div key={date} className="border-b border-stone-100 last:border-b-0">
+                                                                {/* Date Header with daily hours */}
+                                                                <div className="bg-stone-50/50 px-6 py-2 flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Calendar size={14} className="text-stone-400" />
+                                                                        <span className="text-xs font-black text-stone-600">{formattedDate}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        {hours > 0 ? (
+                                                                            <>
+                                                                                <Clock size={14} className="text-emerald-600" />
+                                                                                <span className="text-xs font-black text-emerald-700">
+                                                                                    {hours.toFixed(1)} 小時
+                                                                                </span>
+                                                                                {hours > 8 && (
+                                                                                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                                                                                        加班 {(hours - 8).toFixed(1)}h
+                                                                                    </span>
+                                                                                )}
+                                                                            </>
+                                                                        ) : (
+                                                                            <span className="text-xs font-bold text-stone-400">
+                                                                                未完整
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Records for this day */}
+                                                                <table className="w-full">
+                                                                    <tbody>
+                                                                        {dayRecords.map((record) => {
+                                                                            const locString = safeLocation(record.location);
+                                                                            return (
+                                                                                <tr key={record.id} className="hover:bg-stone-50 transition-colors">
+                                                                                    <td className="px-6 py-3 whitespace-nowrap w-24">
+                                                                                        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${record.type === 'work-start'
+                                                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                                                            : 'bg-indigo-100 text-indigo-700'
+                                                                                            }`}>
+                                                                                            {record.type === 'work-start' ? '上班' : '下班'}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="px-6 py-3 whitespace-nowrap font-mono text-sm text-stone-600">
+                                                                                        {new Date(record.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                                                                    </td>
+                                                                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-stone-500">
+                                                                                        <div
+                                                                                            className={`flex items-center gap-1 ${locString ? 'cursor-pointer hover:text-orange-500 hover:underline' : ''}`}
+                                                                                            onClick={() => locString && setViewingLocation(record)}
+                                                                                        >
+                                                                                            <MapPin size={14} />
+                                                                                            {locString || '未知位置'}
+                                                                                        </div>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            );
+                                                                        })}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
