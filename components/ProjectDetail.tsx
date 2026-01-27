@@ -345,9 +345,11 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
     // Labor cost is now derived purely from dispatch records
     const labor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
     const material = (project.expenses || []).reduce((acc, curr) => acc + curr.amount, 0);
-    const totalSpent = labor + material;
+    // 介紹費計入成本
+    const introducerFee = (project.introducerFeeRequired && project.introducerFeeAmount) ? project.introducerFeeAmount : 0;
+    const totalSpent = labor + material + introducerFee;
     return project.budget - totalSpent;
-  }, [project.budget, project.expenses, project.workAssignments]);
+  }, [project.budget, project.expenses, project.workAssignments, project.introducerFeeRequired, project.introducerFeeAmount]);
 
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [expenseFormData, setExpenseFormData] = useState<Partial<Expense>>({
@@ -1135,7 +1137,30 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                         <p className={`text-[11px] font-bold mt-1 ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                           {profit >= 0 ? '目前預估毛利' : '目前預估虧損'}
                         </p>
+                        {/* 毛利率 */}
+                        <div className="mt-3 pt-3 border-t border-white/50">
+                          <p className="text-[9px] font-black text-emerald-900/40 uppercase tracking-widest mb-1">PROFIT MARGIN</p>
+                          <p className={`text-xl font-black ${profit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                            {project.budget > 0 ? ((profit / project.budget) * 100).toFixed(1) : '0.0'}%
+                          </p>
+                        </div>
                       </div>
+
+                      {/* 介紹費卡片 */}
+                      {project.introducerFeeRequired && project.introducerFeeAmount && (
+                        <div className="bg-white p-6 rounded-3xl border border-blue-100 shadow-sm">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                              <Users size={20} />
+                            </div>
+                            <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">REFERRAL FEE</span>
+                          </div>
+                          <p className="text-2xl font-black text-stone-900 tracking-tight">
+                            NT$ {(project.introducerFeeAmount || 0).toLocaleString()}
+                          </p>
+                          <p className="text-[11px] font-bold text-stone-400 mt-1">介紹人：{project.introducerName || '未填寫'}</p>
+                        </div>
+                      )}
 
                       <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
                         <div className="flex justify-between items-start mb-4">
