@@ -188,7 +188,9 @@ export interface Project {
   engineeringManager: string; // 工程負責人
   introducer?: string; // 介紹人
   introducerFeeRequired?: boolean; // 是否需要介紹費
-  introducerFeeAmount?: number; // 介紹費金額
+  introducerFeeType?: 'percentage' | 'fixed'; // 介紹費計算方式：百分比或固定金額
+  introducerFeePercentage?: number; // 介紹費百分比（如5代表5%）
+  introducerFeeAmount?: number; // 介紹費金額（固定金額或依百分比計算後的實際金額）
   startDate: string;
   endDate: string;
   createdDate: string;

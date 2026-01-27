@@ -27,6 +27,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
     engineeringManager: '',
     introducer: '',
     introducerFeeRequired: false,
+    introducerFeeType: 'percentage' as 'percentage' | 'fixed',
+    introducerFeePercentage: '',
     introducerFeeAmount: '',
     budget: '',
     progress: '0',
@@ -50,6 +52,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         engineeringManager: initialData.engineeringManager || '',
         introducer: initialData.introducer || '',
         introducerFeeRequired: initialData.introducerFeeRequired || false,
+        introducerFeeType: initialData.introducerFeeType || 'percentage',
+        introducerFeePercentage: initialData.introducerFeePercentage?.toString() || '',
         introducerFeeAmount: initialData.introducerFeeAmount?.toString() || '',
         budget: initialData.budget.toString(),
         progress: initialData.progress.toString(),
@@ -73,11 +77,25 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
       lng: 121.5654
     };
 
+    // 計算介紹費金額
+    let calculatedFeeAmount = 0;
+    if (formData.introducerFeeRequired) {
+      if (formData.introducerFeeType === 'percentage') {
+        const budget = Number(formData.budget) || 0;
+        const percentage = Number(formData.introducerFeePercentage) || 0;
+        calculatedFeeAmount = (budget * percentage) / 100;
+      } else {
+        calculatedFeeAmount = Number(formData.introducerFeeAmount) || 0;
+      }
+    }
+
     onConfirm({
       ...formData,
       budget: Number(formData.budget),
       progress: Number(formData.progress),
-      introducerFeeAmount: Number(formData.introducerFeeAmount) || 0,
+      introducerFeeType: formData.introducerFeeType,
+      introducerFeePercentage: Number(formData.introducerFeePercentage) || undefined,
+      introducerFeeAmount: calculatedFeeAmount,
       location: mockLocation,
       createdDate: initialData?.createdDate || new Date().toISOString().split('T')[0]
     });
@@ -165,45 +183,103 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
               <Tag size={16} className="text-blue-500" />
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">介紹人資訊 (選填)</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">介紹人名稱</label>
-                <input
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 outline-none font-bold text-sm"
-                  placeholder="介紹人姓名"
-                  value={formData.introducer}
-                  onChange={e => setFormData({ ...formData, introducer: e.target.value })}
-                />
-              </div>
-              <div className="md:col-span-1 flex items-center gap-4">
-                <div className="flex flex-col">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">需介紹費</label>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={formData.introducerFeeRequired}
-                      onChange={e => setFormData({ ...formData, introducerFeeRequired: e.target.checked })}
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">介紹人名稱</label>
+                  <input
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 outline-none font-bold text-sm"
+                    placeholder="介紹人姓名"
+                    value={formData.introducer}
+                    onChange={e => setFormData({ ...formData, introducer: e.target.value })}
+                  />
                 </div>
-                {formData.introducerFeeRequired && (
-                  <div className="flex-1 animate-in slide-in-from-left-2">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">介紹費金額</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                <div className="flex items-end">
+                  <div className="flex flex-col w-full">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">需介紹費</label>
+                    <label className="relative inline-flex items-center cursor-pointer">
                       <input
-                        type="number"
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-4 py-2 outline-none font-bold text-sm"
-                        placeholder="金額"
-                        value={formData.introducerFeeAmount}
-                        onChange={e => setFormData({ ...formData, introducerFeeAmount: e.target.value })}
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={formData.introducerFeeRequired}
+                        onChange={e => setFormData({ ...formData, introducerFeeRequired: e.target.checked })}
                       />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {formData.introducerFeeRequired && (
+                <div className="animate-in slide-in-from-top-2 space-y-4">
+                  {/* 計算方式選擇 */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">介紹費計算方式</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, introducerFeeType: 'percentage' })}
+                        className={`py-2.5 rounded-xl text-xs font-bold transition-all border ${formData.introducerFeeType === 'percentage'
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                      >
+                        📊 百分比計算
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, introducerFeeType: 'fixed' })}
+                        className={`py-2.5 rounded-xl text-xs font-bold transition-all border ${formData.introducerFeeType === 'fixed'
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                      >
+                        💵 固定金額
+                      </button>
                     </div>
                   </div>
-                )}
-              </div>
+
+                  {/* 百分比模式 */}
+                  {formData.introducerFeeType === 'percentage' ? (
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">介紹費百分比</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          className="w-full bg-white border border-blue-200 rounded-xl pl-4 pr-8 py-2.5 outline-none font-bold text-sm"
+                          placeholder="例如：5 (代表5%)"
+                          value={formData.introducerFeePercentage}
+                          onChange={e => setFormData({ ...formData, introducerFeePercentage: e.target.value })}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 text-sm font-black">%</span>
+                      </div>
+                      {formData.introducerFeePercentage && formData.budget && (
+                        <p className="text-xs text-emerald-600 font-bold mt-2">
+                          預估介紹費：NT$ {((Number(formData.budget) * Number(formData.introducerFeePercentage)) / 100).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    /* 固定金額模式 */
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider">介紹費金額</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                        <input
+                          type="number"
+                          className="w-full bg-white border border-blue-200 rounded-xl pl-7 pr-4 py-2.5 outline-none font-bold text-sm"
+                          placeholder="輸入固定金額"
+                          value={formData.introducerFeeAmount}
+                          onChange={e => setFormData({ ...formData, introducerFeeAmount: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
