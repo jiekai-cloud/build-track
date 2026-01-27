@@ -11,7 +11,7 @@ import {
   Sparkles, Phone, MapPin, FileWarning, CalendarDays, AlertTriangle,
   Layers, Target, ArrowRight, Briefcase, Loader2, Download, X, RefreshCw
 } from 'lucide-react';
-import { Project, ProjectStatus, Lead } from '../types';
+import { Project, ProjectStatus, Lead, SystemContext } from '../types';
 import DefectExportModal from './DefectExportModal';
 
 interface DashboardProps {
@@ -24,9 +24,10 @@ interface DashboardProps {
   onConvertLead?: (leadId: string) => void;
   onProjectClick: (projectId: string) => void;
   onStartTour?: () => void;
+  currentDept?: SystemContext;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError, lastCloudSync, isMasterTab, onRetrySync, onConvertLead, onProjectClick, onStartTour }) => {
+const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError, lastCloudSync, isMasterTab, onRetrySync, onConvertLead, onProjectClick, onStartTour, currentDept = 'FirstDept' }) => {
   const [lastSync, setLastSync] = useState(new Date());
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -252,7 +253,9 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl lg:text-2xl font-black text-stone-900 tracking-tight">生活品質 • 智慧指揮中心</h1>
+            <h1 className="text-xl lg:text-2xl font-black text-stone-900 tracking-tight">
+              {currentDept === 'ThirdDept' ? '傑凱工程' : currentDept === 'FourthDept' ? '琥凱爾工程' : '生活品質'} • 智慧指揮中心
+            </h1>
             <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 text-white rounded-full">
               <Sparkles size={12} className="text-orange-400" />
               <span className="text-[10px] font-black uppercase tracking-widest">Scale Optimized</span>

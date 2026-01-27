@@ -1524,6 +1524,7 @@ const App: React.FC = () => {
                 onConvertLead={handleConvertLead}
                 onProjectClick={(id) => { setSelectedProjectId(id); setActiveTab('projects'); }}
                 onStartTour={() => setIsOnboardingOpen(true)}
+                currentDept={currentDept}
               />}
               {activeTab === 'projects' && moduleService.isModuleEnabled(ModuleId.PROJECTS) && <ProjectList
                 projects={filteredData.projects}
