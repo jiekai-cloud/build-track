@@ -462,52 +462,100 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 let actualEndTime: string | undefined;
 
                 if (hasWorkStart) {
-                    const starts = dayWorkRecs.filter(r => r.type === 'work-start').map(r => ({
-                        time: new Date(r.timestamp).getTime(),
-                        timestamp: r.timestamp
-                    }));
-                    const ends = dayWorkRecs.filter(r => r.type === 'work-end').map(r => ({
-                        time: new Date(r.timestamp).getTime(),
-                        timestamp: r.timestamp
-                    }));
+                    // 針對計時制員工，計算所有打卡區間的總和
+                    if (m.salaryType === 'hourly') {
+                        const sortedDayRecs = dayWorkRecs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                        let totalTime = 0;
+                        let currentStart: number | null = null;
 
-                    if (starts.length > 0 && ends.length > 0) {
-                        const earliestStart = starts.reduce((min, cur) => cur.time < min.time ? cur : min);
-                        const latestEnd = ends.reduce((max, cur) => cur.time > max.time ? cur : max);
+                        // 尋找最早和最晚打卡時間用於顯示
+                        if (sortedDayRecs.length > 0) {
+                            const starts = sortedDayRecs.filter(r => r.type === 'work-start');
+                            const ends = sortedDayRecs.filter(r => r.type === 'work-end');
 
-                        actualStartTime = new Date(earliestStart.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                        actualEndTime = new Date(latestEnd.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-
-                        dayHours = (latestEnd.time - earliestStart.time) / (1000 * 60 * 60);
-
-                        // Check if late (compare with member's standard work start time)
-                        if (m.workStartTime) {
-                            const [expectedHour, expectedMinute] = m.workStartTime.split(':').map(Number);
-                            const expectedStartDate = new Date(earliestStart.timestamp);
-                            expectedStartDate.setHours(expectedHour, expectedMinute, 0, 0);
-                            const expectedStartTime = expectedStartDate.getTime();
-
-                            if (earliestStart.time > expectedStartTime) {
-                                isLate = true;
-                                lateMinutes = Math.round((earliestStart.time - expectedStartTime) / (1000 * 60));
+                            if (starts.length > 0) {
+                                actualStartTime = new Date(starts[0].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                            }
+                            if (ends.length > 0) {
+                                actualEndTime = new Date(ends[ends.length - 1].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
                             }
                         }
 
-                        // Check if early leave (compare with member's standard work end time)
-                        if (m.workEndTime) {
-                            const [expectedHour, expectedMinute] = m.workEndTime.split(':').map(Number);
-                            const expectedEndDate = new Date(latestEnd.timestamp);
-                            expectedEndDate.setHours(expectedHour, expectedMinute, 0, 0);
-                            const expectedEndTime = expectedEndDate.getTime();
-
-                            if (latestEnd.time < expectedEndTime) {
-                                isEarlyLeave = true;
-                                earlyLeaveMinutes = Math.round((expectedEndTime - latestEnd.time) / (1000 * 60));
+                        sortedDayRecs.forEach(r => {
+                            const time = new Date(r.timestamp).getTime();
+                            if (r.type === 'work-start') {
+                                if (currentStart === null) currentStart = time;
+                            } else if (r.type === 'work-end') {
+                                if (currentStart !== null) {
+                                    totalTime += (time - currentStart);
+                                    currentStart = null;
+                                }
                             }
+                        });
+
+                        dayHours = totalTime / (1000 * 60 * 60);
+                        // 計時制通常休息會打卡下班，所以不自動扣除午休
+                    } else {
+                        // 月薪/日薪制：取當天最早和最晚，並扣除午休
+                        const starts = dayWorkRecs.filter(r => r.type === 'work-start').map(r => ({
+                            time: new Date(r.timestamp).getTime(),
+                            timestamp: r.timestamp
+                        }));
+                        const ends = dayWorkRecs.filter(r => r.type === 'work-end').map(r => ({
+                            time: new Date(r.timestamp).getTime(),
+                            timestamp: r.timestamp
+                        }));
+
+                        if (starts.length > 0 && ends.length > 0) {
+                            const earliestStart = starts.reduce((min, cur) => cur.time < min.time ? cur : min);
+                            const latestEnd = ends.reduce((max, cur) => cur.time > max.time ? cur : max);
+
+                            actualStartTime = new Date(earliestStart.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                            actualEndTime = new Date(latestEnd.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+                            dayHours = (latestEnd.time - earliestStart.time) / (1000 * 60 * 60);
+
+                            // 扣除午休 (12:00-13:00)
+                            const startDate = new Date(earliestStart.timestamp);
+                            const endDate = new Date(latestEnd.timestamp);
+                            const lunchStart = new Date(startDate);
+                            lunchStart.setHours(12, 0, 0, 0);
+                            const lunchEnd = new Date(startDate);
+                            lunchEnd.setHours(13, 0, 0, 0);
+
+                            if (startDate < lunchEnd && endDate > lunchStart) {
+                                dayHours = Math.max(0, dayHours - 1);
+                            }
+
+                            // 遲到檢測 (僅非計時制)
+                            if (m.workStartTime) {
+                                const [expectedHour, expectedMinute] = m.workStartTime.split(':').map(Number);
+                                const expectedStartDate = new Date(earliestStart.timestamp);
+                                expectedStartDate.setHours(expectedHour, expectedMinute, 0, 0);
+                                const expectedStartTime = expectedStartDate.getTime();
+
+                                if (earliestStart.time > expectedStartTime) {
+                                    isLate = true;
+                                    lateMinutes = Math.round((earliestStart.time - expectedStartTime) / (1000 * 60));
+                                }
+                            }
+
+                            // 早退檢測 (僅非計時制)
+                            if (m.workEndTime) {
+                                const [expectedHour, expectedMinute] = m.workEndTime.split(':').map(Number);
+                                const expectedEndDate = new Date(latestEnd.timestamp);
+                                expectedEndDate.setHours(expectedHour, expectedMinute, 0, 0);
+                                const expectedEndTime = expectedEndDate.getTime();
+
+                                if (latestEnd.time < expectedEndTime) {
+                                    isEarlyLeave = true;
+                                    earlyLeaveMinutes = Math.round((expectedEndTime - latestEnd.time) / (1000 * 60));
+                                }
+                            }
+                        } else if (starts.length > 0) {
+                            actualStartTime = new Date(starts[0].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                            dayHours = 8; // Default fallback
                         }
-                    } else if (starts.length > 0) {
-                        actualStartTime = new Date(starts[0].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                        dayHours = 8; // Default fallback
                     }
                 }
 
@@ -526,7 +574,13 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                     context.hours += dayHours;
 
                     // Base Salary
-                    salary = dailyRate;
+                    if (m.salaryType === 'hourly' && m.hourlyRate) {
+                        salary = Math.round(dayHours * m.hourlyRate);
+                    } else if (m.salaryType === 'monthly') {
+                        salary = 0; // 月薪制每日不計薪，最後總結時計算
+                    } else {
+                        salary = dailyRate; // 日薪制
+                    }
                     context.baseSalary += salary;
                     context.records.push(...dayWorkRecs);
 
@@ -623,7 +677,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
     }, [validRecords, teamMembers, selectedMonth, approvalRequests]);
 
     const exportPayrollCSV = () => {
-        const headers = ['員工姓名', '員工編號', '職稱', '出勤天數', '請假天數', '總工時', '加班工時', '日薪/月薪', '本薪總額', '加班費', '各項津貼', '遲到扣款', '勞保費', '健保費', '實領薪資'];
+        const headers = ['員工姓名', '員工編號', '職稱', '出勤天數', '請假天數', '總工時', '加班工時', '日薪/月薪/時薪', '本薪總額', '加班費', '各項津貼', '遲到扣款', '勞保費', '健保費', '實領薪資'];
         const rows = payrollData.map(d => {
             return [
                 d.member?.name || '未知',
@@ -633,7 +687,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 d.leaveDays,
                 d.hours.toFixed(1),
                 d.overtimeHours.toFixed(1),
-                d.member?.salaryType === 'monthly' ? `${d.member?.monthlySalary}(月)` : d.member?.dailyRate || 0,
+                d.member?.salaryType === 'monthly' ? `${d.member?.monthlySalary}(月)` : d.member?.salaryType === 'hourly' ? `${d.member?.hourlyRate}(時)` : d.member?.dailyRate || 0,
                 d.baseSalary,
                 d.overtimePay,
                 d.allowances.total,
