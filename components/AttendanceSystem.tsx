@@ -10,8 +10,34 @@ interface AttendanceSystemProps {
     onRecord: (type: 'work-start' | 'work-end', location: { lat: number; lng: number; address?: string }) => void;
 }
 
+const MOTIVATIONAL_QUOTES = [
+    "每一個新的開始，都從你決定開始的那一刻起。",
+    "你的努力，是為了遇見更好的自己。",
+    "今天的付出，是明天收穫的種子。",
+    "保持專注，堅持到底，你比想像中更強大。",
+    "品質源於細節，成功源於堅持。",
+    "每一份辛勞都值得被看見，每一份堅持都值得被肯定。",
+    "工作不只是為了生存，更是為了實現自我價值。",
+    "生活品質，從每一次精準的執行開始。",
+    "面對挑戰是成長的必經之路。",
+    "今日事今日畢，享受充實的一天。",
+    "你的專業與熱情，是團隊前進的動力。",
+    "休息是為了走更長遠的路，請記得照顧自己。",
+    "每一次的突破，都源於不輕言放棄的堅持。"
+];
+
+const getGreeting = (date: Date) => {
+    const hour = date.getHours();
+    if (hour >= 5 && hour < 11) return '早安';
+    if (hour >= 11 && hour < 14) return '午安';
+    if (hour >= 14 && hour < 18) return '下午好';
+    if (hour >= 18 && hour < 24) return '晚安';
+    return '夜深了，辛苦了';
+};
+
 const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, records, onRecord }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [quote, setQuote] = useState('');
     const [location, setLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
     const [loadingLocation, setLoadingLocation] = useState(false);
     const [locationError, setLocationError] = useState<string | null>(null);
@@ -19,6 +45,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        setQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
         return () => clearInterval(timer);
     }, []);
 
@@ -184,9 +211,10 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
 
                 <div>
                     <h1 className="text-3xl font-black text-stone-800 tracking-tight mb-2">
-                        早安，{currentUser.name}
+                        {getGreeting(currentTime)}，{currentUser.name}
                     </h1>
-                    <p className="text-stone-500 font-medium">現在是 {currentTime.toLocaleDateString('zh-TW', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-emerald-700 font-bold mb-1 opacity-90">{quote}</p>
+                    <p className="text-xs text-stone-400 font-medium">今天是 {currentTime.toLocaleDateString('zh-TW', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
 
                 <div className="text-right">
