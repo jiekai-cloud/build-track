@@ -297,6 +297,19 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                             const endTime = new Date(data.workEnd.timestamp).getTime();
                             hours = (endTime - startTime) / (1000 * 60 * 60); // Convert to hours
                             if (hours < 0) hours = 0; // Handle invalid data
+
+                            // Deduct lunch break (12:00-13:00) if work period spans across it
+                            const startDate = new Date(data.workStart.timestamp);
+                            const endDate = new Date(data.workEnd.timestamp);
+                            const lunchStart = new Date(startDate);
+                            lunchStart.setHours(12, 0, 0, 0);
+                            const lunchEnd = new Date(startDate);
+                            lunchEnd.setHours(13, 0, 0, 0);
+
+                            // Check if work period overlaps with lunch break
+                            if (startDate < lunchEnd && endDate > lunchStart) {
+                                hours = Math.max(0, hours - 1); // Deduct 1 hour for lunch break
+                            }
                         }
 
                         totalMonthHours += hours;
