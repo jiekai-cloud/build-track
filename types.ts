@@ -462,6 +462,7 @@ export interface AttendanceRecord {
   };
   departmentId?: string;
   photoUrl?: string; // Optional: photo verification
+  isCorrection?: boolean; // 補打卡標記
 }
 
 export interface PayrollRecord {

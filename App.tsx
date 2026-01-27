@@ -1485,8 +1485,9 @@ const App: React.FC = () => {
                 <PayrollSystem
                   records={attendanceRecords}
                   teamMembers={teamMembers}
-                  currentUser={{ ...user, accessibleModules: currentUserPermissions }}
+                  currentUser={user}
                   approvalRequests={approvalRequests}
+                  onCreateApproval={handleSaveApprovalRequest}
                 />
               )}
               {activeTab === 'approvals' && moduleService.isModuleEnabled(ModuleId.APPROVALS) && (
