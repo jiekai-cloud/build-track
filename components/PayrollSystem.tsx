@@ -3,6 +3,29 @@ import { AttendanceRecord, TeamMember, User, ApprovalRequest } from '../types';
 import { Calendar, User as UserIcon, MapPin, Download, Printer, Calculator, DollarSign, Clock, Filter, FileSpreadsheet, FileText, XCircle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import LocationModal from './LocationModal';
 
+const TAIWAN_HOLIDAYS_2026: Record<string, string> = {
+    '2026-01-01': '元旦',
+    '2026-02-16': '小年夜',
+    '2026-02-17': '除夕',
+    '2026-02-18': '春節',
+    '2026-02-19': '春節',
+    '2026-02-20': '春節',
+    '2026-02-27': '228補假',
+    '2026-02-28': '和平紀念日',
+    '2026-04-03': '兒童節',
+    '2026-04-04': '清明節',
+    '2026-05-01': '勞動節',
+    '2026-06-19': '端午節',
+    '2026-09-25': '中秋節',
+    '2026-10-09': '國慶補假',
+    '2026-10-10': '國慶日'
+};
+
+const isWeekend = (dateStr: string) => {
+    const day = new Date(dateStr).getDay();
+    return day === 0 || day === 6;
+};
+
 interface PayrollSystemProps {
     records: AttendanceRecord[];
     teamMembers: TeamMember[];
@@ -21,7 +44,7 @@ interface PayrollDetailModalProps {
 
 interface DailyStatus {
     date: string;
-    status: 'work' | 'leave' | 'absent' | 'rest';
+    status: 'work' | 'leave' | 'absent' | 'rest' | 'holiday' | 'weekend';
     hours: number;
     overtimeHours: number; // 總加班時數（僅用於顯示）
     approvedOvertimeHours: number; // 新增：核准的加班時數（用於計算加班費）
@@ -302,6 +325,7 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                                             {log.status === 'work' && <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-1 rounded print:border print:border-black print:bg-transparent print:text-black">出勤</span>}
                                             {log.status === 'leave' && <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-1 rounded print:border print:border-black print:bg-transparent print:text-black">請假</span>}
                                             {log.status === 'absent' && <span className="text-slate-300 text-[10px] font-bold">-</span>}
+                                            {(log.status === 'holiday' || log.status === 'weekend') && <span className="bg-purple-50 text-purple-700 text-[10px] font-black px-2 py-1 rounded print:border print:border-black print:bg-transparent print:text-black">{log.note || (log.status === 'weekend' ? '週末' : '休假')}</span>}
                                             {log.isLate && <div className="mt-1"><span className="bg-rose-100 text-rose-700 text-[9px] font-black px-1.5 py-0.5 rounded print:border print:border-black print:bg-transparent print:text-black">遲到{log.lateMinutes}分</span></div>}
                                             {log.isEarlyLeave && <div className="mt-1"><span className="bg-orange-100 text-orange-700 text-[9px] font-black px-1.5 py-0.5 rounded print:border print:border-black print:bg-transparent print:text-black">早退{log.earlyLeaveMinutes}分</span></div>}
                                         </td>
@@ -576,6 +600,8 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
 
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${selectedMonth}-${d.toString().padStart(2, '0')}`;
+                const holidayName = TAIWAN_HOLIDAYS_2026[dateStr];
+                const weekend = isWeekend(dateStr);
 
                 // Check Work
                 const dayWorkRecs = monthRecords.filter(r => r.timestamp.startsWith(dateStr) && (r.employeeId === empId || r.name === m.name));
@@ -726,7 +752,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 }
 
                 // Determine Status & Pay
-                let status: DailyStatus['status'] = 'absent';
+                let status: any = 'absent';
                 let note = '';
                 let salary = 0;
                 let overtimePay = 0;
@@ -806,6 +832,13 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                     status = 'leave';
                     context.leaveDays++;
                     note = `${dayLeave.templateName} (${dayLeave.title || '無事由'})`;
+                } else {
+                    if (holidayName) {
+                        status = 'holiday';
+                        note = holidayName;
+                    } else if (weekend) {
+                        status = 'weekend';
+                    }
                 }
 
                 context.dailyLogs.push({
