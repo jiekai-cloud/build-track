@@ -1158,7 +1158,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                           <p className="text-2xl font-black text-stone-900 tracking-tight">
                             NT$ {(project.introducerFeeAmount || 0).toLocaleString()}
                           </p>
-                          <p className="text-[11px] font-bold text-stone-400 mt-1">介紹人：{project.introducerName || '未填寫'}</p>
+                          <p className="text-[11px] font-bold text-stone-400 mt-1">介紹人：{project.introducer || '未填寫'}</p>
                         </div>
                       )}
 
