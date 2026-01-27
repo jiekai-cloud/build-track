@@ -378,18 +378,87 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                     <input placeholder="帳號" disabled={!canEditPayroll} className="bg-white border border-amber-100 rounded-xl px-4 py-3 text-sm font-bold font-mono" value={formData.bankInfo?.accountNumber || ''} onChange={e => setFormData({ ...formData, bankInfo: { ...(formData.bankInfo || { bankName: '', accountName: '', accountNumber: '' }), accountNumber: e.target.value } })} />
                   </div>
                 </div>
-                <div className="pt-4 border-t border-amber-100">
-                  <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">酬勞設定 Labor Cost</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      placeholder="日薪 (例如: 3000)"
-                      disabled={!canEditPayroll}
-                      className="w-full bg-white border border-amber-100 rounded-xl pl-4 pr-12 py-3 text-sm font-bold"
-                      value={formData.dailyRate || ''}
-                      onChange={e => setFormData({ ...formData, dailyRate: Number(e.target.value) })}
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-400">TWD / 日</span>
+                <div className="pt-4 border-t border-amber-100 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest">酬勞設定 Labor Cost</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-amber-600">類型：</span>
+                      <select
+                        disabled={!canEditPayroll}
+                        className="bg-white border border-amber-200 rounded-lg px-2 py-1 text-xs font-bold text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                        value={formData.salaryType || 'daily'}
+                        onChange={e => setFormData({ ...formData, salaryType: e.target.value as any })}
+                      >
+                        <option value="monthly">月薪制 (Monthly)</option>
+                        <option value="daily">日薪制 (Daily)</option>
+                        <option value="hourly">計時制 (Hourly)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {formData.salaryType === 'monthly' && (
+                    <div className="relative animate-in fade-in zoom-in-95 duration-200">
+                      <input
+                        type="number"
+                        placeholder="月薪 (例如: 45000)"
+                        disabled={!canEditPayroll}
+                        className="w-full bg-white border border-amber-100 rounded-xl pl-4 pr-12 py-3 text-sm font-bold"
+                        value={formData.monthlySalary || ''}
+                        onChange={e => setFormData({ ...formData, monthlySalary: Number(e.target.value) })}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-400">TWD / 月</span>
+                    </div>
+                  )}
+
+                  {(formData.salaryType === 'daily' || !formData.salaryType) && (
+                    <div className="relative animate-in fade-in zoom-in-95 duration-200">
+                      <input
+                        type="number"
+                        placeholder="日薪 (例如: 3000)"
+                        disabled={!canEditPayroll}
+                        className="w-full bg-white border border-amber-100 rounded-xl pl-4 pr-12 py-3 text-sm font-bold"
+                        value={formData.dailyRate || ''}
+                        onChange={e => setFormData({ ...formData, dailyRate: Number(e.target.value) })}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-400">TWD / 日</span>
+                    </div>
+                  )}
+
+                  {formData.salaryType === 'hourly' && (
+                    <div className="relative animate-in fade-in zoom-in-95 duration-200">
+                      <input
+                        type="number"
+                        placeholder="時薪 (例如: 183)"
+                        disabled={!canEditPayroll}
+                        className="w-full bg-white border border-amber-100 rounded-xl pl-4 pr-12 py-3 text-sm font-bold"
+                        value={formData.hourlyRate || ''}
+                        onChange={e => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-400">TWD / 時</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4 bg-amber-50/50 p-3 rounded-xl border border-amber-100/50">
+                    <div>
+                      <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 ml-1">標準上班 Work Start</label>
+                      <input
+                        type="time"
+                        disabled={!canEditPayroll}
+                        className="w-full bg-white border border-amber-100 rounded-xl px-3 py-2 text-sm font-bold text-center"
+                        value={formData.workStartTime || ''}
+                        onChange={e => setFormData({ ...formData, workStartTime: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 ml-1">標準下班 Work End</label>
+                      <input
+                        type="time"
+                        disabled={!canEditPayroll}
+                        className="w-full bg-white border border-amber-100 rounded-xl px-3 py-2 text-sm font-bold text-center"
+                        value={formData.workEndTime || ''}
+                        onChange={e => setFormData({ ...formData, workEndTime: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="pt-4 border-t border-amber-100 grid grid-cols-2 gap-4">

@@ -152,13 +152,18 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=200',
     specialty: ['結構工程', '現場管理'],
     certifications: ['工地主任', '勞安甲種'],
-    joinDate: '2023-01-01'
+    joinDate: '2023-01-01',
+    salaryType: 'monthly',
+    monthlySalary: 55000,
+    dailyRate: 0,
+    workStartTime: '09:00',
+    workEndTime: '18:00'
   },
   {
     id: 'T-102',
     employeeId: 'ENG102',
     name: '陳建宏',
-    role: '工程師',
+    role: '現場工程師',
     systemRole: 'Staff',
     departmentId: 'DEPT-4', // 第一工程部
     departmentIds: ['DEPT-4'],
@@ -169,7 +174,14 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
     specialty: ['水電工程', '圖面繪製'],
     certifications: ['乙級室內配線'],
-    joinDate: '2023-03-15'
+    joinDate: '2023-03-15',
+    salaryType: 'daily',
+    monthlySalary: 0,
+    dailyRate: 2500,
+    laborFee: 1100,
+    healthFee: 500,
+    workStartTime: '08:30',
+    workEndTime: '17:30'
   },
   {
     id: 'T-301',
@@ -186,7 +198,12 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
     specialty: ['裝修工程', '估價預算'],
     certifications: ['室內裝修工程管理乙級'],
-    joinDate: '2023-02-01'
+    joinDate: '2023-02-01',
+    salaryType: 'monthly',
+    monthlySalary: 60000,
+    dailyRate: 0,
+    workStartTime: '09:00',
+    workEndTime: '18:00'
   },
   {
     id: 'T-302',
@@ -203,6 +220,12 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
     specialty: ['文書處理', '採購作業'],
     certifications: [],
-    joinDate: '2023-04-10'
+    joinDate: '2023-04-10',
+    salaryType: 'hourly',
+    hourlyRate: 200,
+    monthlySalary: 0,
+    dailyRate: 0,
+    workStartTime: '09:00',
+    workEndTime: '13:00'
   }
 ];
