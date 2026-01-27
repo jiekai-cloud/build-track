@@ -16,6 +16,7 @@ interface PayrollDetailModalProps {
     data: PayrollData;
     month: string;
     onClose: () => void;
+    onUpdateAdjustment: (adj: any) => void;
 }
 
 interface DailyStatus {
@@ -49,12 +50,15 @@ interface PayrollData {
     overtimePay: number; // 新增：應發加班費
     allowances: { // 新增：津貼明細
         spiderman: number;
+        meal: number;
+        transport: number;
         other: number;
         total: number;
     };
     grossSalary: number; // 新增：稅前應發總額 (本薪+加班+津貼)
     deductions: {
         late: number; // 新增：遲到扣款
+        leave: number; // 请假扣款
         labor: number;
         health: number;
         other: number;
@@ -63,7 +67,41 @@ interface PayrollData {
     dailyLogs: DailyStatus[];
 }
 
-const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, month, onClose }) => {
+const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, month, onClose, onUpdateAdjustment }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [form, setForm] = useState({
+        baseSalary: data.baseSalary,
+        meal: data.allowances.meal,
+        transport: data.allowances.transport,
+        otherAllowance: data.allowances.other,
+        leave: data.deductions.leave,
+        otherDeduction: data.deductions.other,
+        labor: data.deductions.labor,
+        health: data.deductions.health
+    });
+
+    const handleSave = () => {
+        onUpdateAdjustment(form);
+        setIsEditing(false);
+    };
+
+    const Input = ({ label, value, onChange, className = "" }: any) => (
+        <div className={`flex flex-col gap-1 ${className}`}>
+            <label className="text-[10px] font-bold text-slate-400 uppercase">{label}</label>
+            <input
+                type="number"
+                value={value}
+                onChange={e => onChange(Number(e.target.value))}
+                className="w-full bg-slate-100 rounded-lg px-2 py-1 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+        </div>
+    );
+
+    const totalAllowances = data.allowances.spiderman + form.meal + form.transport + form.otherAllowance;
+    const gross = form.baseSalary + data.overtimePay + totalAllowances;
+    const totalDeductions = form.labor + form.health + data.deductions.late + form.leave + form.otherDeduction;
+    const net = Math.max(0, gross - totalDeductions);
+
     return (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
             <div className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -75,7 +113,18 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                             className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-lg"
                         />
                         <div>
-                            <h2 className="text-2xl font-black text-slate-900">{member.name} 薪資明細表</h2>
+                            <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                                {member.name} 薪資明細表
+                                {isEditing ? (
+                                    <button onClick={handleSave} className="bg-emerald-500 text-white text-xs px-3 py-1 rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200">
+                                        儲存修改
+                                    </button>
+                                ) : (
+                                    <button onClick={() => setIsEditing(true)} className="bg-white border border-slate-200 text-slate-400 text-xs px-3 py-1 rounded-full hover:text-blue-500 hover:border-blue-200 transition-colors">
+                                        編輯調整
+                                    </button>
+                                )}
+                            </h2>
                             <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{month} 月份 • {member.role}</p>
                         </div>
                     </div>
@@ -87,6 +136,7 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                 <div className="flex-1 overflow-y-auto p-8">
                     {/* Summary Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                        {/* Attendance - Read Only */}
                         <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 space-y-2">
                             <p className="text-[10px] uppercase font-black text-blue-400 tracking-widest">出勤概況</p>
                             <div className="flex justify-between items-baseline">
@@ -98,45 +148,102 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                                 <span className="text-lg font-black text-amber-600">{data.overtimeHours.toFixed(1)} <span className="text-xs text-amber-400">hr</span></span>
                             </div>
                         </div>
-                        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 space-y-1">
-                            <p className="text-[10px] uppercase font-black text-emerald-500 tracking-widest">應發所得詳情</p>
-                            <div className="flex justify-between text-sm">
-                                <span className="font-bold text-slate-500">本薪</span>
-                                <span className="font-black text-slate-700">${data.baseSalary.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="font-bold text-slate-500">加班費</span>
-                                <span className="font-black text-amber-600">+${data.overtimePay.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="font-bold text-slate-500">各項津貼</span>
-                                <span className="font-black text-blue-600">+${data.allowances.total.toLocaleString()}</span>
-                            </div>
+
+                        {/* Income */}
+                        <div className={`p-4 rounded-2xl border space-y-1 ${isEditing ? 'bg-white border-emerald-500 ring-4 ring-emerald-50/50' : 'bg-emerald-50 border-emerald-100'}`}>
+                            <p className="text-[10px] uppercase font-black text-emerald-500 tracking-widest mb-2">應發所得詳情</p>
+
+                            {isEditing ? (
+                                <div className="space-y-2">
+                                    <Input label="本薪 (Base Salary)" value={form.baseSalary} onChange={(v: number) => setForm({ ...form, baseSalary: v })} />
+                                    <div className="flex justify-between text-xs font-bold text-slate-500 pt-1">
+                                        <span>加班費 (自動)</span>
+                                        <span>+${data.overtimePay.toLocaleString()}</span>
+                                    </div>
+                                    <div className="border-t border-slate-100 my-1 pt-1">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">津貼 Adjustments</p>
+                                        <Input label="伙食津貼" value={form.meal} onChange={(v: number) => setForm({ ...form, meal: v })} className="mb-1" />
+                                        <Input label="交通津貼" value={form.transport} onChange={(v: number) => setForm({ ...form, transport: v })} className="mb-1" />
+                                        <Input label="其他津貼" value={form.otherAllowance} onChange={(v: number) => setForm({ ...form, otherAllowance: v })} />
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-bold text-slate-500">本薪</span>
+                                        <span className="font-black text-slate-700">${form.baseSalary.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-bold text-slate-500">加班費</span>
+                                        <span className="font-black text-amber-600">+${data.overtimePay.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-bold text-slate-500">各項津貼</span>
+                                        <span className="font-black text-blue-600">+${totalAllowances.toLocaleString()}</span>
+                                    </div>
+                                </>
+                            )}
+
                             <div className="border-t border-emerald-200/50 pt-1 mt-1 flex justify-between">
                                 <span className="font-black text-emerald-700 text-xs uppercase">應發總額</span>
-                                <span className="font-black text-emerald-700">${data.grossSalary.toLocaleString()}</span>
+                                <span className="font-black text-emerald-700">${gross.toLocaleString()}</span>
                             </div>
                         </div>
-                        <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 space-y-1">
-                            <p className="text-[10px] uppercase font-black text-rose-400 tracking-widest">代扣項目</p>
-                            <div className="flex justify-between text-sm">
-                                <span className="font-bold text-slate-500">勞保自付</span>
-                                <span className="font-black text-rose-600">-${data.deductions.labor.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="font-bold text-slate-500">健保自付</span>
-                                <span className="font-black text-rose-600">-${data.deductions.health.toLocaleString()}</span>
-                            </div>
-                            {data.deductions.late > 0 && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="font-bold text-rose-500">遲到扣款</span>
-                                    <span className="font-black text-rose-600">-${data.deductions.late.toLocaleString()}</span>
+
+                        {/* Deductions */}
+                        <div className={`p-4 rounded-2xl border space-y-1 ${isEditing ? 'bg-white border-rose-500 ring-4 ring-rose-50/50' : 'bg-rose-50 border-rose-100'}`}>
+                            <p className="text-[10px] uppercase font-black text-rose-400 tracking-widest mb-2">扣除項目</p>
+
+                            {isEditing ? (
+                                <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Input label="勞保自付" value={form.labor} onChange={(v: number) => setForm({ ...form, labor: v })} />
+                                        <Input label="健保自付" value={form.health} onChange={(v: number) => setForm({ ...form, health: v })} />
+                                    </div>
+                                    <div className="flex justify-between text-xs font-bold text-slate-500 border-b border-slate-100 pb-1 mb-1">
+                                        <span>遲到 (自動)</span>
+                                        <span className="text-rose-500">-${data.deductions.late}</span>
+                                    </div>
+                                    <Input label="請假扣薪" value={form.leave} onChange={(v: number) => setForm({ ...form, leave: v })} />
+                                    <Input label="其他扣除" value={form.otherDeduction} onChange={(v: number) => setForm({ ...form, otherDeduction: v })} />
                                 </div>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-bold text-slate-500">勞保自付</span>
+                                        <span className="font-black text-rose-600">-${form.labor.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-bold text-slate-500">健保自付</span>
+                                        <span className="font-black text-rose-600">-${form.health.toLocaleString()}</span>
+                                    </div>
+                                    {data.deductions.late > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="font-bold text-rose-500">遲到扣款</span>
+                                            <span className="font-black text-rose-600">-${data.deductions.late.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {form.leave > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="font-bold text-rose-500">請假扣薪</span>
+                                            <span className="font-black text-rose-600">-${form.leave.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {form.otherDeduction > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="font-bold text-rose-500">其他扣除</span>
+                                            <span className="font-black text-rose-600">-${form.otherDeduction.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
+
+                        {/* Net Pay */}
                         <div className="bg-slate-900 p-4 rounded-2xl text-white shadow-xl shadow-slate-200 flex flex-col justify-center">
                             <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">本月實領薪資</p>
-                            <p className="text-3xl font-black tracking-tight">${data.netSalary.toLocaleString()}</p>
+                            <p className="text-3xl font-black tracking-tight">${net.toLocaleString()}</p>
+                            {isEditing && <p className="text-[10px] text-slate-500 mt-1">* 儲存後生效</p>}
                         </div>
                     </div>
 
@@ -210,6 +317,21 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
 const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers, currentUser, approvalRequests = [], onCreateApproval }) => {
     const [activeTab, setActiveTab] = useState<'records' | 'payroll'>('payroll');
     const [correctionTarget, setCorrectionTarget] = useState<{ date: string, memberId: string, memberName: string } | null>(null);
+    const [payrollAdjustments, setPayrollAdjustments] = useState<Record<string, any>>({});
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('bt_payroll_adjustments');
+            if (saved) setPayrollAdjustments(JSON.parse(saved));
+        } catch (e) { }
+    }, []);
+
+    const handleUpdateAdjustment = (memberId: string, data: any) => {
+        const key = `${selectedMonth}-${memberId}`;
+        const newAdj = { ...payrollAdjustments, [key]: data };
+        setPayrollAdjustments(newAdj);
+        localStorage.setItem('bt_payroll_adjustments', JSON.stringify(newAdj));
+    };
     const [viewingLocation, setViewingLocation] = useState<AttendanceRecord | null>(null);
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [selectedMemberDetail, setSelectedMemberDetail] = useState<{ member: TeamMember, data: PayrollData } | null>(null);
@@ -391,12 +513,15 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 overtimePay: 0,
                 allowances: {
                     spiderman: 0,
+                    meal: 0,
+                    transport: 0,
                     other: 0,
                     total: 0
                 },
                 grossSalary: 0,
                 deductions: {
                     late: 0,
+                    leave: 0,
                     labor: m.laborFee || 0,
                     health: m.healthFee || 0,
                     other: 0
@@ -674,15 +799,30 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 context.baseSalary = m.monthlySalary;
             }
 
-            context.allowances.total = context.allowances.spiderman + context.allowances.other;
+            // Apply Adjustments
+            const adjKey = `${selectedMonth}-${empId}`;
+            const adj = payrollAdjustments[adjKey];
+
+            if (adj) {
+                if (adj.labor !== undefined) context.deductions.labor = Number(adj.labor);
+                if (adj.health !== undefined) context.deductions.health = Number(adj.health);
+                context.deductions.leave = Number(adj.leave || 0);
+                context.deductions.other = Number(adj.otherDeduction || 0);
+
+                context.allowances.meal = Number(adj.meal || 0);
+                context.allowances.transport = Number(adj.transport || 0);
+                context.allowances.other = Number(adj.otherAllowance || 0);
+            }
+
+            context.allowances.total = context.allowances.spiderman + context.allowances.meal + context.allowances.transport + context.allowances.other;
             context.grossSalary = context.baseSalary + context.overtimePay + context.allowances.total;
 
-            // 實領薪資 = 應發總額 - 勞健保 - 遲到扣款
-            context.netSalary = Math.max(0, context.grossSalary - context.deductions.labor - context.deductions.health - context.deductions.late);
+            // 實領薪資 = 應發總額 - 勞健保 - 遲到扣款 - 請假 - 其他
+            context.netSalary = Math.max(0, context.grossSalary - context.deductions.labor - context.deductions.health - context.deductions.late - context.deductions.leave - context.deductions.other);
         });
 
         return Object.values(stats).sort((a, b) => (b.workDays - a.workDays));
-    }, [validRecords, teamMembers, selectedMonth, approvalRequests]);
+    }, [mergedRecords, teamMembers, selectedMonth, approvalRequests, payrollAdjustments]);
 
     const exportPayrollCSV = () => {
         const headers = ['員工姓名', '員工編號', '職稱', '出勤天數', '請假天數', '總工時', '加班工時', '日薪/月薪/時薪', '本薪總額', '加班費', '各項津貼', '遲到扣款', '勞保費', '健保費', '實領薪資'];
@@ -734,6 +874,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                     data={selectedMemberDetail.data}
                     month={selectedMonth}
                     onClose={() => setSelectedMemberDetail(null)}
+                    onUpdateAdjustment={(adj) => handleUpdateAdjustment(selectedMemberDetail.member.id, adj)}
                 />
             )}
 
