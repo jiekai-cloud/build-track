@@ -863,7 +863,8 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
 
             // Final Totals
             // 如果是月薪制，本薪直接使用月薪（還需要考慮缺勤扣款，這裡暫時簡化為固定月薪）
-            if (m.salaryType === 'monthly' && m.monthlySalary) {
+            // 如果是月薪制，本薪直接使用月薪
+            if (m.monthlySalary && (m.salaryType === 'monthly' || !m.salaryType)) {
                 context.baseSalary = m.monthlySalary;
             }
 
@@ -1083,8 +1084,12 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right hidden md:table-cell">
-                                                    <span className={`text-xs font-mono font-bold ${d.member?.dailyRate ? 'text-slate-600' : 'text-rose-400'}`}>
-                                                        {d.member?.dailyRate ? `$${d.member.dailyRate.toLocaleString()}` : '未設定'}
+                                                    <span className={`text-xs font-mono font-bold ${d.member?.monthlySalary || d.member?.dailyRate ? 'text-slate-600' : 'text-rose-400'}`}>
+                                                        {d.member?.monthlySalary
+                                                            ? `$${d.member.monthlySalary.toLocaleString()}`
+                                                            : d.member?.dailyRate
+                                                                ? `$${d.member.dailyRate.toLocaleString()}`
+                                                                : '未設定'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right hidden md:table-cell">
