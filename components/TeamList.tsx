@@ -173,105 +173,114 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
             </div>
 
             <div className="divide-y divide-slate-100">
-              {sortedMembers.map((member) => (
-                <div key={member.id} className="group hover:bg-slate-50/50 transition-colors">
-                  <div className="p-6 lg:px-8 lg:py-5 lg:grid lg:grid-cols-12 lg:items-center gap-4">
-                    {/* 基本資訊 */}
-                    <div className="col-span-4 flex items-center gap-4 mb-4 lg:mb-0">
-                      <div className="relative shrink-0">
-                        <img src={member.avatar} alt={member.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-slate-50 shadow-sm" />
-                        <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white 
+              {sortedMembers
+                .filter(member => {
+                  // Visual Filter: Hide Virtual Members (Safety Net)
+                  const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬', '陳信寬'];
+                  const PURGE_PREFIXES = ['T-', 'CEO'];
+                  const isVirtualId = typeof member.id === 'string' && PURGE_PREFIXES.some(prefix => member.id.startsWith(prefix) && member.id.length < 8);
+                  const isVirtualName = PURGE_NAMES.includes(member.name);
+                  return !isVirtualId && !isVirtualName;
+                })
+                .map((member) => (
+                  <div key={member.id} className="group hover:bg-slate-50/50 transition-colors">
+                    <div className="p-6 lg:px-8 lg:py-5 lg:grid lg:grid-cols-12 lg:items-center gap-4">
+                      {/* 基本資訊 */}
+                      <div className="col-span-4 flex items-center gap-4 mb-4 lg:mb-0">
+                        <div className="relative shrink-0">
+                          <img src={member.avatar} alt={member.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-slate-50 shadow-sm" />
+                          <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white 
                           ${(member.currentWorkStatus === 'OnDuty' || member.status === 'Available') ? 'bg-emerald-500' :
-                            member.status === 'Busy' ? 'bg-amber-500' :
-                              member.status === 'OnLeave' ? 'bg-rose-500' :
-                                member.status === 'OffDuty' ? 'bg-slate-300' : 'bg-slate-300'
-                          }`}></div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-black text-slate-900">
-                            {member.name}
-                            {member.nicknames && member.nicknames.length > 0 && (
-                              <span className="text-slate-400 font-bold ml-2">({member.nicknames.join(', ')})</span>
-                            )}
-                          </h3>
-                          <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded uppercase tracking-tighter">
-                            {member.employeeId}
-                          </span>
+                              member.status === 'Busy' ? 'bg-amber-500' :
+                                member.status === 'OnLeave' ? 'bg-rose-500' :
+                                  member.status === 'OffDuty' ? 'bg-slate-300' : 'bg-slate-300'
+                            }`}></div>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{member.role}</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {(member.departmentIds || [member.departmentId]).filter(Boolean).map(deptId => {
-                            const dept = departments.find(d => d.id === deptId);
-                            return dept ? (
-                              <span key={deptId} className="text-[8px] font-black px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200 uppercase">
-                                {dept.name}
-                              </span>
-                            ) : null;
-                          })}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-black text-slate-900">
+                              {member.name}
+                              {member.nicknames && member.nicknames.length > 0 && (
+                                <span className="text-slate-400 font-bold ml-2">({member.nicknames.join(', ')})</span>
+                              )}
+                            </h3>
+                            <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                              {member.employeeId}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{member.role}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(member.departmentIds || [member.departmentId]).filter(Boolean).map(deptId => {
+                              const dept = departments.find(d => d.id === deptId);
+                              return dept ? (
+                                <span key={deptId} className="text-[8px] font-black px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200 uppercase">
+                                  {dept.name}
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* 聯繫方式 */}
-                    <div className="col-span-3 space-y-1 mb-4 lg:mb-0">
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <Briefcase size={12} className="text-slate-400" />
-                        <a href={`tel:${member.phone}`} className="font-bold font-mono hover:text-orange-600 hover:underline transition-colors">{member.phone}</a>
-                      </div>
-                      {member.personalPhone && (
+                      {/* 聯繫方式 */}
+                      <div className="col-span-3 space-y-1 mb-4 lg:mb-0">
                         <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <Phone size={12} className="text-slate-400" />
-                          <a href={`tel:${member.personalPhone}`} className="font-bold font-mono hover:text-orange-600 hover:underline transition-colors">{member.personalPhone}</a>
+                          <Briefcase size={12} className="text-slate-400" />
+                          <a href={`tel:${member.phone}`} className="font-bold font-mono hover:text-orange-600 hover:underline transition-colors">{member.phone}</a>
+                        </div>
+                        {member.personalPhone && (
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <Phone size={12} className="text-slate-400" />
+                            <a href={`tel:${member.personalPhone}`} className="font-bold font-mono hover:text-orange-600 hover:underline transition-colors">{member.personalPhone}</a>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <Mail size={12} className="shrink-0" />
+                          <span className="truncate max-w-[180px]">{member.email}</span>
+                        </div>
+                      </div>
+
+                      {/* 負載進度 */}
+                      <div className="col-span-2 mb-4 lg:mb-0">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">進行中案場</span>
+                          <span className="text-[10px] font-black text-slate-900">{member.activeProjectsCount} 案</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                          <div className={`h-full transition-all duration-500 ${member.activeProjectsCount > 5 ? 'bg-rose-500' : member.activeProjectsCount > 3 ? 'bg-amber-500' : 'bg-orange-600'
+                            }`} style={{ width: `${Math.min(member.activeProjectsCount * 20, 100)}%` }}></div>
+                        </div>
+                      </div>
+
+                      {/* 狀態標籤 */}
+                      <div className="col-span-2 mb-4 lg:mb-0">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black border ${getStatusBadge(member.status, member.currentWorkStatus)}`}>
+                          {getStatusText(member.status, member.currentWorkStatus)}
+                        </span>
+                      </div>
+
+                      {/* 操作按鈕 */}
+                      {canManage && (
+                        <div className="col-span-1 flex justify-end items-center gap-1">
+                          <button
+                            onClick={() => onEditClick(member)}
+                            className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
+                            title="編輯成員"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => onDeleteClick(member.id)}
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                            title="刪除成員"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <Mail size={12} className="shrink-0" />
-                        <span className="truncate max-w-[180px]">{member.email}</span>
-                      </div>
                     </div>
-
-                    {/* 負載進度 */}
-                    <div className="col-span-2 mb-4 lg:mb-0">
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">進行中案場</span>
-                        <span className="text-[10px] font-black text-slate-900">{member.activeProjectsCount} 案</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-500 ${member.activeProjectsCount > 5 ? 'bg-rose-500' : member.activeProjectsCount > 3 ? 'bg-amber-500' : 'bg-orange-600'
-                          }`} style={{ width: `${Math.min(member.activeProjectsCount * 20, 100)}%` }}></div>
-                      </div>
-                    </div>
-
-                    {/* 狀態標籤 */}
-                    <div className="col-span-2 mb-4 lg:mb-0">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black border ${getStatusBadge(member.status, member.currentWorkStatus)}`}>
-                        {getStatusText(member.status, member.currentWorkStatus)}
-                      </span>
-                    </div>
-
-                    {/* 操作按鈕 */}
-                    {canManage && (
-                      <div className="col-span-1 flex justify-end items-center gap-1">
-                        <button
-                          onClick={() => onEditClick(member)}
-                          className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
-                          title="編輯成員"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => onDeleteClick(member.id)}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                          title="刪除成員"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )}
                   </div>
-                </div>
-              ))}
+                ))}
               {filteredMembers.length === 0 && (
                 <div className="p-20 text-center">
                   <div className="bg-slate-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4">

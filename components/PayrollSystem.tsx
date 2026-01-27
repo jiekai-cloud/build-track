@@ -1172,69 +1172,79 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-stone-100">
-                                    {payrollData.map((d) => {
-                                        const hasData = d.workDays > 0 || d.leaveDays > 0;
-                                        return (
-                                            <tr key={d.member?.id || Math.random()} className="hover:bg-stone-50 transition-colors group">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <img
-                                                            src={d.member?.avatar || `https://ui-avatars.com/api/?name=${d.member?.name}&background=random`}
-                                                            alt="avatar"
-                                                            className="w-10 h-10 rounded-xl object-cover border border-stone-100 shadow-sm"
-                                                        />
-                                                        <div>
-                                                            <div className="font-bold text-stone-900">{d.member?.name || '未知員工'}</div>
-                                                            <div className="text-[10px] text-stone-400 font-black uppercase tracking-wider">{d.member?.role || '無職稱'}</div>
+                                    {payrollData
+                                        .filter(d => {
+                                            // Visual Filter: Hide Virtual Members (Safety Net)
+                                            if (!d.member) return false;
+                                            const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬', '陳信寬'];
+                                            const PURGE_PREFIXES = ['T-', 'CEO'];
+                                            const isVirtualId = typeof d.member.id === 'string' && PURGE_PREFIXES.some(prefix => d.member.id.startsWith(prefix) && d.member.id.length < 8);
+                                            const isVirtualName = PURGE_NAMES.includes(d.member.name);
+                                            return !isVirtualId && !isVirtualName;
+                                        })
+                                        .map((d) => {
+                                            const hasData = d.workDays > 0 || d.leaveDays > 0;
+                                            return (
+                                                <tr key={d.member?.id || Math.random()} className="hover:bg-stone-50 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <img
+                                                                src={d.member?.avatar || `https://ui-avatars.com/api/?name=${d.member?.name}&background=random`}
+                                                                alt="avatar"
+                                                                className="w-10 h-10 rounded-xl object-cover border border-stone-100 shadow-sm"
+                                                            />
+                                                            <div>
+                                                                <div className="font-bold text-stone-900">{d.member?.name || '未知員工'}</div>
+                                                                <div className="text-[10px] text-stone-400 font-black uppercase tracking-wider">{d.member?.role || '無職稱'}</div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <span className={`inline-block px-3 py-1 rounded-lg text-sm font-black ${d.workDays > 0 ? 'bg-blue-50 text-blue-600' : 'text-stone-300'}`}>
-                                                            {d.workDays} <span className="text-[10px] opacity-70">天</span>
-                                                        </span>
-                                                        {d.leaveDays > 0 && (
-                                                            <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
-                                                                請假 {d.leaveDays} 天
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className={`inline-block px-3 py-1 rounded-lg text-sm font-black ${d.workDays > 0 ? 'bg-blue-50 text-blue-600' : 'text-stone-300'}`}>
+                                                                {d.workDays} <span className="text-[10px] opacity-70">天</span>
                                                             </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right hidden md:table-cell">
-                                                    <span className={`text-xs font-mono font-bold ${Number(d.member?.monthlySalary || 0) > 0 || Number(d.member?.dailyRate || 0) > 0 || Number(d.member?.hourlyRate || 0) > 0 ? 'text-slate-600' : 'text-rose-400'}`}>
-                                                        {Number(d.member?.monthlySalary || 0) > 0
-                                                            ? `$${Number(d.member!.monthlySalary).toLocaleString()}`
-                                                            : Number(d.member?.dailyRate || 0) > 0
-                                                                ? `$${Number(d.member!.dailyRate).toLocaleString()}(日)`
-                                                                : Number(d.member?.hourlyRate || 0) > 0
-                                                                    ? `$${Number(d.member!.hourlyRate).toLocaleString()}(時)`
-                                                                    : '未設定'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right hidden md:table-cell">
-                                                    <div className="flex flex-col items-end gap-0.5">
-                                                        <span className="text-[10px] font-bold text-slate-400">勞 ${d.deductions.labor}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400">健 ${d.deductions.health}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className={`text-lg font-black font-mono tracking-tight ${d.netSalary > 0 ? 'text-emerald-600' : 'text-stone-300'}`}>
-                                                        ${d.netSalary.toLocaleString()}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <button
-                                                        onClick={() => d.member && setSelectedMemberDetail({ member: d.member, data: d })}
-                                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                                                        title="查看薪資單細節"
-                                                    >
-                                                        <FileText size={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                                            {d.leaveDays > 0 && (
+                                                                <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
+                                                                    請假 {d.leaveDays} 天
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right hidden md:table-cell">
+                                                        <span className={`text-xs font-mono font-bold ${Number(d.member?.monthlySalary || 0) > 0 || Number(d.member?.dailyRate || 0) > 0 || Number(d.member?.hourlyRate || 0) > 0 ? 'text-slate-600' : 'text-rose-400'}`}>
+                                                            {Number(d.member?.monthlySalary || 0) > 0
+                                                                ? `$${Number(d.member!.monthlySalary).toLocaleString()}`
+                                                                : Number(d.member?.dailyRate || 0) > 0
+                                                                    ? `$${Number(d.member!.dailyRate).toLocaleString()}(日)`
+                                                                    : Number(d.member?.hourlyRate || 0) > 0
+                                                                        ? `$${Number(d.member!.hourlyRate).toLocaleString()}(時)`
+                                                                        : '未設定'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right hidden md:table-cell">
+                                                        <div className="flex flex-col items-end gap-0.5">
+                                                            <span className="text-[10px] font-bold text-slate-400">勞 ${d.deductions.labor}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400">健 ${d.deductions.health}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className={`text-lg font-black font-mono tracking-tight ${d.netSalary > 0 ? 'text-emerald-600' : 'text-stone-300'}`}>
+                                                            ${d.netSalary.toLocaleString()}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <button
+                                                            onClick={() => d.member && setSelectedMemberDetail({ member: d.member, data: d })}
+                                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                                            title="查看薪資單細節"
+                                                        >
+                                                            <FileText size={18} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                 </tbody>
                             </table>
                         </div>
