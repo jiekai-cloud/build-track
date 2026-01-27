@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { AttendanceRecord, TeamMember, User, ApprovalRequest } from '../types';
-import { Calendar, User as UserIcon, MapPin, Download, Calculator, DollarSign, Clock, Filter, FileSpreadsheet, FileText, XCircle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Calendar, User as UserIcon, MapPin, Download, Printer, Calculator, DollarSign, Clock, Filter, FileSpreadsheet, FileText, XCircle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import LocationModal from './LocationModal';
 
 interface PayrollSystemProps {
@@ -102,9 +102,23 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
     const totalDeductions = form.labor + form.health + data.deductions.late + form.leave + form.otherDeduction;
     const net = Math.max(0, gross - totalDeductions);
 
+    const handleReset = () => {
+        if (!window.confirm('確定要還原為系統預設值嗎？這將清除目前的調整。')) return;
+        setForm({
+            baseSalary: member.monthlySalary || 0,
+            meal: 0,
+            transport: 0,
+            otherAllowance: 0,
+            leave: 0,
+            otherDeduction: 0,
+            labor: member.laborFee || 0,
+            health: member.healthFee || 0
+        });
+    };
+
     return (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in print:bg-white print:p-0 print:static print:z-[9999]">
+            <div className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:rounded-none print:w-full print:h-auto">
                 <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-4">
                         <img
@@ -113,17 +127,22 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                             className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-lg"
                         />
                         <div>
-                            <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                            <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2 print:text-3xl">
                                 {member.name} 薪資明細表
-                                {isEditing ? (
-                                    <button onClick={handleSave} className="bg-emerald-500 text-white text-xs px-3 py-1 rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200">
-                                        儲存修改
+                                <div className="flex items-center gap-2 print:hidden">
+                                    <button onClick={() => window.print()} className="bg-slate-800 text-white text-xs px-3 py-1 rounded-full hover:bg-slate-700 transition-colors flex items-center gap-1 shadow-lg shadow-slate-200">
+                                        <Printer size={12} /> 匯出 PDF
                                     </button>
-                                ) : (
-                                    <button onClick={() => setIsEditing(true)} className="bg-white border border-slate-200 text-slate-400 text-xs px-3 py-1 rounded-full hover:text-blue-500 hover:border-blue-200 transition-colors">
-                                        編輯調整
-                                    </button>
-                                )}
+                                    {isEditing ? (
+                                        <button onClick={handleSave} className="bg-emerald-500 text-white text-xs px-3 py-1 rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200">
+                                            儲存修改
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => setIsEditing(true)} className="bg-white border border-slate-200 text-slate-400 text-xs px-3 py-1 rounded-full hover:text-blue-500 hover:border-blue-200 transition-colors">
+                                            編輯調整
+                                        </button>
+                                    )}
+                                </div>
                             </h2>
                             <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{month} 月份 • {member.role}</p>
                         </div>
@@ -133,7 +152,14 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8">
+                <div className="flex-1 overflow-y-auto p-8 print:overflow-visible print:h-auto print:p-4">
+                    {isEditing && (
+                        <div className="mb-4 flex justify-end print:hidden">
+                            <button onClick={handleReset} className="text-xs font-bold text-rose-500 hover:underline flex items-center gap-1">
+                                <XCircle size={12} /> 重置為預設值
+                            </button>
+                        </div>
+                    )}
                     {/* Summary Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                         {/* Attendance - Read Only */}
@@ -256,8 +282,9 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">日期</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-center">狀態</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-center">工時/加班</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-center print:text-black">狀態</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-center print:text-black">打卡時間</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-center print:text-black">工時/加班</th>
                                     <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">本薪</th>
                                     <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">加班費</th>
                                     <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">津貼</th>
@@ -268,15 +295,18 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                                 {data.dailyLogs.map(log => (
                                     <tr key={log.date} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-4 py-3">
-                                            <div className="font-mono text-sm font-bold text-slate-600">{log.date}</div>
-                                            {log.note && <div className="text-[10px] text-slate-400 mt-0.5">{log.note}</div>}
+                                            <div className="font-mono text-sm font-bold text-slate-600 print:text-black">{log.date}</div>
+                                            {log.note && <div className="text-[10px] text-slate-400 mt-0.5 print:text-black">{log.note}</div>}
                                         </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {log.status === 'work' && <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-1 rounded">出勤</span>}
-                                            {log.status === 'leave' && <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-1 rounded">請假</span>}
+                                        <td className="px-4 py-3 text-center border-b border-slate-50 print:border-black">
+                                            {log.status === 'work' && <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-1 rounded print:border print:border-black print:bg-transparent print:text-black">出勤</span>}
+                                            {log.status === 'leave' && <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-1 rounded print:border print:border-black print:bg-transparent print:text-black">請假</span>}
                                             {log.status === 'absent' && <span className="text-slate-300 text-[10px] font-bold">-</span>}
-                                            {log.isLate && <div className="mt-1"><span className="bg-rose-100 text-rose-700 text-[9px] font-black px-1.5 py-0.5 rounded">遲到{log.lateMinutes}分</span></div>}
-                                            {log.isEarlyLeave && <div className="mt-1"><span className="bg-orange-100 text-orange-700 text-[9px] font-black px-1.5 py-0.5 rounded">早退{log.earlyLeaveMinutes}分</span></div>}
+                                            {log.isLate && <div className="mt-1"><span className="bg-rose-100 text-rose-700 text-[9px] font-black px-1.5 py-0.5 rounded print:border print:border-black print:bg-transparent print:text-black">遲到{log.lateMinutes}分</span></div>}
+                                            {log.isEarlyLeave && <div className="mt-1"><span className="bg-orange-100 text-orange-700 text-[9px] font-black px-1.5 py-0.5 rounded print:border print:border-black print:bg-transparent print:text-black">早退{log.earlyLeaveMinutes}分</span></div>}
+                                        </td>
+                                        <td className="px-4 py-3 text-center text-xs font-bold text-slate-600 font-mono whitespace-nowrap border-b border-slate-50 print:border-black print:text-black">
+                                            {log.actualStartTime || '--:--'} - {log.actualEndTime || '--:--'}
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <div className="flex flex-col items-center">
@@ -302,7 +332,7 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                             </tbody>
                             <tfoot className="bg-slate-50 border-t border-slate-100">
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-3 text-right text-xs font-black text-slate-500 uppercase">稅前應發總計</td>
+                                    <td colSpan={7} className="px-4 py-3 text-right text-xs font-black text-slate-500 uppercase print:text-black">稅前應發總計</td>
                                     <td className="px-4 py-3 text-right font-black text-emerald-700 border-t-2 border-emerald-500">${data.grossSalary.toLocaleString()}</td>
                                 </tr>
                             </tfoot>
@@ -878,7 +908,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 />
             )}
 
-            <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4 print:hidden">
                 <div>
                     <h1 className="text-2xl font-black text-stone-900 mb-1">人事與薪資管理</h1>
                     <p className="text-stone-500 font-bold text-xs">全公司出勤監控與薪資試算中心</p>
@@ -901,7 +931,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
             </div>
 
             {/* Company Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:hidden">
                 <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
@@ -945,7 +975,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
             </div>
 
             {activeTab === 'payroll' && (
-                <div className="space-y-6 animate-in slide-in-from-right-4">
+                <div className="space-y-6 animate-in slide-in-from-right-4 print:hidden">
                     {/* Controls */}
                     <div className="bg-white p-4 rounded-2xl border border-stone-200 flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
