@@ -342,847 +342,833 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                     records: sortedRecs
                 };
 
+            })
+            .sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'));
+    }, [mergedRecords]);
 
-                dailyRecords.push({
-                    date,
-                    records: dateRecords,
-                    hours
+    const toggleMemberExpansion = (memberName: string) => {
+        setExpandedMembers(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(memberName)) {
+                newSet.delete(memberName);
+            } else {
+                newSet.add(memberName);
+            }
+            return newSet;
+        });
+    };
+
+    // Core Payroll Calculation Logic
+    const payrollData = useMemo(() => {
+        const [yearStr, monthStr] = selectedMonth.split('-');
+        const year = parseInt(yearStr);
+        const month = parseInt(monthStr);
+        const daysInMonth = new Date(year, month, 0).getDate();
+
+        // 1. Filter needed data
+        const monthRecords = mergedRecords.filter(r => r.timestamp.startsWith(selectedMonth));
+        const monthLeaves = approvalRequests.filter(req => {
+            const isLeave = req.templateName.includes('請假') || req.title.includes('請假');
+            const isApproved = req.status === 'approved';
+            let dateInMonth = false;
+            // Support multiple date formats from various form templates
+            if (req.formData?.date && req.formData.date.startsWith(selectedMonth)) dateInMonth = true;
+            if (req.formData?.startDate && req.formData.startDate.startsWith(selectedMonth)) dateInMonth = true;
+            return isLeave && isApproved && dateInMonth;
+        });
+
+        // 2. Initialize map for each employee
+        const stats: Record<string, PayrollData> = {};
+        teamMembers.forEach(m => {
+            stats[m.employeeId || m.id] = {
+                member: m,
+                workDays: 0,
+                leaveDays: 0,
+                hours: 0,
+                overtimeHours: 0,
+                records: [],
+                baseSalary: 0,
+                overtimePay: 0,
+                allowances: {
+                    spiderman: 0,
+                    other: 0,
+                    total: 0
+                },
+                grossSalary: 0,
+                deductions: {
+                    late: 0,
+                    labor: m.laborFee || 0,
+                    health: m.healthFee || 0,
+                    other: 0
+                },
+                netSalary: 0,
+                dailyLogs: []
+            };
+        });
+
+        // 3. Process each day of the month for each employee
+        Object.values(stats).forEach(context => {
+            const m = context.member!;
+            const empId = m.employeeId || m.id;
+            const dailyRate = m.dailyRate || 0;
+            // Assuming 8-hour work day for hourly rate calc
+            const hourlyRate = dailyRate > 0 ? dailyRate / 8 : 0;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${selectedMonth}-${d.toString().padStart(2, '0')}`;
+
+                // Check Work
+                const dayWorkRecs = monthRecords.filter(r => r.timestamp.startsWith(dateStr) && (r.employeeId === empId || r.name === m.name));
+                const hasWorkStart = dayWorkRecs.some(r => r.type === 'work-start');
+
+                // Check Leave
+                const dayLeave = monthLeaves.find(req => {
+                    const reqRequester = req.requesterId === m.id;
+                    const reqDate = req.formData?.date === dateStr || req.formData?.startDate === dateStr;
+                    return reqRequester && reqDate;
                 });
-            });
 
-        return {
-            name,
-            records: sortedRecs,
-            dailyRecords,
-            count: records.length,
-            totalMonthHours
-        };
-    })
-        .sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'));
-}, [sortedRecords]);
+                // Check Approved Overtime Request for this date
+                const overtimeRequest = approvalRequests.find(req => {
+                    const isOvertime = req.templateName.includes('加班') || req.title.includes('加班');
+                    const isApproved = req.status === 'approved';
+                    const reqRequester = req.requesterId === m.id;
+                    const reqDate = req.formData?.date === dateStr || req.formData?.startDate === dateStr;
+                    return isOvertime && isApproved && reqRequester && reqDate;
+                });
 
-const toggleMemberExpansion = (memberName: string) => {
-    setExpandedMembers(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(memberName)) {
-            newSet.delete(memberName);
-        } else {
-            newSet.add(memberName);
-        }
-        return newSet;
-    });
-};
+                const approvedOvertimeHours = overtimeRequest ? (parseFloat(overtimeRequest.formData?.hours) || 0) : 0;
 
-// Core Payroll Calculation Logic
-const payrollData = useMemo(() => {
-    const [yearStr, monthStr] = selectedMonth.split('-');
-    const year = parseInt(yearStr);
-    const month = parseInt(monthStr);
-    const daysInMonth = new Date(year, month, 0).getDate();
+                // Calculate Hours and Late Status
+                let dayHours = 0;
+                let isLate = false;
+                let lateMinutes = 0;
+                let isEarlyLeave = false;
+                let earlyLeaveMinutes = 0;
+                let isIncomplete = false;
+                let actualStartTime: string | undefined;
+                let actualEndTime: string | undefined;
 
-    // 1. Filter needed data
-    const monthRecords = mergedRecords.filter(r => r.timestamp.startsWith(selectedMonth));
-    const monthLeaves = approvalRequests.filter(req => {
-        const isLeave = req.templateName.includes('請假') || req.title.includes('請假');
-        const isApproved = req.status === 'approved';
-        let dateInMonth = false;
-        // Support multiple date formats from various form templates
-        if (req.formData?.date && req.formData.date.startsWith(selectedMonth)) dateInMonth = true;
-        if (req.formData?.startDate && req.formData.startDate.startsWith(selectedMonth)) dateInMonth = true;
-        return isLeave && isApproved && dateInMonth;
-    });
+                if (hasWorkStart) {
+                    // 針對計時制員工，計算所有打卡區間的總和
+                    if (m.salaryType === 'hourly') {
+                        const sortedDayRecs = dayWorkRecs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                        let totalTime = 0;
+                        let currentStart: number | null = null;
 
-    // 2. Initialize map for each employee
-    const stats: Record<string, PayrollData> = {};
-    teamMembers.forEach(m => {
-        stats[m.employeeId || m.id] = {
-            member: m,
-            workDays: 0,
-            leaveDays: 0,
-            hours: 0,
-            overtimeHours: 0,
-            records: [],
-            baseSalary: 0,
-            overtimePay: 0,
-            allowances: {
-                spiderman: 0,
-                other: 0,
-                total: 0
-            },
-            grossSalary: 0,
-            deductions: {
-                late: 0,
-                labor: m.laborFee || 0,
-                health: m.healthFee || 0,
-                other: 0
-            },
-            netSalary: 0,
-            dailyLogs: []
-        };
-    });
+                        // 尋找最早和最晚打卡時間用於顯示
+                        if (sortedDayRecs.length > 0) {
+                            const starts = sortedDayRecs.filter(r => r.type === 'work-start');
+                            const ends = sortedDayRecs.filter(r => r.type === 'work-end');
 
-    // 3. Process each day of the month for each employee
-    Object.values(stats).forEach(context => {
-        const m = context.member!;
-        const empId = m.employeeId || m.id;
-        const dailyRate = m.dailyRate || 0;
-        // Assuming 8-hour work day for hourly rate calc
-        const hourlyRate = dailyRate > 0 ? dailyRate / 8 : 0;
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${selectedMonth}-${d.toString().padStart(2, '0')}`;
-
-            // Check Work
-            const dayWorkRecs = monthRecords.filter(r => r.timestamp.startsWith(dateStr) && (r.employeeId === empId || r.name === m.name));
-            const hasWorkStart = dayWorkRecs.some(r => r.type === 'work-start');
-
-            // Check Leave
-            const dayLeave = monthLeaves.find(req => {
-                const reqRequester = req.requesterId === m.id;
-                const reqDate = req.formData?.date === dateStr || req.formData?.startDate === dateStr;
-                return reqRequester && reqDate;
-            });
-
-            // Check Approved Overtime Request for this date
-            const overtimeRequest = approvalRequests.find(req => {
-                const isOvertime = req.templateName.includes('加班') || req.title.includes('加班');
-                const isApproved = req.status === 'approved';
-                const reqRequester = req.requesterId === m.id;
-                const reqDate = req.formData?.date === dateStr || req.formData?.startDate === dateStr;
-                return isOvertime && isApproved && reqRequester && reqDate;
-            });
-
-            const approvedOvertimeHours = overtimeRequest ? (parseFloat(overtimeRequest.formData?.hours) || 0) : 0;
-
-            // Calculate Hours and Late Status
-            let dayHours = 0;
-            let isLate = false;
-            let lateMinutes = 0;
-            let isEarlyLeave = false;
-            let earlyLeaveMinutes = 0;
-            let isIncomplete = false;
-            let actualStartTime: string | undefined;
-            let actualEndTime: string | undefined;
-
-            if (hasWorkStart) {
-                // 針對計時制員工，計算所有打卡區間的總和
-                if (m.salaryType === 'hourly') {
-                    const sortedDayRecs = dayWorkRecs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                    let totalTime = 0;
-                    let currentStart: number | null = null;
-
-                    // 尋找最早和最晚打卡時間用於顯示
-                    if (sortedDayRecs.length > 0) {
-                        const starts = sortedDayRecs.filter(r => r.type === 'work-start');
-                        const ends = sortedDayRecs.filter(r => r.type === 'work-end');
-
-                        if (starts.length > 0) {
-                            actualStartTime = new Date(starts[0].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                        }
-                        if (ends.length > 0) {
-                            actualEndTime = new Date(ends[ends.length - 1].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                        }
-                    }
-
-                    sortedDayRecs.forEach(r => {
-                        const time = new Date(r.timestamp).getTime();
-                        if (r.type === 'work-start') {
-                            if (currentStart === null) currentStart = time;
-                        } else if (r.type === 'work-end') {
-                            if (currentStart !== null) {
-                                totalTime += (time - currentStart);
-                                currentStart = null;
-                            } else {
-                                isIncomplete = true; // 有下班沒上班
+                            if (starts.length > 0) {
+                                actualStartTime = new Date(starts[0].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
                             }
-                        }
-                    });
-
-                    // 檢查是否有懸空的上班打卡
-                    if (currentStart !== null) {
-                        isIncomplete = true;
-                    }
-
-                    dayHours = totalTime / (1000 * 60 * 60);
-                    // 計時制通常休息會打卡下班，所以不自動扣除午休
-                } else {
-                    // 月薪/日薪制：取當天最早和最晚，並扣除午休
-                    const starts = dayWorkRecs.filter(r => r.type === 'work-start').map(r => ({
-                        time: new Date(r.timestamp).getTime(),
-                        timestamp: r.timestamp
-                    }));
-                    const ends = dayWorkRecs.filter(r => r.type === 'work-end').map(r => ({
-                        time: new Date(r.timestamp).getTime(),
-                        timestamp: r.timestamp
-                    }));
-
-                    if (starts.length > 0 && ends.length > 0) {
-                        const earliestStart = starts.reduce((min, cur) => cur.time < min.time ? cur : min);
-                        const latestEnd = ends.reduce((max, cur) => cur.time > max.time ? cur : max);
-
-                        actualStartTime = new Date(earliestStart.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                        actualEndTime = new Date(latestEnd.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-
-                        dayHours = (latestEnd.time - earliestStart.time) / (1000 * 60 * 60);
-
-                        // 扣除午休 (12:00-13:00)
-                        const startDate = new Date(earliestStart.timestamp);
-                        const endDate = new Date(latestEnd.timestamp);
-                        const lunchStart = new Date(startDate);
-                        lunchStart.setHours(12, 0, 0, 0);
-                        const lunchEnd = new Date(startDate);
-                        lunchEnd.setHours(13, 0, 0, 0);
-
-                        if (startDate < lunchEnd && endDate > lunchStart) {
-                            dayHours = Math.max(0, dayHours - 1);
-                        }
-
-                        // 遲到檢測 (僅非計時制)
-                        if (m.workStartTime) {
-                            const [expectedHour, expectedMinute] = m.workStartTime.split(':').map(Number);
-                            const expectedStartDate = new Date(earliestStart.timestamp);
-                            expectedStartDate.setHours(expectedHour, expectedMinute, 0, 0);
-                            const expectedStartTime = expectedStartDate.getTime();
-
-                            if (earliestStart.time > expectedStartTime) {
-                                isLate = true;
-                                lateMinutes = Math.round((earliestStart.time - expectedStartTime) / (1000 * 60));
+                            if (ends.length > 0) {
+                                actualEndTime = new Date(ends[ends.length - 1].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
                             }
                         }
 
-                        // 早退檢測 (僅非計時制)
-                        if (m.workEndTime) {
-                            const [expectedHour, expectedMinute] = m.workEndTime.split(':').map(Number);
-                            const expectedEndDate = new Date(latestEnd.timestamp);
-                            expectedEndDate.setHours(expectedHour, expectedMinute, 0, 0);
-                            const expectedEndTime = expectedEndDate.getTime();
-
-                            if (latestEnd.time < expectedEndTime) {
-                                isEarlyLeave = true;
-                                earlyLeaveMinutes = Math.round((expectedEndTime - latestEnd.time) / (1000 * 60));
+                        sortedDayRecs.forEach(r => {
+                            const time = new Date(r.timestamp).getTime();
+                            if (r.type === 'work-start') {
+                                if (currentStart === null) currentStart = time;
+                            } else if (r.type === 'work-end') {
+                                if (currentStart !== null) {
+                                    totalTime += (time - currentStart);
+                                    currentStart = null;
+                                } else {
+                                    isIncomplete = true; // 有下班沒上班
+                                }
                             }
+                        });
+
+                        // 檢查是否有懸空的上班打卡
+                        if (currentStart !== null) {
+                            isIncomplete = true;
                         }
+
+                        dayHours = totalTime / (1000 * 60 * 60);
+                        // 計時制通常休息會打卡下班，所以不自動扣除午休
                     } else {
-                        // 資料不完整（只有上班或只有下班）
-                        if (starts.length > 0) {
-                            actualStartTime = new Date(starts[0].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                        } else if (ends.length > 0) {
-                            actualEndTime = new Date(ends[ends.length - 1].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                        // 月薪/日薪制：取當天最早和最晚，並扣除午休
+                        const starts = dayWorkRecs.filter(r => r.type === 'work-start').map(r => ({
+                            time: new Date(r.timestamp).getTime(),
+                            timestamp: r.timestamp
+                        }));
+                        const ends = dayWorkRecs.filter(r => r.type === 'work-end').map(r => ({
+                            time: new Date(r.timestamp).getTime(),
+                            timestamp: r.timestamp
+                        }));
+
+                        if (starts.length > 0 && ends.length > 0) {
+                            const earliestStart = starts.reduce((min, cur) => cur.time < min.time ? cur : min);
+                            const latestEnd = ends.reduce((max, cur) => cur.time > max.time ? cur : max);
+
+                            actualStartTime = new Date(earliestStart.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                            actualEndTime = new Date(latestEnd.timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+                            dayHours = (latestEnd.time - earliestStart.time) / (1000 * 60 * 60);
+
+                            // 扣除午休 (12:00-13:00)
+                            const startDate = new Date(earliestStart.timestamp);
+                            const endDate = new Date(latestEnd.timestamp);
+                            const lunchStart = new Date(startDate);
+                            lunchStart.setHours(12, 0, 0, 0);
+                            const lunchEnd = new Date(startDate);
+                            lunchEnd.setHours(13, 0, 0, 0);
+
+                            if (startDate < lunchEnd && endDate > lunchStart) {
+                                dayHours = Math.max(0, dayHours - 1);
+                            }
+
+                            // 遲到檢測 (僅非計時制)
+                            if (m.workStartTime) {
+                                const [expectedHour, expectedMinute] = m.workStartTime.split(':').map(Number);
+                                const expectedStartDate = new Date(earliestStart.timestamp);
+                                expectedStartDate.setHours(expectedHour, expectedMinute, 0, 0);
+                                const expectedStartTime = expectedStartDate.getTime();
+
+                                if (earliestStart.time > expectedStartTime) {
+                                    isLate = true;
+                                    lateMinutes = Math.round((earliestStart.time - expectedStartTime) / (1000 * 60));
+                                }
+                            }
+
+                            // 早退檢測 (僅非計時制)
+                            if (m.workEndTime) {
+                                const [expectedHour, expectedMinute] = m.workEndTime.split(':').map(Number);
+                                const expectedEndDate = new Date(latestEnd.timestamp);
+                                expectedEndDate.setHours(expectedHour, expectedMinute, 0, 0);
+                                const expectedEndTime = expectedEndDate.getTime();
+
+                                if (latestEnd.time < expectedEndTime) {
+                                    isEarlyLeave = true;
+                                    earlyLeaveMinutes = Math.round((expectedEndTime - latestEnd.time) / (1000 * 60));
+                                }
+                            }
+                        } else {
+                            // 資料不完整（只有上班或只有下班）
+                            if (starts.length > 0) {
+                                actualStartTime = new Date(starts[0].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                            } else if (ends.length > 0) {
+                                actualEndTime = new Date(ends[ends.length - 1].timestamp).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                            }
+                            isIncomplete = true;
+                            dayHours = 0;
                         }
-                        isIncomplete = true;
-                        dayHours = 0;
                     }
                 }
-            }
 
-            // 如果打卡不完整，當日不予計薪
-            if (isIncomplete) {
-                dayHours = 0;
-            }
-
-            // Determine Status & Pay
-            let status: DailyStatus['status'] = 'absent';
-            let note = '';
-            let salary = 0;
-            let overtimePay = 0;
-            let allowance = 0;
-            let overtimeHours = 0;
-            let lateDeduction = 0;
-
-            if (hasWorkStart) {
-                status = 'work';
-                context.workDays++;
-                context.hours += dayHours;
-
-                // Base Salary
+                // 如果打卡不完整，當日不予計薪
                 if (isIncomplete) {
-                    salary = 0;
-                    note = '打卡不完整 (不計薪，需補打卡)';
-                } else if (m.salaryType === 'hourly' && m.hourlyRate) {
-                    salary = Math.round(dayHours * m.hourlyRate);
-                } else if (m.salaryType === 'monthly') {
-                    salary = 0; // 月薪制每日不計薪，最後總結時計算
-                } else {
+                    dayHours = 0;
                 }
-                context.baseSalary += salary;
-                context.records.push(...dayWorkRecs);
 
-                // Calculate Late Deduction
-                if (isLate && lateMinutes > 0) {
-                    let perMinuteRate = 0;
+                // Determine Status & Pay
+                let status: DailyStatus['status'] = 'absent';
+                let note = '';
+                let salary = 0;
+                let overtimePay = 0;
+                let allowance = 0;
+                let overtimeHours = 0;
+                let lateDeduction = 0;
 
-                    if (m.salaryType === 'monthly' && m.monthlySalary) {
-                        // 月薪制：月薪 / 30天 / 8小時 / 60分鐘
-                        perMinuteRate = m.monthlySalary / 30 / 8 / 60;
-                    } else if (m.salaryType === 'daily' && m.dailyRate) {
-                        // 日薪制：日薪 / 8小時 / 60分鐘
-                        perMinuteRate = m.dailyRate / 8 / 60;
-                    } else if (m.dailyRate) {
-                        // 預設使用日薪計算
-                        perMinuteRate = m.dailyRate / 8 / 60;
+                if (hasWorkStart) {
+                    status = 'work';
+                    context.workDays++;
+                    context.hours += dayHours;
+
+                    // Base Salary
+                    if (isIncomplete) {
+                        salary = 0;
+                        note = '打卡不完整 (不計薪，需補打卡)';
+                    } else if (m.salaryType === 'hourly' && m.hourlyRate) {
+                        salary = Math.round(dayHours * m.hourlyRate);
+                    } else if (m.salaryType === 'monthly') {
+                        salary = 0; // 月薪制每日不計薪，最後總結時計算
+                    } else {
+                    }
+                    context.baseSalary += salary;
+                    context.records.push(...dayWorkRecs);
+
+                    // Calculate Late Deduction
+                    if (isLate && lateMinutes > 0) {
+                        let perMinuteRate = 0;
+
+                        if (m.salaryType === 'monthly' && m.monthlySalary) {
+                            // 月薪制：月薪 / 30天 / 8小時 / 60分鐘
+                            perMinuteRate = m.monthlySalary / 30 / 8 / 60;
+                        } else if (m.salaryType === 'daily' && m.dailyRate) {
+                            // 日薪制：日薪 / 8小時 / 60分鐘
+                            perMinuteRate = m.dailyRate / 8 / 60;
+                        } else if (m.dailyRate) {
+                            // 預設使用日薪計算
+                            perMinuteRate = m.dailyRate / 8 / 60;
+                        }
+
+                        lateDeduction = Math.round(perMinuteRate * lateMinutes);
+                        context.deductions.late += lateDeduction;
                     }
 
-                    lateDeduction = Math.round(perMinuteRate * lateMinutes);
-                    context.deductions.late += lateDeduction;
-                }
-
-                // Add note for early leave (for manager notification)
-                if (isEarlyLeave && earlyLeaveMinutes > 0) {
-                    note = `早退 ${earlyLeaveMinutes} 分鐘（需主管確認是否扣款）`;
-                }
-
-                // Overtime Calculation - Only for approved overtime
-                // Display actual overtime hours but only calculate pay for approved hours
-                if (dayHours > 8) {
-                    overtimeHours = dayHours - 8;
-                    context.overtimeHours += overtimeHours;
-
-                    // Only calculate pay for approved overtime hours
-                    if (approvedOvertimeHours > 0) {
-                        const payableOT = Math.min(approvedOvertimeHours, overtimeHours);
-                        const first2OT = Math.min(payableOT, 2);
-                        const restOT = Math.max(0, payableOT - 2);
-
-                        overtimePay += (first2OT * hourlyRate * 1.34);
-                        overtimePay += (restOT * hourlyRate * 1.67);
-
-                        overtimePay = Math.round(overtimePay); // Round to integer
-                        context.overtimePay += overtimePay;
+                    // Add note for early leave (for manager notification)
+                    if (isEarlyLeave && earlyLeaveMinutes > 0) {
+                        note = `早退 ${earlyLeaveMinutes} 分鐘（需主管確認是否扣款）`;
                     }
+
+                    // Overtime Calculation - Only for approved overtime
+                    // Display actual overtime hours but only calculate pay for approved hours
+                    if (dayHours > 8) {
+                        overtimeHours = dayHours - 8;
+                        context.overtimeHours += overtimeHours;
+
+                        // Only calculate pay for approved overtime hours
+                        if (approvedOvertimeHours > 0) {
+                            const payableOT = Math.min(approvedOvertimeHours, overtimeHours);
+                            const first2OT = Math.min(payableOT, 2);
+                            const restOT = Math.max(0, payableOT - 2);
+
+                            overtimePay += (first2OT * hourlyRate * 1.34);
+                            overtimePay += (restOT * hourlyRate * 1.67);
+
+                            overtimePay = Math.round(overtimePay); // Round to integer
+                            context.overtimePay += overtimePay;
+                        }
+                    }
+
+                    // Allowance Calculation
+                    if (m.spiderManAllowance && m.spiderManAllowance > 0) {
+                        allowance += m.spiderManAllowance;
+                        context.allowances.spiderman += m.spiderManAllowance;
+                    }
+
+                } else if (dayLeave) {
+                    status = 'leave';
+                    context.leaveDays++;
+                    note = `${dayLeave.templateName} (${dayLeave.title || '無事由'})`;
                 }
 
-                // Allowance Calculation
-                if (m.spiderManAllowance && m.spiderManAllowance > 0) {
-                    allowance += m.spiderManAllowance;
-                    context.allowances.spiderman += m.spiderManAllowance;
-                }
-
-            } else if (dayLeave) {
-                status = 'leave';
-                context.leaveDays++;
-                note = `${dayLeave.templateName} (${dayLeave.title || '無事由'})`;
+                context.dailyLogs.push({
+                    date: dateStr,
+                    status,
+                    hours: dayHours,
+                    overtimeHours,
+                    approvedOvertimeHours,
+                    isLate,
+                    lateMinutes,
+                    lateDeduction,
+                    isEarlyLeave,
+                    earlyLeaveMinutes,
+                    actualStartTime,
+                    actualEndTime,
+                    note,
+                    salary,
+                    overtimePay,
+                    allowance
+                });
             }
 
-            context.dailyLogs.push({
-                date: dateStr,
-                status,
-                hours: dayHours,
-                overtimeHours,
-                approvedOvertimeHours,
-                isLate,
-                lateMinutes,
-                lateDeduction,
-                isEarlyLeave,
-                earlyLeaveMinutes,
-                actualStartTime,
-                actualEndTime,
-                note,
-                salary,
-                overtimePay,
-                allowance
-            });
-        }
+            // Final Totals
+            // 如果是月薪制，本薪直接使用月薪（還需要考慮缺勤扣款，這裡暫時簡化為固定月薪）
+            if (m.salaryType === 'monthly' && m.monthlySalary) {
+                context.baseSalary = m.monthlySalary;
+            }
 
-        // Final Totals
-        // 如果是月薪制，本薪直接使用月薪（還需要考慮缺勤扣款，這裡暫時簡化為固定月薪）
-        if (m.salaryType === 'monthly' && m.monthlySalary) {
-            context.baseSalary = m.monthlySalary;
-        }
+            context.allowances.total = context.allowances.spiderman + context.allowances.other;
+            context.grossSalary = context.baseSalary + context.overtimePay + context.allowances.total;
 
-        context.allowances.total = context.allowances.spiderman + context.allowances.other;
-        context.grossSalary = context.baseSalary + context.overtimePay + context.allowances.total;
+            // 實領薪資 = 應發總額 - 勞健保 - 遲到扣款
+            context.netSalary = Math.max(0, context.grossSalary - context.deductions.labor - context.deductions.health - context.deductions.late);
+        });
 
-        // 實領薪資 = 應發總額 - 勞健保 - 遲到扣款
-        context.netSalary = Math.max(0, context.grossSalary - context.deductions.labor - context.deductions.health - context.deductions.late);
-    });
+        return Object.values(stats).sort((a, b) => (b.workDays - a.workDays));
+    }, [validRecords, teamMembers, selectedMonth, approvalRequests]);
 
-    return Object.values(stats).sort((a, b) => (b.workDays - a.workDays));
-}, [validRecords, teamMembers, selectedMonth, approvalRequests]);
+    const exportPayrollCSV = () => {
+        const headers = ['員工姓名', '員工編號', '職稱', '出勤天數', '請假天數', '總工時', '加班工時', '日薪/月薪/時薪', '本薪總額', '加班費', '各項津貼', '遲到扣款', '勞保費', '健保費', '實領薪資'];
+        const rows = payrollData.map(d => {
+            return [
+                d.member?.name || '未知',
+                d.member?.employeeId || '-',
+                d.member?.role || '-',
+                d.workDays,
+                d.leaveDays,
+                d.hours.toFixed(1),
+                d.overtimeHours.toFixed(1),
+                d.member?.salaryType === 'monthly' ? `${d.member?.monthlySalary}(月)` : d.member?.salaryType === 'hourly' ? `${d.member?.hourlyRate}(時)` : d.member?.dailyRate || 0,
+                d.baseSalary,
+                d.overtimePay,
+                d.allowances.total,
+                d.deductions.late,
+                d.deductions.labor,
+                d.deductions.health,
+                d.netSalary
+            ];
+        });
 
-const exportPayrollCSV = () => {
-    const headers = ['員工姓名', '員工編號', '職稱', '出勤天數', '請假天數', '總工時', '加班工時', '日薪/月薪/時薪', '本薪總額', '加班費', '各項津貼', '遲到扣款', '勞保費', '健保費', '實領薪資'];
-    const rows = payrollData.map(d => {
-        return [
-            d.member?.name || '未知',
-            d.member?.employeeId || '-',
-            d.member?.role || '-',
-            d.workDays,
-            d.leaveDays,
-            d.hours.toFixed(1),
-            d.overtimeHours.toFixed(1),
-            d.member?.salaryType === 'monthly' ? `${d.member?.monthlySalary}(月)` : d.member?.salaryType === 'hourly' ? `${d.member?.hourlyRate}(時)` : d.member?.dailyRate || 0,
-            d.baseSalary,
-            d.overtimePay,
-            d.allowances.total,
-            d.deductions.late,
-            d.deductions.labor,
-            d.deductions.health,
-            d.netSalary
-        ];
-    });
+        const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `薪資報表_${selectedMonth}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
-    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `薪資報表_${selectedMonth}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
+    return (
+        <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in space-y-6">
+            {/* Modals */}
+            {viewingLocation && viewingLocation.location && (
+                <LocationModal
+                    location={viewingLocation.location}
+                    onClose={() => setViewingLocation(null)}
+                    title={`${safeName(viewingLocation.name)} - 打卡位置`}
+                />
+            )}
 
-return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in space-y-6">
-        {/* Modals */}
-        {viewingLocation && viewingLocation.location && (
-            <LocationModal
-                location={viewingLocation.location}
-                onClose={() => setViewingLocation(null)}
-                title={`${safeName(viewingLocation.name)} - 打卡位置`}
-            />
-        )}
+            {selectedMemberDetail && selectedMemberDetail.member && (
+                <PayrollDetailModal
+                    member={selectedMemberDetail.member}
+                    data={selectedMemberDetail.data}
+                    month={selectedMonth}
+                    onClose={() => setSelectedMemberDetail(null)}
+                />
+            )}
 
-        {selectedMemberDetail && selectedMemberDetail.member && (
-            <PayrollDetailModal
-                member={selectedMemberDetail.member}
-                data={selectedMemberDetail.data}
-                month={selectedMonth}
-                onClose={() => setSelectedMemberDetail(null)}
-            />
-        )}
-
-        <div className="flex flex-col md:flex-row justify-between items-end gap-4">
-            <div>
-                <h1 className="text-2xl font-black text-stone-900 mb-1">人事與薪資管理</h1>
-                <p className="text-stone-500 font-bold text-xs">全公司出勤監控與薪資試算中心</p>
-            </div>
-
-            <div className="flex bg-stone-100 p-1 rounded-xl">
-                <button
-                    onClick={() => setActiveTab('payroll')}
-                    className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${activeTab === 'payroll' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
-                >
-                    <span className="flex items-center gap-2"><DollarSign size={14} /> 薪資試算</span>
-                </button>
-                <button
-                    onClick={() => setActiveTab('records')}
-                    className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${activeTab === 'records' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
-                >
-                    <span className="flex items-center gap-2"><Clock size={14} /> 原始打卡紀錄</span>
-                </button>
-            </div>
-        </div>
-
-        {/* Company Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
-                        <DollarSign size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">本月實發總額</p>
-                        <p className="text-2xl font-black text-stone-900 tabular-nums">
-                            ${payrollData.reduce((acc, d) => acc + d.netSalary, 0).toLocaleString()}
-                        </p>
-                    </div>
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+                <div>
+                    <h1 className="text-2xl font-black text-stone-900 mb-1">人事與薪資管理</h1>
+                    <p className="text-stone-500 font-bold text-xs">全公司出勤監控與薪資試算中心</p>
                 </div>
-            </div>
-            <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                        <Calendar size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">本月出勤 / 請假</p>
-                        <p className="text-2xl font-black text-stone-900 tabular-nums flex items-center gap-2">
-                            <span>{payrollData.reduce((acc, d) => acc + d.workDays, 0)} 天</span>
-                            <span className="text-sm font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">{payrollData.reduce((acc, d) => acc + d.leaveDays, 0)} 請假</span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
-                        <FileText size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">勞健保代扣總額</p>
-                        <p className="text-2xl font-black text-stone-900 tabular-nums">
-                            ${payrollData.reduce((acc, d) => acc + d.deductions.labor + d.deductions.health, 0).toLocaleString()}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        {activeTab === 'payroll' && (
-            <div className="space-y-6 animate-in slide-in-from-right-4">
-                {/* Controls */}
-                <div className="bg-white p-4 rounded-2xl border border-stone-200 flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
-                            <Calculator size={20} />
-                        </div>
-                        <div className="flex flex-col">
-                            <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">結算月份</label>
-                            <input
-                                type="month"
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                                className="font-bold text-stone-900 bg-transparent outline-none cursor-pointer"
-                            />
-                        </div>
-                    </div>
+                <div className="flex bg-stone-100 p-1 rounded-xl">
                     <button
-                        onClick={exportPayrollCSV}
-                        className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-100"
+                        onClick={() => setActiveTab('payroll')}
+                        className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${activeTab === 'payroll' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
                     >
-                        <FileSpreadsheet size={16} /> 匯出 CSV 報表
+                        <span className="flex items-center gap-2"><DollarSign size={14} /> 薪資試算</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('records')}
+                        className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${activeTab === 'records' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                        <span className="flex items-center gap-2"><Clock size={14} /> 原始打卡紀錄</span>
                     </button>
                 </div>
+            </div>
 
-                {/* Payroll Table */}
-                <div className="bg-white rounded-[2.5rem] shadow-sm border border-stone-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-stone-50 border-b border-stone-200">
-                                <tr>
-                                    <th className="px-6 py-4 text-left text-[10px] font-black text-stone-400 uppercase tracking-widest">員工資訊</th>
-                                    <th className="px-6 py-4 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest">出勤 / 請假</th>
-                                    <th className="px-6 py-4 text-right text-[10px] font-black text-stone-400 uppercase tracking-widest hidden md:table-cell">日薪設定</th>
-                                    <th className="px-6 py-4 text-right text-[10px] font-black text-stone-400 uppercase tracking-widest hidden md:table-cell">勞健保</th>
-                                    <th className="px-6 py-4 text-right text-[10px] font-black text-stone-400 uppercase tracking-widest">實領薪資</th>
-                                    <th className="px-6 py-4 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-stone-100">
-                                {payrollData.map((d) => {
-                                    const hasData = d.workDays > 0 || d.leaveDays > 0;
+            {/* Company Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                            <DollarSign size={24} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">本月實發總額</p>
+                            <p className="text-2xl font-black text-stone-900 tabular-nums">
+                                ${payrollData.reduce((acc, d) => acc + d.netSalary, 0).toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                            <Calendar size={24} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">本月出勤 / 請假</p>
+                            <p className="text-2xl font-black text-stone-900 tabular-nums flex items-center gap-2">
+                                <span>{payrollData.reduce((acc, d) => acc + d.workDays, 0)} 天</span>
+                                <span className="text-sm font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">{payrollData.reduce((acc, d) => acc + d.leaveDays, 0)} 請假</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
+                            <FileText size={24} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-1">勞健保代扣總額</p>
+                            <p className="text-2xl font-black text-stone-900 tabular-nums">
+                                ${payrollData.reduce((acc, d) => acc + d.deductions.labor + d.deductions.health, 0).toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {activeTab === 'payroll' && (
+                <div className="space-y-6 animate-in slide-in-from-right-4">
+                    {/* Controls */}
+                    <div className="bg-white p-4 rounded-2xl border border-stone-200 flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                                <Calculator size={20} />
+                            </div>
+                            <div className="flex flex-col">
+                                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest">結算月份</label>
+                                <input
+                                    type="month"
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(e.target.value)}
+                                    className="font-bold text-stone-900 bg-transparent outline-none cursor-pointer"
+                                />
+                            </div>
+                        </div>
+                        <button
+                            onClick={exportPayrollCSV}
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-100"
+                        >
+                            <FileSpreadsheet size={16} /> 匯出 CSV 報表
+                        </button>
+                    </div>
+
+                    {/* Payroll Table */}
+                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-stone-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-stone-50 border-b border-stone-200">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black text-stone-400 uppercase tracking-widest">員工資訊</th>
+                                        <th className="px-6 py-4 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest">出勤 / 請假</th>
+                                        <th className="px-6 py-4 text-right text-[10px] font-black text-stone-400 uppercase tracking-widest hidden md:table-cell">日薪設定</th>
+                                        <th className="px-6 py-4 text-right text-[10px] font-black text-stone-400 uppercase tracking-widest hidden md:table-cell">勞健保</th>
+                                        <th className="px-6 py-4 text-right text-[10px] font-black text-stone-400 uppercase tracking-widest">實領薪資</th>
+                                        <th className="px-6 py-4 text-center text-[10px] font-black text-stone-400 uppercase tracking-widest">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-stone-100">
+                                    {payrollData.map((d) => {
+                                        const hasData = d.workDays > 0 || d.leaveDays > 0;
+                                        return (
+                                            <tr key={d.member?.id || Math.random()} className="hover:bg-stone-50 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <img
+                                                            src={d.member?.avatar || `https://ui-avatars.com/api/?name=${d.member?.name}&background=random`}
+                                                            alt="avatar"
+                                                            className="w-10 h-10 rounded-xl object-cover border border-stone-100 shadow-sm"
+                                                        />
+                                                        <div>
+                                                            <div className="font-bold text-stone-900">{d.member?.name || '未知員工'}</div>
+                                                            <div className="text-[10px] text-stone-400 font-black uppercase tracking-wider">{d.member?.role || '無職稱'}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <span className={`inline-block px-3 py-1 rounded-lg text-sm font-black ${d.workDays > 0 ? 'bg-blue-50 text-blue-600' : 'text-stone-300'}`}>
+                                                            {d.workDays} <span className="text-[10px] opacity-70">天</span>
+                                                        </span>
+                                                        {d.leaveDays > 0 && (
+                                                            <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
+                                                                請假 {d.leaveDays} 天
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right hidden md:table-cell">
+                                                    <span className={`text-xs font-mono font-bold ${d.member?.dailyRate ? 'text-slate-600' : 'text-rose-400'}`}>
+                                                        {d.member?.dailyRate ? `$${d.member.dailyRate.toLocaleString()}` : '未設定'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right hidden md:table-cell">
+                                                    <div className="flex flex-col items-end gap-0.5">
+                                                        <span className="text-[10px] font-bold text-slate-400">勞 ${d.deductions.labor}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400">健 ${d.deductions.health}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className={`text-lg font-black font-mono tracking-tight ${d.netSalary > 0 ? 'text-emerald-600' : 'text-stone-300'}`}>
+                                                        ${d.netSalary.toLocaleString()}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button
+                                                        onClick={() => d.member && setSelectedMemberDetail({ member: d.member, data: d })}
+                                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                                        title="查看薪資單細節"
+                                                    >
+                                                        <FileText size={18} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'records' && (
+                <div className="space-y-6 animate-in slide-in-from-left-4">
+                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-stone-200 overflow-hidden">
+                        <div className="p-6 space-y-3">
+                            {recordsByMember.length === 0 ? (
+                                <div className="text-center py-12 text-stone-400">尚無打卡紀錄</div>
+                            ) : (
+                                recordsByMember.map(({ name, records, count, dailyRecords, totalMonthHours }) => {
+                                    const isExpanded = expandedMembers.has(name);
+                                    const member = teamMembers.find(m => m.name === name);
+
                                     return (
-                                        <tr key={d.member?.id || Math.random()} className="hover:bg-stone-50 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
+                                        <div key={name} className="border border-stone-200 rounded-2xl overflow-hidden">
+                                            {/* Member Header - Clickable to expand/collapse */}
+                                            <button
+                                                onClick={() => toggleMemberExpansion(name)}
+                                                className="w-full px-6 py-4 bg-stone-50 hover:bg-stone-100 transition-colors flex items-center justify-between"
+                                            >
+                                                <div className="flex items-center gap-4">
                                                     <img
-                                                        src={d.member?.avatar || `https://ui-avatars.com/api/?name=${d.member?.name}&background=random`}
+                                                        src={member?.avatar || `https://ui-avatars.com/api/?name=${name}&background=random`}
                                                         alt="avatar"
-                                                        className="w-10 h-10 rounded-xl object-cover border border-stone-100 shadow-sm"
+                                                        className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm"
                                                     />
-                                                    <div>
-                                                        <div className="font-bold text-stone-900">{d.member?.name || '未知員工'}</div>
-                                                        <div className="text-[10px] text-stone-400 font-black uppercase tracking-wider">{d.member?.role || '無職稱'}</div>
+                                                    <div className="text-left">
+                                                        <h3 className="text-lg font-black text-stone-900">{name}</h3>
+                                                        <p className="text-xs text-stone-500 font-bold">{member?.role || '員工'}</p>
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex flex-col items-center gap-1">
-                                                    <span className={`inline-block px-3 py-1 rounded-lg text-sm font-black ${d.workDays > 0 ? 'bg-blue-50 text-blue-600' : 'text-stone-300'}`}>
-                                                        {d.workDays} <span className="text-[10px] opacity-70">天</span>
-                                                    </span>
-                                                    {d.leaveDays > 0 && (
-                                                        <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
-                                                            請假 {d.leaveDays} 天
-                                                        </span>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl">
+                                                        <span className="text-sm font-black">{totalMonthHours.toFixed(1)}</span>
+                                                        <span className="text-xs font-bold ml-1">小時</span>
+                                                    </div>
+                                                    <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl">
+                                                        <span className="text-sm font-black">{count}</span>
+                                                        <span className="text-xs font-bold ml-1">筆記錄</span>
+                                                    </div>
+                                                    {isExpanded ? (
+                                                        <ChevronDown size={20} className="text-stone-400" />
+                                                    ) : (
+                                                        <ChevronRight size={20} className="text-stone-400" />
                                                     )}
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right hidden md:table-cell">
-                                                <span className={`text-xs font-mono font-bold ${d.member?.dailyRate ? 'text-slate-600' : 'text-rose-400'}`}>
-                                                    {d.member?.dailyRate ? `$${d.member.dailyRate.toLocaleString()}` : '未設定'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right hidden md:table-cell">
-                                                <div className="flex flex-col items-end gap-0.5">
-                                                    <span className="text-[10px] font-bold text-slate-400">勞 ${d.deductions.labor}</span>
-                                                    <span className="text-[10px] font-bold text-slate-400">健 ${d.deductions.health}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <span className={`text-lg font-black font-mono tracking-tight ${d.netSalary > 0 ? 'text-emerald-600' : 'text-stone-300'}`}>
-                                                    ${d.netSalary.toLocaleString()}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <button
-                                                    onClick={() => d.member && setSelectedMemberDetail({ member: d.member, data: d })}
-                                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                                                    title="查看薪資單細節"
-                                                >
-                                                    <FileText size={18} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        )}
+                                            </button>
 
-        {activeTab === 'records' && (
-            <div className="space-y-6 animate-in slide-in-from-left-4">
-                <div className="bg-white rounded-[2.5rem] shadow-sm border border-stone-200 overflow-hidden">
-                    <div className="p-6 space-y-3">
-                        {recordsByMember.length === 0 ? (
-                            <div className="text-center py-12 text-stone-400">尚無打卡紀錄</div>
-                        ) : (
-                            recordsByMember.map(({ name, records, count, dailyRecords, totalMonthHours }) => {
-                                const isExpanded = expandedMembers.has(name);
-                                const member = teamMembers.find(m => m.name === name);
+                                            {/* Member's Records - Shown when expanded, grouped by date */}
+                                            {isExpanded && (
+                                                <div className="bg-white">
+                                                    {dailyRecords.map(({ date, records: dayRecords, hours }) => {
+                                                        const dateObj = new Date(date + 'T00:00:00');
+                                                        const formattedDate = dateObj.toLocaleDateString('zh-TW', {
+                                                            year: 'numeric',
+                                                            month: '2-digit',
+                                                            day: '2-digit',
+                                                            weekday: 'short'
+                                                        });
 
-                                return (
-                                    <div key={name} className="border border-stone-200 rounded-2xl overflow-hidden">
-                                        {/* Member Header - Clickable to expand/collapse */}
-                                        <button
-                                            onClick={() => toggleMemberExpansion(name)}
-                                            className="w-full px-6 py-4 bg-stone-50 hover:bg-stone-100 transition-colors flex items-center justify-between"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <img
-                                                    src={member?.avatar || `https://ui-avatars.com/api/?name=${name}&background=random`}
-                                                    alt="avatar"
-                                                    className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm"
-                                                />
-                                                <div className="text-left">
-                                                    <h3 className="text-lg font-black text-stone-900">{name}</h3>
-                                                    <p className="text-xs text-stone-500 font-bold">{member?.role || '員工'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl">
-                                                    <span className="text-sm font-black">{totalMonthHours.toFixed(1)}</span>
-                                                    <span className="text-xs font-bold ml-1">小時</span>
-                                                </div>
-                                                <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl">
-                                                    <span className="text-sm font-black">{count}</span>
-                                                    <span className="text-xs font-bold ml-1">筆記錄</span>
-                                                </div>
-                                                {isExpanded ? (
-                                                    <ChevronDown size={20} className="text-stone-400" />
-                                                ) : (
-                                                    <ChevronRight size={20} className="text-stone-400" />
-                                                )}
-                                            </div>
-                                        </button>
-
-                                        {/* Member's Records - Shown when expanded, grouped by date */}
-                                        {isExpanded && (
-                                            <div className="bg-white">
-                                                {dailyRecords.map(({ date, records: dayRecords, hours }) => {
-                                                    const dateObj = new Date(date + 'T00:00:00');
-                                                    const formattedDate = dateObj.toLocaleDateString('zh-TW', {
-                                                        year: 'numeric',
-                                                        month: '2-digit',
-                                                        day: '2-digit',
-                                                        weekday: 'short'
-                                                    });
-
-                                                    return (
-                                                        <div key={date} className="border-b border-stone-100 last:border-b-0">
-                                                            {/* Date Header with daily hours */}
-                                                            <div className="bg-stone-50/50 px-6 py-2 flex items-center justify-between">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Calendar size={14} className="text-stone-400" />
-                                                                    <span className="text-xs font-black text-stone-600">{formattedDate}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    {hours > 0 ? (
-                                                                        <>
-                                                                            <Clock size={14} className="text-emerald-600" />
-                                                                            <span className="text-xs font-black text-emerald-700">
-                                                                                {hours.toFixed(1)} 小時
-                                                                            </span>
-                                                                            {hours > 8 && (
-                                                                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                                                                                    加班 {(hours - 8).toFixed(1)}h
+                                                        return (
+                                                            <div key={date} className="border-b border-stone-100 last:border-b-0">
+                                                                {/* Date Header with daily hours */}
+                                                                <div className="bg-stone-50/50 px-6 py-2 flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Calendar size={14} className="text-stone-400" />
+                                                                        <span className="text-xs font-black text-stone-600">{formattedDate}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        {hours > 0 ? (
+                                                                            <>
+                                                                                <Clock size={14} className="text-emerald-600" />
+                                                                                <span className="text-xs font-black text-emerald-700">
+                                                                                    {hours.toFixed(1)} 小時
                                                                                 </span>
-                                                                            )}
-                                                                        </>
-                                                                    ) : (
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-lg">未完整 (不計薪)</span>
-                                                                            {onCreateApproval && (
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        const m = teamMembers.find(tm => tm.name === name);
-                                                                                        if (m) setCorrectionTarget({ date, memberId: m.id || m.employeeId, memberName: m.name });
-                                                                                    }}
-                                                                                    className="text-[10px] font-black bg-emerald-500 text-white px-2 py-1 rounded-lg hover:bg-emerald-600 shadow-sm transition-all"
-                                                                                >
-                                                                                    申請補打卡
-                                                                                </button>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
+                                                                                {hours > 8 && (
+                                                                                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                                                                                        加班 {(hours - 8).toFixed(1)}h
+                                                                                    </span>
+                                                                                )}
+                                                                            </>
+                                                                        ) : (
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-lg">未完整 (不計薪)</span>
+                                                                                {onCreateApproval && (
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            const m = teamMembers.find(tm => tm.name === name);
+                                                                                            if (m) setCorrectionTarget({ date, memberId: m.id || m.employeeId, memberName: m.name });
+                                                                                        }}
+                                                                                        className="text-[10px] font-black bg-emerald-500 text-white px-2 py-1 rounded-lg hover:bg-emerald-600 shadow-sm transition-all"
+                                                                                    >
+                                                                                        申請補打卡
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
 
-                                                            {/* Records for this day */}
-                                                            <table className="w-full">
-                                                                <tbody>
-                                                                    {(() => {
-                                                                        // Find the earliest work-start record for this day
-                                                                        const startRecords = dayRecords.filter(r => r.type === 'work-start');
-                                                                        const earliestStartRecord = startRecords.length > 0
-                                                                            ? startRecords.reduce((prev, curr) =>
-                                                                                new Date(prev.timestamp).getTime() < new Date(curr.timestamp).getTime() ? prev : curr
-                                                                            )
-                                                                            : null;
+                                                                {/* Records for this day */}
+                                                                <table className="w-full">
+                                                                    <tbody>
+                                                                        {(() => {
+                                                                            // Find the earliest work-start record for this day
+                                                                            const startRecords = dayRecords.filter(r => r.type === 'work-start');
+                                                                            const earliestStartRecord = startRecords.length > 0
+                                                                                ? startRecords.reduce((prev, curr) =>
+                                                                                    new Date(prev.timestamp).getTime() < new Date(curr.timestamp).getTime() ? prev : curr
+                                                                                )
+                                                                                : null;
 
-                                                                        return dayRecords.map((record) => {
-                                                                            const locString = safeLocation(record.location);
-                                                                            const recordTime = new Date(record.timestamp);
-                                                                            const member = teamMembers.find(m => m.name === name);
+                                                                            return dayRecords.map((record) => {
+                                                                                const locString = safeLocation(record.location);
+                                                                                const recordTime = new Date(record.timestamp);
+                                                                                const member = teamMembers.find(m => m.name === name);
 
-                                                                            // Check if this is the earliest start record and if it's late
-                                                                            let isRecordLate = false;
-                                                                            let lateMinutes = 0;
+                                                                                // Check if this is the earliest start record and if it's late
+                                                                                let isRecordLate = false;
+                                                                                let lateMinutes = 0;
 
-                                                                            if (record.type === 'work-start' &&
-                                                                                earliestStartRecord &&
-                                                                                record.id === earliestStartRecord.id &&
-                                                                                member?.workStartTime) {
+                                                                                if (record.type === 'work-start' &&
+                                                                                    earliestStartRecord &&
+                                                                                    record.id === earliestStartRecord.id &&
+                                                                                    member?.workStartTime) {
 
-                                                                                const [expectedHour, expectedMinute] = member.workStartTime.split(':').map(Number);
-                                                                                const expectedTime = new Date(recordTime);
-                                                                                expectedTime.setHours(expectedHour, expectedMinute, 0, 0);
+                                                                                    const [expectedHour, expectedMinute] = member.workStartTime.split(':').map(Number);
+                                                                                    const expectedTime = new Date(recordTime);
+                                                                                    expectedTime.setHours(expectedHour, expectedMinute, 0, 0);
 
-                                                                                if (recordTime > expectedTime) {
-                                                                                    isRecordLate = true;
-                                                                                    lateMinutes = Math.round((recordTime.getTime() - expectedTime.getTime()) / (1000 * 60));
+                                                                                    if (recordTime > expectedTime) {
+                                                                                        isRecordLate = true;
+                                                                                        lateMinutes = Math.round((recordTime.getTime() - expectedTime.getTime()) / (1000 * 60));
+                                                                                    }
                                                                                 }
-                                                                            }
 
-                                                                            return (
-                                                                                <tr key={record.id} className="hover:bg-stone-50 transition-colors">
-                                                                                    <td className="px-6 py-3 whitespace-nowrap w-24">
-                                                                                        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${record.type === 'work-start'
-                                                                                            ? 'bg-emerald-100 text-emerald-700'
-                                                                                            : 'bg-indigo-100 text-indigo-700'
-                                                                                            }`}>
-                                                                                            {record.type === 'work-start' ? '上班' : '下班'}
-                                                                                        </span>
-                                                                                    </td>
-                                                                                    <td className="px-6 py-3 whitespace-nowrap font-mono text-sm text-stone-600">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <span>{recordTime.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                                                                                            {isRecordLate && (
-                                                                                                <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                                                                                                    遲到 {lateMinutes}分
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </td>
-                                                                                    <td className="px-6 py-3 whitespace-nowrap text-sm text-stone-500">
-                                                                                        <div
-                                                                                            className={`flex items-center gap-1 ${locString ? 'cursor-pointer hover:text-orange-500 hover:underline' : ''}`}
-                                                                                            onClick={() => locString && setViewingLocation(record)}
-                                                                                        >
-                                                                                            <MapPin size={14} />
-                                                                                            {locString || '未知位置'}
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                            );
-                                                                        });
-                                                                    })()}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })
-                        )}
+                                                                                return (
+                                                                                    <tr key={record.id} className="hover:bg-stone-50 transition-colors">
+                                                                                        <td className="px-6 py-3 whitespace-nowrap w-24">
+                                                                                            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${record.type === 'work-start'
+                                                                                                ? 'bg-emerald-100 text-emerald-700'
+                                                                                                : 'bg-indigo-100 text-indigo-700'
+                                                                                                }`}>
+                                                                                                {record.type === 'work-start' ? '上班' : '下班'}
+                                                                                            </span>
+                                                                                        </td>
+                                                                                        <td className="px-6 py-3 whitespace-nowrap font-mono text-sm text-stone-600">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <span>{recordTime.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                                                                                {isRecordLate && (
+                                                                                                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                                                                                                        遲到 {lateMinutes}分
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </td>
+                                                                                        <td className="px-6 py-3 whitespace-nowrap text-sm text-stone-500">
+                                                                                            <div
+                                                                                                className={`flex items-center gap-1 ${locString ? 'cursor-pointer hover:text-orange-500 hover:underline' : ''}`}
+                                                                                                onClick={() => locString && setViewingLocation(record)}
+                                                                                            >
+                                                                                                <MapPin size={14} />
+                                                                                                {locString || '未知位置'}
+                                                                                            </div>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                );
+                                                                            });
+                                                                        })()}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
             {viewingLocation && (
-            <LocationModal
-                record={viewingLocation}
-                onClose={() => setViewingLocation(null)}
-            />
-        )}
+                <LocationModal
+                    record={viewingLocation}
+                    onClose={() => setViewingLocation(null)}
+                />
+            )}
 
-        {correctionTarget && (
-            <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
-                    <div className="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50">
-                        <h3 className="font-bold text-stone-800">補打卡申請</h3>
-                        <button onClick={() => setCorrectionTarget(null)}><XCircle size={20} className="text-stone-400 hover:text-stone-600" /></button>
+            {correctionTarget && (
+                <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50">
+                            <h3 className="font-bold text-stone-800">補打卡申請</h3>
+                            <button onClick={() => setCorrectionTarget(null)}><XCircle size={20} className="text-stone-400 hover:text-stone-600" /></button>
+                        </div>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!onCreateApproval) {
+                                alert('系統錯誤：無法發送申請');
+                                return;
+                            }
+                            const fd = new FormData(e.currentTarget);
+                            const time = fd.get('time') as string;
+                            const type = fd.get('type') as string;
+                            const reason = fd.get('reason') as string;
+
+                            onCreateApproval({
+                                id: crypto.randomUUID(),
+                                templateId: 'TPL-CORRECTION',
+                                templateName: '補打卡申請',
+                                requesterId: currentUser.id,
+                                requesterName: currentUser.name,
+                                title: `[補打卡] ${correctionTarget.memberName} - ${correctionTarget.date}`,
+                                formData: {
+                                    date: correctionTarget.date,
+                                    time,
+                                    type,
+                                    reason,
+                                    targetEmployeeId: correctionTarget.memberId,
+                                    targetEmployeeName: correctionTarget.memberName
+                                },
+                                status: 'pending',
+                                currentStep: 0,
+                                workflowLogs: [],
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString()
+                            });
+                            alert('申請已提交！待主管核准後生效。');
+                            setCorrectionTarget(null);
+                        }} className="p-4 space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-stone-500">日期</label>
+                                <div className="font-bold text-lg">{correctionTarget.date}</div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-stone-500">補卡類型</label>
+                                <select name="type" className="w-full bg-stone-100 rounded-xl px-3 py-2 font-bold outline-none focus:ring-2 ring-emerald-500">
+                                    <option value="上班">上班 (Work Start)</option>
+                                    <option value="下班">下班 (Work End)</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-stone-500">補卡時間</label>
+                                <input type="time" name="time" required defaultValue="09:00" className="w-full bg-stone-100 rounded-xl px-3 py-2 font-bold outline-none focus:ring-2 ring-emerald-500" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-stone-500">補卡理由</label>
+                                <input type="text" name="reason" placeholder="例如：忘記打卡、外出辦事" required className="w-full bg-stone-100 rounded-xl px-3 py-2 font-bold outline-none focus:ring-2 ring-emerald-500" />
+                            </div>
+                            <div className="pt-2">
+                                <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-100">
+                                    送出申請
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <form onSubmit={(e) => {
-                        e.preventDefault();
-                        if (!onCreateApproval) {
-                            alert('系統錯誤：無法發送申請');
-                            return;
-                        }
-                        const fd = new FormData(e.currentTarget);
-                        const time = fd.get('time') as string;
-                        const type = fd.get('type') as string;
-                        const reason = fd.get('reason') as string;
-
-                        onCreateApproval({
-                            id: crypto.randomUUID(),
-                            templateId: 'TPL-CORRECTION',
-                            templateName: '補打卡申請',
-                            requesterId: currentUser.id,
-                            requesterName: currentUser.name,
-                            title: `[補打卡] ${correctionTarget.memberName} - ${correctionTarget.date}`,
-                            formData: {
-                                date: correctionTarget.date,
-                                time,
-                                type,
-                                reason,
-                                targetEmployeeId: correctionTarget.memberId,
-                                targetEmployeeName: correctionTarget.memberName
-                            },
-                            status: 'pending',
-                            currentStep: 0,
-                            workflowLogs: [],
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        });
-                        alert('申請已提交！待主管核准後生效。');
-                        setCorrectionTarget(null);
-                    }} className="p-4 space-y-4">
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-stone-500">日期</label>
-                            <div className="font-bold text-lg">{correctionTarget.date}</div>
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-stone-500">補卡類型</label>
-                            <select name="type" className="w-full bg-stone-100 rounded-xl px-3 py-2 font-bold outline-none focus:ring-2 ring-emerald-500">
-                                <option value="上班">上班 (Work Start)</option>
-                                <option value="下班">下班 (Work End)</option>
-                            </select>
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-stone-500">補卡時間</label>
-                            <input type="time" name="time" required defaultValue="09:00" className="w-full bg-stone-100 rounded-xl px-3 py-2 font-bold outline-none focus:ring-2 ring-emerald-500" />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-stone-500">補卡理由</label>
-                            <input type="text" name="reason" placeholder="例如：忘記打卡、外出辦事" required className="w-full bg-stone-100 rounded-xl px-3 py-2 font-bold outline-none focus:ring-2 ring-emerald-500" />
-                        </div>
-                        <div className="pt-2">
-                            <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-100">
-                                送出申請
-                            </button>
-                        </div>
-                    </form>
                 </div>
-            </div>
-        )}
-    </div>
-);
+            )}
+        </div>
+    );
 };
 
 export default PayrollSystem;
