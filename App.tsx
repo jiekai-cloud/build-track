@@ -819,11 +819,26 @@ const App: React.FC = () => {
       // 在存檔前先檢查雲端是否有更新
       const metadata = await googleDriveService.getFileMetadata(true);
       if (metadata && lastRemoteModifiedTime.current && metadata.modifiedTime !== lastRemoteModifiedTime.current) {
-        console.log('[Sync] Detected newer cloud version, merging before save...');
+        console.log('[Sync] Detected newer cloud version...');
         const cloudData = await googleDriveService.loadFromCloud(true);
+
         if (cloudData) {
-          updateStateWithMerge(cloudData);
-          lastRemoteModifiedTime.current = metadata.modifiedTime;
+          // SANITY CHECK: Cloud Data Integrity
+          // If cloud has 0 projects but we have many (>3), assume cloud is corrupt/wiped by accident.
+          // Ignore cloud update, allowing local save to overwrite it.
+          const localCount = dataRef.current.projects.length;
+          const cloudCount = Array.isArray(cloudData.projects) ? cloudData.projects.length : 0;
+
+          if (localCount > 3 && cloudCount === 0) {
+            console.warn(`[Sync] ⚠️ DANGER: Cloud data appears empty (${cloudCount}) while local has ${localCount}. IGNORING CLOUD UPDATE to prevent data loss.`);
+            // Do NOT call updateStateWithMerge(cloudData);
+            // Proceed to upload local data to fix the cloud.
+          } else {
+            // Safe to merge
+            console.log('[Sync] Merging cloud data...');
+            updateStateWithMerge(cloudData);
+            lastRemoteModifiedTime.current = metadata.modifiedTime;
+          }
         }
       }
 
