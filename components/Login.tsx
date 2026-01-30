@@ -95,7 +95,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setIsLoading(false);
       }
     } else {
-      setError(`找不到該員工編號 (新設備請先以 test 下載 ${selectedDept === 'FirstDept' ? '第一' : selectedDept === 'ThirdDept' ? '第三' : '第四'}工程部 團隊清單)`);
+      setError(`找不到該員工編號 (新設備請先以 test 下載 ${selectedDept === 'FirstDept' ? '第一' : '第三'}工程部 團隊清單)`);
       setIsLoading(false);
     }
   };
@@ -117,23 +117,23 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   return (
     <div className="min-h-screen bg-stone-950 flex items-center justify-center p-4 lg:p-8 relative overflow-hidden font-sans">
       {/* 動態背景裝飾 */}
-      <div className={`absolute top-[-15%] left-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-orange-600/10' : selectedDept === 'ThirdDept' ? 'bg-blue-600/10' : 'bg-purple-600/10'}`}></div>
-      <div className={`absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse [animation-delay:2s] transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-amber-600/10' : selectedDept === 'ThirdDept' ? 'bg-cyan-600/10' : 'bg-fuchsia-600/10'}`}></div>
+      <div className={`absolute top-[-15%] left-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-orange-600/10' : 'bg-blue-600/10'}`}></div>
+      <div className={`absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse [animation-delay:2s] transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-amber-600/10' : 'bg-cyan-600/10'}`}></div>
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-stone-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative z-10 overflow-hidden">
 
         {/* 左側：品牌形象區 */}
-        <div className={`hidden lg:flex lg:col-span-5 flex-col justify-between p-16 bg-gradient-to-br transition-all duration-1000 border-r border-white/5 relative ${selectedDept === 'FirstDept' ? 'from-stone-900 to-stone-950' : selectedDept === 'ThirdDept' ? 'from-slate-900 to-slate-950' : 'from-purple-950 to-purple-900'}`}>
+        <div className={`hidden lg:flex lg:col-span-5 flex-col justify-between p-16 bg-gradient-to-br transition-all duration-1000 border-r border-white/5 relative ${selectedDept === 'FirstDept' ? 'from-stone-900 to-stone-950' : 'from-slate-900 to-slate-950'}`}>
           <div className="relative z-10">
             <div className="bg-white/10 w-16 h-16 rounded-3xl flex items-center justify-center border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] mb-10 group hover:scale-110 transition-transform duration-500 overflow-hidden">
               <img src="./pwa-icon.png" alt="Logo" className="w-10 h-10 object-contain" />
             </div>
             <h1 className="text-4xl font-black text-white leading-tight tracking-tighter mb-6">
               生活品質<br />
-              <span className={`transition-colors duration-500 ${selectedDept === 'FirstDept' ? 'text-orange-500' : selectedDept === 'ThirdDept' ? 'text-blue-500' : 'text-purple-500'}`}>工程管理系統</span>
+              <span className={`transition-colors duration-500 ${selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'}`}>工程管理系統</span>
             </h1>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-8">
-              <Sparkles size={14} className={selectedDept === 'FirstDept' ? 'text-amber-400' : selectedDept === 'ThirdDept' ? 'text-cyan-400' : 'text-fuchsia-400'} />
+              <Sparkles size={14} className={selectedDept === 'FirstDept' ? 'text-amber-400' : 'text-cyan-400'} />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">2026 Professional Edition</span>
             </div>
             <div className="space-y-4">
@@ -151,13 +151,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 </div>
                 <p className="text-xs text-stone-400">大型建案、公設維護、機電整合</p>
               </div>
-              <div onClick={() => setSelectedDept('FourthDept')} className={`cursor-pointer p-4 rounded-2xl border transition-all ${selectedDept === 'FourthDept' ? 'bg-purple-500/20 border-purple-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-white">琥凱爾工程<br />第四工程部</span>
-                  {selectedDept === 'FourthDept' && <Check size={16} className="text-purple-500" />}
-                </div>
-                <p className="text-xs text-stone-400">特殊工程、技術開發、創新應用</p>
-              </div>
             </div>
           </div>
         </div>
@@ -168,8 +161,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <div className="text-center lg:text-left space-y-2">
               <h1 className="text-3xl font-black text-stone-900 tracking-tight">Quality of Life</h1>
               <p className="text-stone-500 font-bold uppercase tracking-widest text-xs mt-2">
-                Login to <span className={selectedDept === 'FirstDept' ? 'text-orange-600' : selectedDept === 'ThirdDept' ? 'text-blue-600' : 'text-purple-600'}>
-                  {selectedDept === 'FirstDept' ? 'First Dept.' : selectedDept === 'ThirdDept' ? 'Third Dept.' : 'Fourth Dept.'}
+                Login to <span className={selectedDept === 'FirstDept' ? 'text-orange-600' : 'text-blue-600'}>
+                  {selectedDept === 'FirstDept' ? 'First Dept.' : 'Third Dept.'}
                 </span>
               </p>
 
@@ -177,7 +170,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               <div className="lg:hidden flex gap-2 mt-4 p-1 bg-stone-100 rounded-xl">
                 <button type="button" onClick={() => setSelectedDept('FirstDept')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${selectedDept === 'FirstDept' ? 'bg-white shadow text-orange-600' : 'text-stone-400'}`}>生活品質<br />第一工程部</button>
                 <button type="button" onClick={() => setSelectedDept('ThirdDept')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${selectedDept === 'ThirdDept' ? 'bg-white shadow text-blue-600' : 'text-stone-400'}`}>傑凱工程<br />第三工程部</button>
-                <button type="button" onClick={() => setSelectedDept('FourthDept')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${selectedDept === 'FourthDept' ? 'bg-white shadow text-purple-600' : 'text-stone-400'}`}>琥凱爾工程<br />第四工程部</button>
               </div>
             </div>
 
@@ -192,14 +184,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <div className="space-y-5">
               <div className="space-y-2">
                 <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.25em] pl-1 flex items-center gap-2">
-                  <Hash size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : selectedDept === 'ThirdDept' ? 'text-blue-500' : 'text-purple-500'} /> 員工編號 Employee ID
+                  <Hash size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'} /> 員工編號 Employee ID
                 </label>
                 <div className="group relative">
                   <input
                     type="text"
                     placeholder="輸入員工編號"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-opacity-50 transition-all placeholder:text-stone-700 uppercase"
-                    style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : selectedDept === 'ThirdDept' ? 'rgb(37 99 235)' : 'rgb(168 85 247)' } as any}
+                    style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : 'rgb(37 99 235)' } as any}
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
                   />
@@ -207,13 +199,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               </div>
               <div className="space-y-2">
                 <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.25em] pl-1 flex items-center gap-2">
-                  <Lock size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : selectedDept === 'ThirdDept' ? 'text-blue-500' : 'text-purple-500'} /> 登入密碼 Password
+                  <Lock size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'} /> 登入密碼 Password
                 </label>
                 <input
                   type="password"
                   placeholder="••••••••"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-opacity-50 transition-all placeholder:text-stone-700"
-                  style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : selectedDept === 'ThirdDept' ? 'rgb(37 99 235)' : 'rgb(168 85 247)' } as any}
+                  style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : 'rgb(37 99 235)' } as any}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -228,9 +220,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   ? 'bg-stone-800 text-stone-600 cursor-not-allowed'
                   : selectedDept === 'FirstDept'
                     ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-900/20'
-                    : selectedDept === 'ThirdDept'
-                      ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20'
-                      : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/20'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20'
                   }`}
               >
                 {isLoading ? (

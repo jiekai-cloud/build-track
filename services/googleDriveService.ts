@@ -214,6 +214,30 @@ class GoogleDriveService {
         return false;
       }
 
+      // 新增：自動設定檔案權限為「其他人可讀」，以便免登入讀取
+      // 只有在是新建立檔案或是明確要求時才需要做，但為了保險起見，每次成功存檔後都確保一次權限
+      if (response.ok) {
+        try {
+          const result = await response.json();
+          const fileId = result.id || existingFile?.id;
+
+          if (fileId) {
+            const permissionUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`;
+            await this.fetchWithAuth(permissionUrl, {
+              method: 'POST',
+              body: JSON.stringify({
+                role: 'reader',
+                type: 'anyone'
+              }),
+              headers: { 'Content-Type': 'application/json' }
+            }, isBackground);
+            console.log('[Drive] Public read permission set successfully.');
+          }
+        } catch (permError) {
+          console.warn('[Drive] Failed to set public permission (might already exist or scopes issue):', permError);
+        }
+      }
+
       console.log('[Drive] Sync Successful');
       return true;
     } catch (err) {

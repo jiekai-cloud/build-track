@@ -268,7 +268,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <h1 className="text-xl lg:text-2xl font-black text-stone-900 tracking-tight">
-              {currentDept === 'ThirdDept' ? '傑凱工程' : currentDept === 'FourthDept' ? '琥凱爾工程' : '生活品質'} • 智慧指揮中心
+              {currentDept === 'ThirdDept' ? '傑凱工程' : '生活品質'} • 智慧指揮中心
             </h1>
             <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 text-white rounded-full">
               <Sparkles size={12} className="text-orange-400" />

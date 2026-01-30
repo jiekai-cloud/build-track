@@ -337,7 +337,7 @@ export interface TeamMember {
 
 export type Role = 'SuperAdmin' | 'Admin' | 'Manager' | 'AdminStaff' | 'Staff' | 'Guest' | 'SyncOnly' | 'DeptAdmin';
 
-export type SystemContext = 'FirstDept' | 'ThirdDept' | 'FourthDept'; // 第一工程部 | 第三工程部 | 第四工程部
+export type SystemContext = 'FirstDept' | 'ThirdDept'; // 第一工程部 | 第三工程部
 
 export interface User {
   id: string;
