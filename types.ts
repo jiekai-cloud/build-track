@@ -202,7 +202,8 @@ export interface Project {
   contractAmount?: number; // 合約總金額
   spent: number;
   progress: number;
-  status: 'Planning' | 'Active' | 'Completed' | 'OnHold'; // 新增 Planning
+  status: ProjectStatus | string; // 容許 Enum 值與舊版英文字串
+  manager?: string; // Legacy field support
   tasks: Task[];
   phases: ProjectPhase[];
   dailyLogs?: DailyLogEntry[];
@@ -552,12 +553,12 @@ export interface QuotationHeader {
   mobile?: string;             // 行動電話
   fax?: string;                // 傳真
   email?: string;              // Email
-  
+
   // 工程資訊
   projectCode?: string;        // 工程編號
   projectName: string;         // 工程名稱
   projectAddress?: string;     // 工程地址
-  
+
   // 報價日期
   quotationDate: string;       // 報價日期 (YYYY-MM-DD)
 }
@@ -571,7 +572,7 @@ export interface QuotationItem {
   unitPrice: number;           // 單價
   amount: number;              // 金額 (自動計算: quantity × unitPrice)
   notes?: string;              // 備註
-  
+
   // 進階欄位
   materialCode?: string;       // 材料編號 (例: MC-INJECT 2111 FLEX)
   isNoiseWork?: boolean;       // 是否為噪音工程
@@ -625,28 +626,28 @@ export interface Quotation {
   id: string;
   quotationNumber: string;     // 報價單編號 (例: Q2026-001)
   version: number;             // 版本號（修改時遞增）
-  
+
   // 關聯資訊
   customerId?: string;         // 關聯客戶 ID
   projectId?: string;          // 關聯專案 ID（成交後）
-  
+
   // 報價單抬頭
   header: QuotationHeader;
-  
+
   // 報價方案（支援多方案比較）
   options: QuotationOption[];
   selectedOptionIndex: number; // 預設選擇的方案索引
-  
+
   // 負責人資訊
   responsibles?: ProjectResponsibles;
-  
+
   // 條款與備註
   terms?: QuotationTerms;
-  
+
   // 狀態管理
   status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'converted';
   validUntil?: string;         // 有效期限 (YYYY-MM-DD)
-  
+
   // 審計資訊
   createdBy: string;           // 建立人員 ID
   createdByName: string;       // 建立人員姓名
@@ -655,14 +656,14 @@ export interface Quotation {
   sentAt?: string;             // 送出時間
   approvedAt?: string;         // 核准時間
   convertedProjectId?: string; // 成交後轉成的專案ID
-  
+
   // 附件
   attachments?: {
     drawingUrl?: string;       // 施工位置簡圖
     detailDrawingUrl?: string; // 施工大樣圖
     otherFiles?: string[];     // 其他附件
   };
-  
+
   // 其他
   departmentId?: string;       // 所屬部門
   deletedAt?: string;          // 軟刪除標記

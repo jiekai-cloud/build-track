@@ -48,7 +48,7 @@ const getAI = () => {
 /**
  * 集中處理 AI 報錯，提供更友善的資訊
  */
-const handleAIError = (error: any, context: string, modelUsed: string) => {
+const handleAIError = (error: any, context: string, modelUsed: string = STABLE_MODEL) => {
   console.warn(`${context} 使用 ${modelUsed} 失敗:`, error); // Changed to warn
 
   const errorMsg = error?.message || "";
@@ -264,7 +264,7 @@ export const getTeamLoadAnalysis = async (members: any[], projects: Project[]) =
 
     const projectSummary = projects
       .filter(p => p.status === '施工中')
-      .map(p => `- ${p.name}: 進度 ${p.progress}%, 負責人: ${p.manager}`)
+      .map(p => `- ${p.name}: 進度 ${p.progress}%, 負責人: ${p.engineeringManager || p.manager || '未指定'}`)
       .join('\n');
 
     const response = await callAIWithFallback({
@@ -321,7 +321,8 @@ export const searchNearbyResources = async (address: string, lat: number, lng: n
 
     return { text: response.text, links };
   } catch (error) {
-    return handleAIError(error, "案場資源搜尋");
+    const errMsg = handleAIError(error, "案場資源搜尋");
+    return { text: typeof errMsg === 'string' ? errMsg : "發生錯誤", links: [] };
   }
 };
 

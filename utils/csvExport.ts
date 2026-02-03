@@ -4,17 +4,17 @@ import { Project } from '../types';
 export const exportProjectsToCSV = (projects: Project[]) => {
   // 定義 CSV 標頭
   const headers = ['案件編號', '案件來源', '建立日期', '專案名稱', '案件類別', '業主', '具體說明', '負責人', '開始日期', '結束日期', '預算', '進度(%)', '狀態'];
-  
+
   // 轉換資料列
   const rows = projects.map(p => [
     p.id,
     p.source,
     p.createdDate,
-    `"${p.name}"`, 
+    `"${p.name}"`,
     p.category,
     `"${p.client}"`,
     `"${p.referrer}"`,
-    p.manager,
+    p.engineeringManager || p.quotationManager || '',
     p.startDate,
     p.endDate,
     p.budget,
@@ -33,7 +33,7 @@ export const exportProjectsToCSV = (projects: Project[]) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   const timestamp = new Date().toISOString().split('T')[0];
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', `BuildTrack_Projects_${timestamp}.csv`);
   link.style.visibility = 'hidden';

@@ -473,7 +473,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
       if (!acc[groupKey]) acc[groupKey] = [];
       acc[groupKey].push(item);
       return acc;
-    }, {} as Record<string, typeof pendingAssignments>);
+    }, {} as Record<string, PendingAssignment[]>);
   }, [pendingAssignments, projects]);
 
   return (
