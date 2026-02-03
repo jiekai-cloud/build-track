@@ -7,6 +7,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 interface QuotationSystemProps {
+    quotations: Quotation[];
     customers: Customer[];
     projects: Project[];
     user: any;
@@ -16,6 +17,7 @@ interface QuotationSystemProps {
 }
 
 const QuotationSystem: React.FC<QuotationSystemProps> = ({
+    quotations,
     customers,
     projects,
     user,
@@ -23,7 +25,7 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
     onUpdateQuotation,
     onDeleteQuotation
 }) => {
-    const [quotations, setQuotations] = useState<Quotation[]>([]);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
@@ -369,11 +371,9 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 onSave={(newQuotation) => {
                     if (selectedQuotation) {
                         // Update
-                        setQuotations(prev => prev.map(q => q.id === newQuotation.id ? newQuotation : q));
                         if (onUpdateQuotation) onUpdateQuotation(newQuotation);
                     } else {
                         // Create
-                        setQuotations(prev => [newQuotation, ...prev]);
                         if (onAddQuotation) onAddQuotation(newQuotation);
                     }
                     setShowNewQuotationModal(false);

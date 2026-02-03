@@ -31,7 +31,7 @@ import OnboardingTour from './components/OnboardingTour';
 import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download, Phone } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
-import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder, AttendanceRecord, PayrollRecord, ApprovalRequest, ApprovalTemplate } from './types';
+import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder, AttendanceRecord, PayrollRecord, ApprovalRequest, ApprovalTemplate, Quotation } from './types';
 import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 import { moduleService } from './services/moduleService';
 import { ModuleId, DEFAULT_ENABLED_MODULES, ALL_MODULES } from './moduleConfig';
@@ -57,6 +57,7 @@ const App: React.FC = () => {
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
   const [approvalTemplates, setApprovalTemplates] = useState<ApprovalTemplate[]>([]);
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
 
   // Calculate permissions dynamically
   // Calculate permissions dynamically
@@ -390,6 +391,9 @@ const App: React.FC = () => {
     if (cloudData.approvalTemplates) {
       setApprovalTemplates(prev => mergeData(prev, cloudData.approvalTemplates || []));
     }
+    if (cloudData.quotations) {
+      setQuotations(prev => mergeData(prev, cloudData.quotations || []));
+    }
     // Activity logs 採取單純合併去重
     setActivityLogs(prev => {
       const combined = [...(cloudData.activityLogs || []), ...prev];
@@ -417,6 +421,7 @@ const App: React.FC = () => {
       setInventoryItems([]);
       setPurchaseOrders([]);
       setActivityLogs([]);
+      setQuotations([]);
 
       setActiveTab('dashboard');
       console.log('[System] Logout complete, memory cleared.');
@@ -769,6 +774,9 @@ const App: React.FC = () => {
       setApprovalTemplates(approvalTemplatesData);
       setActivityLogs(logsData);
 
+      const quotationsData = await storageService.getItem<Quotation[]>(`${prefix}bt_quotations`, []);
+      setQuotations(quotationsData);
+
       setInitialSyncDone(true);
       setIsInitializing(false);
       console.log('System initialized successfully');
@@ -792,10 +800,17 @@ const App: React.FC = () => {
 
 
   // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
-  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates });
+  // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
+  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations });
   React.useEffect(() => {
-    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates };
-  }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates]);
+    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations };
+  }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations]);
+
+  React.useEffect(() => {
+    if (isInitializing) return;
+    const prefix = currentDept === 'ThirdDept' ? 'dept3_' : '';
+    storageService.setItem(`${prefix}bt_quotations`, quotations);
+  }, [quotations, isInitializing, currentDept]);
 
   const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
     if (!user) return;
@@ -892,6 +907,7 @@ const App: React.FC = () => {
         approvalRequests: localData.approvalRequests,
         approvalTemplates: localData.approvalTemplates,
         activityLogs: localData.activityLogs,
+        quotations: localData.quotations,
         lastUpdated: new Date().toISOString(),
         userEmail: user?.email
       }, true);
@@ -926,7 +942,7 @@ const App: React.FC = () => {
       isSyncingRef.current = false;
       setIsSyncing(false); // STOP UI SPINNER
     }
-  }, [isCloudConnected, user?.email, user?.role, projects, customers, teamMembers, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, activityLogs, updateStateWithMerge, cloudError, handleLogout, approvalRequests, approvalTemplates]);
+  }, [isCloudConnected, user?.email, user?.role, projects, customers, teamMembers, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, activityLogs, updateStateWithMerge, cloudError, handleLogout, approvalRequests, approvalTemplates, quotations]);
 
   const handleConnectCloud = async () => {
     if (user?.role === 'Guest') return;
@@ -1293,7 +1309,7 @@ const App: React.FC = () => {
       category: '室內裝修',
       source: '系統測試',
       client: '測試客戶 (林先生)',
-      location: '台北市萬華區萬大路 123 號 5 樓',
+      location: { address: '台北市萬華區萬大路 123 號 5 樓', lat: 25.029, lng: 121.498 },
       manager: user?.name || '測試經理',
       startDate: today,
       endDate: new Date(Date.now() + 86400000 * 30).toISOString().split('T')[0],
@@ -1303,9 +1319,9 @@ const App: React.FC = () => {
       progress: 15,
       status: ProjectStatus.CONSTRUCTING,
       tasks: [
-        { id: 'T-1', title: '現場放樣與水電確認', completed: true, priority: 'High', dueDate: today },
-        { id: 'T-2', title: '拆除牆面與清運', completed: true, priority: 'Medium', dueDate: today },
-        { id: 'T-3', title: '泥作粉刷工程', completed: false, priority: 'Medium', dueDate: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0] }
+        { id: 'T-1', title: '現場放樣與水電確認', status: 'Done', priority: 'High', dueDate: today, assignee: user?.name || 'Manager' },
+        { id: 'T-2', title: '拆除牆面與清運', status: 'Done', priority: 'Medium', dueDate: today, assignee: user?.name || 'Manager' },
+        { id: 'T-3', title: '泥作粉刷工程', status: 'Todo', priority: 'Medium', dueDate: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0], assignee: user?.name || 'Manager' }
       ],
       phases: [
         { id: 'P-1', name: '準備階段', startDate: today, endDate: today, status: 'Completed', progress: 100 },
@@ -1313,12 +1329,12 @@ const App: React.FC = () => {
         { id: 'P-3', name: '泥作工程', startDate: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0], endDate: new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0], status: 'Upcoming', progress: 0 }
       ],
       checklist: [
-        { id: 'C-1', category: '合約與文件', task: '合約用印與簽署', completed: true },
-        { id: 'C-2', category: '合約與文件', task: '室內裝修審查申請', completed: false }
+        { id: 'C-1', title: '合約用印與簽署 (合約與文件)', isDone: true },
+        { id: 'C-2', title: '室內裝修審查申請 (合約與文件)', isDone: false }
       ],
       payments: [
-        { id: 'PY-1', stage: '開工案', amount: 360000, dueDate: today, status: 'Paid', datePaid: today },
-        { id: 'PY-2', stage: '泥作完成', amount: 360000, dueDate: new Date(Date.now() + 86400000 * 15).toISOString().split('T')[0], status: 'Pending' }
+        { id: 'PY-1', stage: '開工案', amount: 360000, dueDate: today, status: 'paid', datePaid: today, label: '第一期', notes: '' },
+        { id: 'PY-2', stage: '泥作完成', amount: 360000, dueDate: new Date(Date.now() + 86400000 * 15).toISOString().split('T')[0], status: 'pending', label: '第二期', notes: '' }
       ],
       updatedAt: new Date().toISOString(),
       financials: { labor: 0, material: 0, subcontractor: 0, other: 0 }
@@ -1645,12 +1661,24 @@ const App: React.FC = () => {
               )}
               {activeTab === 'quotations' && moduleService.isModuleEnabled(ModuleId.QUOTATIONS) && (
                 <QuotationSystem
-                  customers={filteredData.customers}
-                  projects={filteredData.projects}
+                  customers={customers}
+                  projects={projects}
                   user={user}
-                  onAddQuotation={(quotation) => {
-                    // TODO: 之後實作報價單資料存儲邏輯
-                    console.log('New quotation:', quotation);
+                  quotations={quotations}
+                  onAddQuotation={(q) => {
+                    setQuotations(prev => [q, ...prev]);
+                    addActivityLog('建立了報價單', q.header.projectName, q.id, 'system');
+                  }}
+                  onUpdateQuotation={(q) => {
+                    setQuotations(prev => prev.map(item => item.id === q.id ? q : item));
+                    addActivityLog('更新了報價單', q.header.projectName, q.id, 'system');
+                  }}
+                  onDeleteQuotation={(id) => {
+                    const q = quotations.find(item => item.id === id);
+                    if (q) {
+                      setQuotations(prev => prev.map(item => item.id === id ? { ...item, deletedAt: new Date().toISOString() } : item));
+                      addActivityLog('刪除了報價單', q.header.projectName, id, 'system');
+                    }
                   }}
                 />
               )}
@@ -1734,6 +1762,7 @@ const App: React.FC = () => {
                         if (parsed.purchaseOrders) setPurchaseOrders(parsed.purchaseOrders);
                         if (parsed.attendance) setAttendanceRecords(parsed.attendance);
                         if (parsed.payroll) setPayrollRecords(parsed.payroll);
+                        if (parsed.quotations) setQuotations(parsed.quotations);
                       } else {
                         // Safe Merge Mode
                         if (parsed.projects) setProjects(prev => mergeData(prev, parsed.projects));
@@ -1746,6 +1775,7 @@ const App: React.FC = () => {
                         if (parsed.purchaseOrders) setPurchaseOrders(prev => mergeData(prev, parsed.purchaseOrders || []));
                         if (parsed.attendance) setAttendanceRecords(prev => mergeData(prev, parsed.attendance || []));
                         if (parsed.payroll) setPayrollRecords(prev => mergeData(prev, parsed.payroll || []));
+                        if (parsed.quotations) setQuotations(prev => mergeData(prev, parsed.quotations || []));
                       }
                       alert('資料匯入成功！');
                     } catch (e: any) {
@@ -1766,7 +1796,8 @@ const App: React.FC = () => {
                       locations: inventoryLocations,
                       purchaseOrders,
                       attendance: attendanceRecords,
-                      payroll: payrollRecords
+                      payroll: payrollRecords,
+                      quotations
                     });
                   }}
                   onRestoreLocalBackup={async () => {
