@@ -357,6 +357,35 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                     {/* 基本資料區 */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
+                            <label className="text-sm font-bold text-stone-600">關聯案件 (選填)</label>
+                            <div className="relative">
+                                <select
+                                    value={formData.projectId || ''}
+                                    onChange={(e) => {
+                                        const pid = e.target.value;
+                                        setFormData(prev => prev ? ({ ...prev, projectId: pid }) : null);
+
+                                        // Auto-fill client name if empty
+                                        if (pid) {
+                                            const proj = projects.find(p => p.id === pid);
+                                            if (proj && !formData.header.to) {
+                                                updateHeader('to', proj.client);
+                                            }
+                                        }
+                                    }}
+                                    className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none appearance-none bg-white"
+                                >
+                                    <option value="">-- 獨立報價單 (無關聯案件) --</option>
+                                    {projects.map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.name} ({p.client})
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-2.5 text-stone-400 pointer-events-none" size={16} />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
                             <label className="text-sm font-bold text-stone-600">客戶名稱 / 對象</label>
                             <input
                                 type="text"

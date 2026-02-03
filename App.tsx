@@ -1620,8 +1620,30 @@ const App: React.FC = () => {
               onUpdatePayments={(payments) => handleUpdatePayments(selectedProjectId, payments)}
               onUpdateTasks={(tasks) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, tasks, updatedAt: new Date().toISOString() } : p))}
               onUpdateProgress={(progress) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, progress, updatedAt: new Date().toISOString() } : p))}
-              onUpdateExpenses={(expenses) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, expenses, updatedAt: new Date().toISOString() } : p))}
-              onUpdateWorkAssignments={(assignments) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, workAssignments: assignments, updatedAt: new Date().toISOString() } : p))}
+              onUpdateExpenses={(expenses) => setProjects(prev => prev.map(p => {
+                if (p.id !== selectedProjectId) return p;
+                const labor = (p.workAssignments || []).reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
+                const mat = expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                const introducerFee = (p.introducerFeeRequired && p.introducerFeeAmount) ? p.introducerFeeAmount : 0;
+                return {
+                  ...p,
+                  expenses,
+                  spent: labor + mat + introducerFee,
+                  updatedAt: new Date().toISOString()
+                };
+              }))}
+              onUpdateWorkAssignments={(assignments) => setProjects(prev => prev.map(p => {
+                if (p.id !== selectedProjectId) return p;
+                const labor = assignments.reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
+                const mat = (p.expenses || []).reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                const introducerFee = (p.introducerFeeRequired && p.introducerFeeAmount) ? p.introducerFeeAmount : 0;
+                return {
+                  ...p,
+                  workAssignments: assignments,
+                  spent: labor + mat + introducerFee,
+                  updatedAt: new Date().toISOString()
+                };
+              }))}
               onUpdatePreConstruction={(prep) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, preConstruction: prep, updatedAt: new Date().toISOString() } : p))}
               onUpdateContractUrl={(url) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, contractUrl: url, updatedAt: new Date().toISOString() } : p))}
               onUpdateDefectRecords={(records) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, defectRecords: records, updatedAt: new Date().toISOString() } : p))}

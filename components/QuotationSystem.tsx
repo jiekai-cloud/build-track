@@ -287,6 +287,11 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                                             {quotation.header.projectAddress && (
                                                 <div className="text-xs text-stone-500 mt-1">{quotation.header.projectAddress}</div>
                                             )}
+                                            {quotation.projectId && (
+                                                <div className="flex items-center gap-1 mt-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 w-fit font-bold">
+                                                    連結案件: {projects.find(p => p.id === quotation.projectId)?.name || '未知案件'}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-stone-900">{quotation.header.to || '-'}</div>
