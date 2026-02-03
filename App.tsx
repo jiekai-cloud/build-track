@@ -25,6 +25,7 @@ import OrderManagerModal from './components/OrderManagerModal';
 import AttendanceSystem from './components/AttendanceSystem';
 import PayrollSystem from './components/PayrollSystem';
 import ApprovalSystem from './components/ApprovalSystem';
+import QuotationSystem from './components/QuotationSystem';
 import ModuleManager from './components/ModuleManager';
 import OnboardingTour from './components/OnboardingTour';
 import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download, Phone } from 'lucide-react';
@@ -1640,6 +1641,17 @@ const App: React.FC = () => {
                   onSaveTemplate={handleSaveApprovalTemplate}
                   onDeleteTemplate={handleDeleteApprovalTemplate}
                   onAction={handleApprovalAction}
+                />
+              )}
+              {activeTab === 'quotations' && moduleService.isModuleEnabled(ModuleId.QUOTATIONS) && (
+                <QuotationSystem
+                  customers={filteredData.customers}
+                  projects={filteredData.projects}
+                  user={user}
+                  onAddQuotation={(quotation) => {
+                    // TODO: 之後實作報價單資料存儲邏輯
+                    console.log('New quotation:', quotation);
+                  }}
                 />
               )}
               {activeTab === 'dashboard' && !isCloudConnected && user.role !== 'Guest' && (

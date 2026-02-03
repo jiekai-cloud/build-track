@@ -142,11 +142,11 @@ const YearFilter = forwardRef((props: IFilterParams, ref) => {
         className="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs font-bold outline-none cursor-pointer hover:border-blue-500 transition-colors"
         onPointerDown={(e) => e.stopPropagation()} // Prevent grid sorting when clicking
       >
-        <option value="All">全部年份 (All)</option>
         <option value="2026">2026 年度</option>
         <option value="2025">2025 年度</option>
         <option value="2024">2024 年度</option>
         <option value="others">其他</option>
+        <option value="All">全部年份 (All)</option>
       </select>
     </div>
   );
@@ -415,7 +415,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [viewMode, setViewMode] = useState<'card' | 'table' | 'kanban'>('table'); // Default Set to Table to show off AgGrid
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [yearFilter, setYearFilter] = useState<string>('all'); // New Year Filter State
+  const [yearFilter, setYearFilter] = useState<string>('2026'); // Updated default to 2026
   // Removed custom sortConfig as Ag-Grid handles it internally
 
   const projectsWithFinancials = useMemo<ProjectWithFinancials[]>(() => {
@@ -607,15 +607,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setYearFilter('all')}
-              className={`px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-sm border-2 ${yearFilter === 'all'
-                ? 'bg-stone-900 text-white border-stone-900 shadow-lg scale-105'
-                : 'bg-white text-stone-400 border-stone-200 hover:border-stone-400 hover:text-stone-600'
-                }`}
-            >
-              📊 全部年份
-            </button>
-            <button
               onClick={() => setYearFilter('2026')}
               className={`px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-sm border-2 ${yearFilter === '2026'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg scale-105'
@@ -641,6 +632,15 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 }`}
             >
               📆 2024 年度
+            </button>
+            <button
+              onClick={() => setYearFilter('all')}
+              className={`px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-sm border-2 ${yearFilter === 'all'
+                ? 'bg-stone-900 text-white border-stone-900 shadow-lg scale-105'
+                : 'bg-white text-stone-400 border-stone-200 hover:border-stone-400 hover:text-stone-600'
+                }`}
+            >
+              📊 全部年份
             </button>
           </div>
           <div className="mt-2 text-xs font-bold text-stone-400">

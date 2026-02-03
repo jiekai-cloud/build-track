@@ -37,6 +37,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
   const [lastUploadedFileName, setLastUploadedFileName] = useState<string | null>(null);
   const [selectedPendingIds, setSelectedPendingIds] = useState<Set<string>>(new Set());
+  const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<string>>(new Set());
 
   const [filterProject, setFilterProject] = useState('all');
   const [formData, setFormData] = useState({
@@ -290,6 +291,42 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
       newSet.add(id);
     }
     setSelectedPendingIds(newSet);
+  };
+
+  // 歷史紀錄批次刪除功能
+  const getHistoryKey = (projectId: string, assignmentId: string) => `${projectId}|${assignmentId}`;
+
+  const handleBatchDeleteHistory = () => {
+    if (selectedHistoryIds.size === 0) return;
+    if (window.confirm(`確定要刪除選取的 ${selectedHistoryIds.size} 筆歷史紀錄嗎？包含的成本數據將一併移除。`)) {
+      selectedHistoryIds.forEach(key => {
+        const [projectId, assignmentId] = key.split('|');
+        if (projectId && assignmentId) {
+          onDeleteDispatch(projectId, assignmentId);
+        }
+      });
+      setSelectedHistoryIds(new Set());
+    }
+  };
+
+  const toggleHistorySelectAll = () => {
+    if (selectedHistoryIds.size === filteredAssignments.length) {
+      setSelectedHistoryIds(new Set());
+    } else {
+      const allKeys = filteredAssignments.map(a => getHistoryKey(a.projectId, a.id));
+      setSelectedHistoryIds(new Set(allKeys));
+    }
+  };
+
+  const toggleHistorySelection = (projectId: string, assignmentId: string) => {
+    const key = getHistoryKey(projectId, assignmentId);
+    const newSet = new Set(selectedHistoryIds);
+    if (newSet.has(key)) {
+      newSet.delete(key);
+    } else {
+      newSet.add(key);
+    }
+    setSelectedHistoryIds(newSet);
   };
 
   // 處理特定群組匯入 (V3.0 New Feature)
@@ -1083,13 +1120,25 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
           <div className="flex items-center gap-3">
             <ClipboardSignature size={18} className="text-orange-600" />
             <h3 className="font-black text-stone-900 text-sm uppercase tracking-widest">累積派工紀錄明細</h3>
+            {selectedHistoryIds.size > 0 && (
+              <button
+                onClick={handleBatchDeleteHistory}
+                className="ml-4 px-3 py-1.5 bg-rose-100 text-rose-600 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-rose-200 transition-all flex items-center gap-2"
+              >
+                <Trash2 size={14} />
+                刪除選取 ({selectedHistoryIds.size})
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-stone-200">
             <Briefcase size={14} className="text-stone-400" />
             <select
               className="bg-transparent text-xs font-bold text-black outline-none cursor-pointer"
               value={filterProject}
-              onChange={e => setFilterProject(e.target.value)}
+              onChange={e => {
+                setFilterProject(e.target.value);
+                setSelectedHistoryIds(new Set()); // 切換篩選時清除選取
+              }}
             >
               <option value="all">所有案件紀錄</option>
               {projects.map(p => <option key={p.id} value={p.id} className="text-black">{p.name}</option>)}
@@ -1100,7 +1149,16 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
           <table className="w-full text-left">
             <thead>
               <tr className="bg-stone-50/50 text-[10px] font-black text-stone-400 uppercase tracking-widest border-b border-stone-100">
-                <th className="px-8 py-4">日期</th>
+                <th className="px-4 py-4 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={filteredAssignments.length > 0 && selectedHistoryIds.size === filteredAssignments.length}
+                    onChange={toggleHistorySelectAll}
+                    disabled={filteredAssignments.length === 0}
+                    className="w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500"
+                  />
+                </th>
+                <th className="px-4 py-4">日期</th>
                 <th className="px-8 py-4">所屬案件</th>
                 <th className="px-8 py-4">成員</th>
                 <th className="px-8 py-4 text-right">單日薪資</th>
@@ -1111,8 +1169,16 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
             </thead>
             <tbody className="divide-y divide-stone-50">
               {filteredAssignments.length > 0 ? filteredAssignments.map((item) => (
-                <tr key={item.id} className="text-sm hover:bg-stone-50/50 transition-colors group">
-                  <td className="px-8 py-5 font-mono text-xs text-stone-500">{item.date}</td>
+                <tr key={`${item.projectId}-${item.id}`} className={`text-sm hover:bg-stone-50/50 transition-colors group ${selectedHistoryIds.has(getHistoryKey(item.projectId, item.id)) ? 'bg-orange-50/30' : ''}`}>
+                  <td className="px-4 py-5 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedHistoryIds.has(getHistoryKey(item.projectId, item.id))}
+                      onChange={() => toggleHistorySelection(item.projectId, item.id)}
+                      className="w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500"
+                    />
+                  </td>
+                  <td className="px-4 py-5 font-mono text-xs text-stone-500">{item.date}</td>
                   <td className="px-8 py-5">
                     <div className="flex flex-col">
                       <span className="font-bold text-stone-900">{item.projectName}</span>
@@ -1134,7 +1200,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-20 text-xs font-black uppercase tracking-widest text-stone-300 italic">尚無相關紀錄</td>
+                  <td colSpan={8} className="text-center py-20 text-xs font-black uppercase tracking-widest text-stone-300 italic">尚無相關紀錄</td>
                 </tr>
               )}
             </tbody>

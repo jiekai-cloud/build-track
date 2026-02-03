@@ -524,3 +524,160 @@ export interface ApprovalRequest {
   updatedAt: string;
   completedAt?: string;
 }
+
+// ===== 報價系統 (Quotation System) =====
+
+export interface BankAccount {
+  bankName: string;            // "玉山銀行(808) 士林分行"
+  accountName: string;         // "台灣生活品質發展股份有限公司"
+  accountNumber: string;       // "0657-940-151307"
+}
+
+export interface ProjectResponsible {
+  name: string;
+  mobile: string;
+}
+
+export interface ProjectResponsibles {
+  siteManager?: ProjectResponsible;    // 工地負責人
+  projectManager?: ProjectResponsible;  // 專案負責人
+  fieldManager?: ProjectResponsible;    // 現場負責人
+}
+
+export interface QuotationHeader {
+  // 客戶資訊
+  to?: string;                 // 收件人
+  attn?: string;               // 聯絡人
+  tel?: string;                // 電話
+  mobile?: string;             // 行動電話
+  fax?: string;                // 傳真
+  email?: string;              // Email
+  
+  // 工程資訊
+  projectCode?: string;        // 工程編號
+  projectName: string;         // 工程名稱
+  projectAddress?: string;     // 工程地址
+  
+  // 報價日期
+  quotationDate: string;       // 報價日期 (YYYY-MM-DD)
+}
+
+export interface QuotationItem {
+  id: string;
+  itemNumber: number;          // 項目序號
+  name: string;                // 品名
+  unit: string;                // 單位 (M, M2, M3, ST, PC...)
+  quantity: number;            // 數量
+  unitPrice: number;           // 單價
+  amount: number;              // 金額 (自動計算: quantity × unitPrice)
+  notes?: string;              // 備註
+  
+  // 進階欄位
+  materialCode?: string;       // 材料編號 (例: MC-INJECT 2111 FLEX)
+  isNoiseWork?: boolean;       // 是否為噪音工程
+  category?: string;           // 分類
+}
+
+export interface ItemCategory {
+  id: string;
+  code: string;                // "壹", "貳", "參", "肆"...
+  name: string;                // "拆除工程", "防水工程"...
+  items: QuotationItem[];
+}
+
+export interface DiscountItem {
+  name: string;                // "會勘費折抵"
+  amount: number;              // -1000 (負數表示折扣)
+  description?: string;        // 說明
+}
+
+export interface QuotationSummary {
+  subtotal: number;            // 項目小計
+  managementFee: number;       // 工安管理費
+  managementFeeRate: number;   // 工安管理費率 (預設 10%)
+  beforeTaxAmount: number;     // 未稅金額
+  tax: number;                 // 營業稅
+  taxRate: number;             // 稅率 (預設 5%)
+  discounts?: DiscountItem[];  // 折扣項目
+  totalAmount: number;         // 工程金額總計
+}
+
+export interface QuotationOption {
+  id: string;
+  name: string;                // "方案一"
+  description: string;         // "頂樓地坪及女兒牆外牆防水工程"
+  categories: ItemCategory[];  // 項目分類
+  summary: QuotationSummary;   // 金額總計
+  warranty?: string;           // 保固說明
+}
+
+export interface QuotationTerms {
+  workSchedule?: string;       // 工期說明 "預計25個工作天"
+  safetyRequirements?: string[]; // 安全規定
+  paymentTerms?: string;       // 付款方式
+  bankAccount?: BankAccount;   // 收款帳號
+  validityPeriod?: string;     // 報價有效期限 "30天"
+  warrantyYears?: number;      // 保固年限
+  otherNotes?: string[];       // 其他備註
+}
+
+export interface Quotation {
+  id: string;
+  quotationNumber: string;     // 報價單編號 (例: Q2026-001)
+  version: number;             // 版本號（修改時遞增）
+  
+  // 關聯資訊
+  customerId?: string;         // 關聯客戶 ID
+  projectId?: string;          // 關聯專案 ID（成交後）
+  
+  // 報價單抬頭
+  header: QuotationHeader;
+  
+  // 報價方案（支援多方案比較）
+  options: QuotationOption[];
+  selectedOptionIndex: number; // 預設選擇的方案索引
+  
+  // 負責人資訊
+  responsibles?: ProjectResponsibles;
+  
+  // 條款與備註
+  terms?: QuotationTerms;
+  
+  // 狀態管理
+  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'converted';
+  validUntil?: string;         // 有效期限 (YYYY-MM-DD)
+  
+  // 審計資訊
+  createdBy: string;           // 建立人員 ID
+  createdByName: string;       // 建立人員姓名
+  createdAt: string;           // 建立時間
+  updatedAt: string;           // 更新時間
+  sentAt?: string;             // 送出時間
+  approvedAt?: string;         // 核准時間
+  convertedProjectId?: string; // 成交後轉成的專案ID
+  
+  // 附件
+  attachments?: {
+    drawingUrl?: string;       // 施工位置簡圖
+    detailDrawingUrl?: string; // 施工大樣圖
+    otherFiles?: string[];     // 其他附件
+  };
+  
+  // 其他
+  departmentId?: string;       // 所屬部門
+  deletedAt?: string;          // 軟刪除標記
+}
+
+// 報價單項目範本（可重複使用）
+export interface QuotationTemplate {
+  id: string;
+  name: string;                // 範本名稱
+  category: string;            // 分類
+  description?: string;        // 描述
+  items: Omit<QuotationItem, 'id' | 'itemNumber' | 'amount'>[];
+  usageCount: number;          // 使用次數
+  lastUsedAt?: string;         // 最後使用時間
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}

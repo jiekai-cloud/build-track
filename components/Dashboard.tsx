@@ -29,7 +29,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError, lastCloudSync, isMasterTab, onRetrySync, onConvertLead, onProjectClick, onStartTour, currentDept = 'FirstDept' }) => {
   const [lastSync, setLastSync] = useState(new Date());
-  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('2026');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [portfolioAnalysis, setPortfolioAnalysis] = useState<string | null>(null);
@@ -285,8 +285,8 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
           <div className="flex items-center gap-2 px-3 border-r border-stone-100">
             <CalendarDays size={14} className="text-stone-400" />
             <select className="bg-transparent text-xs font-bold outline-none cursor-pointer" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-              <option value="all">全年度</option>
               {availableYears.map(year => <option key={year} value={year}>{year}年</option>)}
+              <option value="all">全年度</option>
             </select>
           </div>
           <div className="flex items-center gap-2 px-3">

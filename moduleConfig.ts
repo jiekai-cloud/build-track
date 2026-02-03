@@ -4,7 +4,7 @@
  * 此檔案定義系統中所有可用的功能模組及其配置
  */
 
-import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet, FileCheck } from 'lucide-react';
+import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet, FileCheck, FileText } from 'lucide-react';
 
 // ... (omitted enum and interface changes which are already correct) ...
 
@@ -32,7 +32,8 @@ export enum ModuleId {
     INVENTORY = 'inventory',          // 庫存管理
     ATTENDANCE = 'attendance',        // 考勤系統
     PAYROLL = 'payroll',               // 薪資管理
-    APPROVALS = 'approvals'           // 簽核系統
+    APPROVALS = 'approvals',          // 簽核系統
+    QUOTATIONS = 'quotations'         // 報價系統
 }
 
 /**
@@ -218,6 +219,16 @@ export const ALL_MODULES: ModuleConfig[] = [
         isCore: false,
         dependencies: [ModuleId.TEAM],
         enabled: true,
+        category: 'management'
+    },
+    {
+        id: ModuleId.QUOTATIONS,
+        name: '報價系統',
+        description: '工程報價單製作、審核與追蹤管理',
+        icon: FileText,
+        isCore: false,
+        dependencies: [ModuleId.CUSTOMERS, ModuleId.PROJECTS],
+        enabled: true,  // ✅ 已啟用
         category: 'management'
     }
 ];
