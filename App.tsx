@@ -206,7 +206,8 @@ const App: React.FC = () => {
       // Robust matching: ID or Email
       const me = teamMembers.find(m =>
         m.employeeId.toLowerCase() === user.id.toLowerCase() ||
-        (m.email && user.email && m.email.toLowerCase() === user.email.toLowerCase())
+        (m.email && user.email && m.email.toLowerCase() === user.email.toLowerCase()) ||
+        m.name === user.name
       );
       if (me) {
         // Also sync accessibleModules to user session for immediate UI update
