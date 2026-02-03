@@ -657,35 +657,46 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
 
         // 2. Initialize map for each employee
         const stats: Record<string, PayrollData> = {};
-        teamMembers.forEach(m => {
-            stats[m.employeeId || m.id] = {
-                member: m,
-                workDays: 0,
-                leaveDays: 0,
-                hours: 0,
-                overtimeHours: 0,
-                records: [],
-                baseSalary: 0,
-                overtimePay: 0,
-                allowances: {
-                    spiderman: 0,
-                    meal: 0,
-                    transport: 0,
-                    other: 0,
-                    total: 0
-                },
-                grossSalary: 0,
-                deductions: {
-                    late: 0,
-                    leave: 0,
-                    labor: m.laborFee || 0,
-                    health: m.healthFee || 0,
-                    other: 0
-                },
-                netSalary: 0,
-                dailyLogs: []
-            };
-        });
+
+        // Shared filtering logic from TeamList
+        const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬'];
+        const PURGE_PREFIXES = ['T-', 'CEO'];
+
+        teamMembers
+            .filter(m => {
+                const isVirtualId = typeof m.id === 'string' && PURGE_PREFIXES.some(prefix => m.id.startsWith(prefix) && m.id.length < 8);
+                const isVirtualName = PURGE_NAMES.includes(m.name);
+                return !isVirtualId && !isVirtualName;
+            })
+            .forEach(m => {
+                stats[m.employeeId || m.id] = {
+                    member: m,
+                    workDays: 0,
+                    leaveDays: 0,
+                    hours: 0,
+                    overtimeHours: 0,
+                    records: [],
+                    baseSalary: 0,
+                    overtimePay: 0,
+                    allowances: {
+                        spiderman: 0,
+                        meal: 0,
+                        transport: 0,
+                        other: 0,
+                        total: 0
+                    },
+                    grossSalary: 0,
+                    deductions: {
+                        late: 0,
+                        leave: 0,
+                        labor: m.laborFee || 0,
+                        health: m.healthFee || 0,
+                        other: 0
+                    },
+                    netSalary: 0,
+                    dailyLogs: []
+                };
+            });
 
         // 3. Process each day of the month for each employee
         Object.values(stats).forEach(context => {

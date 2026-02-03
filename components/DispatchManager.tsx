@@ -1059,7 +1059,15 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
                 onChange={e => setFormData({ ...formData, memberId: e.target.value })}
               >
                 <option value="">選擇人員...</option>
-                {teamMembers.map(m => <option key={m.id} value={m.id} className="text-black">{m.name} ({m.role})</option>)}
+                {teamMembers
+                  .filter(m => {
+                    const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬'];
+                    const PURGE_PREFIXES = ['T-', 'CEO'];
+                    const isVirtualId = typeof m.id === 'string' && PURGE_PREFIXES.some(prefix => m.id.startsWith(prefix) && m.id.length < 8);
+                    const isVirtualName = PURGE_NAMES.includes(m.name);
+                    return !isVirtualId && !isVirtualName;
+                  })
+                  .map(m => <option key={m.id} value={m.id} className="text-black">{m.name} ({m.role})</option>)}
               </select>
             </div>
             <div>
