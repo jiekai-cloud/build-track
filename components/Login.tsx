@@ -100,6 +100,74 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  /* LINE Login Integration */
+  const [isLineReady, setIsLineReady] = useState(false);
+
+  useEffect(() => {
+    const initLine = async () => {
+      const { lineService } = await import('../services/lineService');
+      const initialized = await lineService.init();
+      setIsLineReady(initialized);
+
+      if (initialized && lineService.isLoggedIn()) {
+        setIsLoading(true);
+        const profile = await lineService.getProfile();
+        if (profile) {
+          console.log('LINE Profile:', profile);
+
+          // Verify against all departments
+          const departments: SystemContext[] = ['FirstDept', 'ThirdDept'];
+          let foundMember = null;
+          let foundDept: SystemContext = 'FirstDept';
+
+          for (const dept of departments) {
+            const prefix = dept === 'ThirdDept' ? 'dept3_' : '';
+            const teamKey = `${prefix}bt_team`;
+            const team = await storageService.getItem<any[]>(teamKey, []) || [];
+
+            // Match by Email or Name (DisplayName)
+            // Note: LINE displayName might not match exactly, so Email is safer if available.
+            // If email is hidden, fallback to Name.
+            const match = team.find((m: any) =>
+              (m.email && profile.email && m.email.toLowerCase() === profile.email.toLowerCase()) ||
+              (m.name === profile.displayName)
+            );
+
+            if (match) {
+              foundMember = match;
+              foundDept = dept;
+              break;
+            }
+          }
+
+          if (foundMember) {
+            const finalRole = foundMember.systemRole || (foundMember.role === '工務主管' || foundMember.role === '專案經理' ? 'DeptAdmin' : 'Staff');
+            onLoginSuccess({
+              id: foundMember.id,
+              name: foundMember.name,
+              email: foundMember.email,
+              picture: foundMember.avatar || profile.pictureUrl, // Use LINE picture if avatar missing
+              role: finalRole,
+              roleName: foundMember.role,
+              department: foundDept
+            }, foundDept);
+            return;
+          } else {
+            setError(`LINE 帳號 (${profile.displayName}) 未綁定任何員工資料。請確認您的「員工姓名」與 LINE 暱稱一致，或聯絡管理員設定 Email。`);
+            setIsLoading(false);
+          }
+        }
+      }
+    };
+    initLine();
+  }, [onLoginSuccess]);
+
+  const handleLineLoginAction = async () => {
+    const { lineService } = await import('../services/lineService');
+    if (!isLineReady) await lineService.init();
+    lineService.login();
+  };
+
   const handleQuickAccess = () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -234,6 +302,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <ArrowRight size={20} />
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLineLoginAction}
+                disabled={isLoading}
+                className="w-full py-5 bg-[#06C755] hover:bg-[#05b34c] text-white rounded-2xl flex items-center justify-center gap-3 font-black text-sm tracking-[0.2em] uppercase transition-all shadow-xl shadow-[#06c755]/20 active:scale-[0.98]"
+              >
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" className="w-6 h-6" alt="LINE" />
+                LINE 快速登入
               </button>
 
               <button
