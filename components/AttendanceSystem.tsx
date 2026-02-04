@@ -145,7 +145,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
     }, [records, currentUser.id, currentTime]); // Add currentTime dependency for real-time update
 
     // Helper to get location and trigger record
-    const handleLocationUpdate = async (type: 'work-start' | 'work-end') => {
+    const handleLocationUpdate = async (type?: 'work-start' | 'work-end') => {
         setLoadingLocation(true);
         setLocationError(null);
 
@@ -168,7 +168,9 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
 
                 setLocation({ lat: latitude, lng: longitude, address });
                 setLoadingLocation(false);
-                onRecord(type, { lat: latitude, lng: longitude, address });
+                if (type) {
+                    onRecord(type, { lat: latitude, lng: longitude, address });
+                }
             },
             (error) => {
                 console.error("Location error", error);
@@ -279,7 +281,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                 )}
                 <div className="flex-1">
                     {loadingLocation && <span className="font-bold">正在定位中...</span>}
-                    {locationError && <span className="font-bold">{locationError} <button onClick={getLocation} className="underline ml-2">重試</button></span>}
+                    {locationError && <span className="font-bold">{locationError} <button onClick={() => handleLocationUpdate()} className="underline ml-2">重試</button></span>}
                     {location && (
                         <div>
                             <span className="font-bold flex items-center gap-1">定位成功 <Sparkles size={10} className="text-blue-500" /></span>
@@ -288,7 +290,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
                     )}
                 </div>
                 {!loadingLocation && !locationError && (
-                    <button onClick={getLocation} className="p-2 hover:bg-black/5 rounded-full" title="更新位置">
+                    <button onClick={() => handleLocationUpdate()} className="p-2 hover:bg-black/5 rounded-full" title="更新位置">
                         <Navigation size={16} />
                     </button>
                 )}
