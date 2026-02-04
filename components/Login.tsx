@@ -127,10 +127,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
             // Match by Email or Name (DisplayName)
             // Note: LINE displayName might not match exactly, so Email is safer if available.
-            // If email is hidden, fallback to Name.
+            // If email is hidden, fallback to Name PARTIAL match (e.g. "陳信寬 BNI" matches "陳信寬")
             const match = team.find((m: any) =>
               (m.email && profile.email && m.email.toLowerCase() === profile.email.toLowerCase()) ||
-              (m.name === profile.displayName)
+              (m.name === profile.displayName) ||
+              (profile.displayName && m.name && profile.displayName.includes(m.name))
             );
 
             if (match) {
