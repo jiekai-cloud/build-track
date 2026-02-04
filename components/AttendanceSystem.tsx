@@ -46,6 +46,27 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         setQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
+
+        // LINE Automation Check
+        const checkLineAutomation = async () => {
+            const { lineService } = await import('../services/lineService');
+            // If running inside LINE LIFF context
+            if (lineService.isLoggedIn()) {
+                const params = new URLSearchParams(window.location.search);
+                const action = params.get('action');
+
+                if (action === 'checkin' && !loadingLocation) {
+                    console.log('Auto Check-in triggered via LINE');
+                    handleLocationUpdate('work-start'); // This is a wrapper we need to impl or reuse logic
+                } else if (action === 'checkout' && !loadingLocation) {
+                    console.log('Auto Check-out triggered via LINE');
+                    handleLocationUpdate('work-end');
+                }
+            }
+        };
+        // Delay slightly to ensure location services might be ready or just user context is settled
+        setTimeout(checkLineAutomation, 1000);
+
         return () => clearInterval(timer);
     }, []);
 
@@ -123,7 +144,8 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
         };
     }, [records, currentUser.id, currentTime]); // Add currentTime dependency for real-time update
 
-    const getLocation = async () => {
+    // Helper to get location and trigger record
+    const handleLocationUpdate = async (type: 'work-start' | 'work-end') => {
         setLoadingLocation(true);
         setLocationError(null);
 
@@ -136,27 +158,24 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
-
-                let address = '';
-
-                // Using Gemini-powered reverse geocoding to avoid CORS and API key restrictions
+                // Get Address from Gemini (Mock for now or real if API key exists)
+                let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
                 try {
                     address = await getAddressFromCoords(latitude, longitude);
                 } catch (e) {
-                    console.error('Reverse Geocoding Error:', e);
-                    address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                    console.error('Failed to get address', e);
                 }
 
                 setLocation({ lat: latitude, lng: longitude, address });
                 setLoadingLocation(false);
+                onRecord(type, { lat: latitude, lng: longitude, address });
             },
             (error) => {
-                let msg = "無法獲取位置";
-                switch (error.code) {
-                    case error.PERMISSION_DENIED: msg = "請允許瀏覽器存取位置資訊以進行打卡"; break;
-                    case error.POSITION_UNAVAILABLE: msg = "無法偵測到目前位置"; break;
-                    case error.TIMEOUT: msg = "位置偵測逾時"; break;
-                }
+                console.error("Location error", error);
+                let msg = "無法取得位置資訊";
+                if (error.code === 1) msg = "請允許瀏覽器存取位置資訊 (Permission Denied)";
+                else if (error.code === 2) msg = "無法偵測目前位置 (Position Unavailable)";
+                else if (error.code === 3) msg = "定位逾時 (Timeout)";
                 setLocationError(msg);
                 setLoadingLocation(false);
             },
@@ -164,34 +183,8 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, record
         );
     };
 
-    useEffect(() => {
-        getLocation();
-    }, []);
-
-    // Safe helpers
-    const safeDate = (iso: string) => {
-        try {
-            const d = new Date(iso);
-            if (isNaN(d.getTime())) return '無效時間';
-            return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-        } catch {
-            return '無效格式';
-        }
-    };
-
-    const safeLocation = (loc: any) => {
-        if (!loc) return null;
-        if (loc.address) return loc.address;
-        if (typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return null;
-        return `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
-    };
-
     const handleClockAction = (type: 'work-start' | 'work-end') => {
-        if (!location) {
-            getLocation();
-            return;
-        }
-        onRecord(type, location);
+        handleLocationUpdate(type);
     };
 
     return (
