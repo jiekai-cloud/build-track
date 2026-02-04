@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HardHat, ShieldCheck, Sparkles, User, Lock, ArrowRight, Layers, Check, AlertCircle, Hash, Info, UserCheck, Cloud, Building2 } from 'lucide-react';
 import { MOCK_DEPARTMENTS } from '../constants';
 import { storageService } from '../services/storageService';
