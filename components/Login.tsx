@@ -131,7 +131,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             const match = team.find((m: any) =>
               (m.email && profile.email && m.email.toLowerCase() === profile.email.toLowerCase()) ||
               (m.name === profile.displayName) ||
-              (profile.displayName && m.name && profile.displayName.includes(m.name))
+              (profile.displayName && m.name && profile.displayName.includes(m.name)) ||
+              (profile.displayName && m.name && m.name.includes(profile.displayName))
             );
 
             if (match) {
