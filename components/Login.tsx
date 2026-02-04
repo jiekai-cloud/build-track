@@ -164,7 +164,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   const handleLineLoginAction = async () => {
     const { lineService } = await import('../services/lineService');
-    if (!isLineReady) await lineService.init();
+    const initialized = isLineReady || await lineService.init();
+
+    if (!initialized) {
+      alert('尚未設定 LINE LIFF ID。\n\n請聯絡管理員在系統設定 (.env.local) 中填入 VITE_LINE_LIFF_ID，才能啟用 LINE 登入功能。');
+      return;
+    }
     lineService.login();
   };
 
