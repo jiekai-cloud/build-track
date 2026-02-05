@@ -24,59 +24,77 @@ export const useQuotationPresets = () => {
     const [error, setError] = useState<string | null>(null);
 
     const parseCSV = (csvText: string) => {
-        const lines = csvText.trim().split('\n');
         const items: any[] = [];
+        const rows: string[][] = [];
+        let currentRow: string[] = [];
+        let currentToken = '';
+        let inQuote = false;
 
-        for (let i = 1; i < lines.length; i++) {
-            // Simple robust CSV parser for this specific sheet format
-            let row: string[] = [];
-            let inQuote = false;
-            let currentToken = '';
-            const line = lines[i];
+        // Iterate through the entire CSV text char by char to handle multiline quotes
+        for (let i = 0; i < csvText.length; i++) {
+            const char = csvText[i];
+            const nextChar = csvText[i + 1];
 
-            for (let j = 0; j < line.length; j++) {
-                const char = line[j];
-                if (char === '"') {
-                    // Check for escaped quote ("") which is Google CSV's way of escaping " inside a quoted string
-                    if (inQuote && line[j + 1] === '"') {
-                        currentToken += '"';
-                        j++; // Skip next quote
-                    } else {
-                        inQuote = !inQuote;
-                    }
-                } else if (char === ',' && !inQuote) {
-                    row.push(currentToken);
-                    currentToken = '';
+            if (char === '"') {
+                if (inQuote && nextChar === '"') {
+                    currentToken += '"';
+                    i++; // Skip escape
                 } else {
-                    currentToken += char;
+                    inQuote = !inQuote;
                 }
-            }
-            row.push(currentToken);
+            } else if (char === ',' && !inQuote) {
+                currentRow.push(currentToken);
+                currentToken = '';
+            } else if ((char === '\n' || char === '\r') && !inQuote) {
+                // Handle CRLF or LF (skip LF if prev was CR)
+                if (char === '\r' && nextChar === '\n') {
+                    i++;
+                }
 
-            // Clean up row values: remove surrounding quotes and unescape "" to "
+                currentRow.push(currentToken);
+                rows.push(currentRow);
+                currentRow = [];
+                currentToken = '';
+            } else {
+                currentToken += char;
+            }
+        }
+        // Push last token/row if exists
+        if (currentToken || currentRow.length > 0) {
+            currentRow.push(currentToken);
+            rows.push(currentRow);
+        }
+
+        // Process parsed rows (skip header row which is usually index 0)
+        // However, we need to be careful. The Google Viz output usually has a header.
+        // Let's iterate all rows and use logic to skip header.
+        for (let i = 0; i < rows.length; i++) {
+            let row = rows[i];
+
+            // Clean up: unescape quotes (remove surrounding quotes and replace "" with ")
             row = row.map(val => val.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
 
-            // Filter empty rows by Name
-            if (!row[1]) continue;
+            // Filter empty rows or header
+            // Header usually contains "項目名稱" or is empty
+            if (!row[1] || row[1] === '備註' || row[1].includes('項目名稱')) continue;
 
+            // Safe access
             const name = row[1];
-            // const spec = row[2]; // unused
+            // const spec = row[2];
             const unit = row[3] || '式';
-
-            // Handle number parsing with commas (e.g. "1,500")
             const qtyStr = row[4] || '1';
             const priceStr = row[5] || '0';
+            const note = row[7];
 
             const qty = parseFloat(qtyStr.replace(/,/g, '')) || 1;
             const price = parseFloat(priceStr.replace(/,/g, '')) || 0;
-            const note = row[7];
 
             items.push({
                 name,
                 unit,
                 quantity: qty,
                 unitPrice: price,
-                notes: note // Store note too if needed
+                notes: note
             });
         }
         return items;
@@ -109,19 +127,15 @@ export const useQuotationPresets = () => {
 
             const results = await Promise.all(promises);
             setPresets(results);
-            // Cache locally for this session if needed, or just state
             console.log('Updated presets from Google Sheets:', results.length);
         } catch (err: any) {
             console.error('Error fetching presets:', err);
             setError(err.message);
-            // Fallback is keeping static presets
         } finally {
             setLoading(false);
         }
     };
 
-    // Auto-fetch on mount? User requested "any time", so maybe we fetch on load.
-    // Or we provide a button. Let's fetch on mount to be "fresh".
     useEffect(() => {
         fetchPresets();
     }, []);
