@@ -711,19 +711,19 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                             {preset.name}
                                         </h4>
                                         <div className="bg-stone-100 text-stone-500 text-xs px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600">
-                                            {preset.items.length} 個分類
+                                            {preset.categories.length} 個分類
                                         </div>
                                     </div>
                                     <p className="text-stone-500 text-sm mb-4">
                                         {preset.description}
                                     </p>
                                     <div className="flex flex-wrap gap-2">
-                                        {preset.items.slice(0, 3).map((cat, idx) => (
+                                        {preset.categories.slice(0, 3).map((cat, idx) => (
                                             <span key={idx} className="text-xs bg-stone-50 text-stone-400 border border-stone-100 px-2 py-0.5 rounded">
-                                                分類 {cat.categoryCode}
+                                                分類 {cat.code}
                                             </span>
                                         ))}
-                                        {preset.items.length > 3 && (
+                                        {preset.categories.length > 3 && (
                                             <span className="text-xs text-stone-400 px-1">...</span>
                                         )}
                                     </div>
