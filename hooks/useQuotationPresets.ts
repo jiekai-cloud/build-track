@@ -37,15 +37,24 @@ export const useQuotationPresets = () => {
             for (let j = 0; j < line.length; j++) {
                 const char = line[j];
                 if (char === '"') {
-                    inQuote = !inQuote;
+                    // Check for escaped quote ("") which is Google CSV's way of escaping " inside a quoted string
+                    if (inQuote && line[j + 1] === '"') {
+                        currentToken += '"';
+                        j++; // Skip next quote
+                    } else {
+                        inQuote = !inQuote;
+                    }
                 } else if (char === ',' && !inQuote) {
-                    row.push(currentToken.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+                    row.push(currentToken);
                     currentToken = '';
                 } else {
                     currentToken += char;
                 }
             }
-            row.push(currentToken.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+            row.push(currentToken);
+
+            // Clean up row values: remove surrounding quotes and unescape "" to "
+            row = row.map(val => val.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
 
             // Filter empty rows by Name
             if (!row[1]) continue;
@@ -53,8 +62,13 @@ export const useQuotationPresets = () => {
             const name = row[1];
             // const spec = row[2]; // unused
             const unit = row[3] || '式';
-            const qty = parseFloat(row[4]?.replace(/,/g, '')) || 1;
-            const price = parseFloat(row[5]?.replace(/,/g, '')) || 0;
+
+            // Handle number parsing with commas (e.g. "1,500")
+            const qtyStr = row[4] || '1';
+            const priceStr = row[5] || '0';
+
+            const qty = parseFloat(qtyStr.replace(/,/g, '')) || 1;
+            const price = parseFloat(priceStr.replace(/,/g, '')) || 0;
             const note = row[7];
 
             items.push({
