@@ -173,205 +173,203 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setIsLoading(false);
       }
     };
-  }
-      }
-    };
-initLine();
+
+    initLine();
   }, [onLoginSuccess]);
 
-const handleLineLoginAction = async () => {
-  const { lineService } = await import('../services/lineService');
-  const initialized = isLineReady || await lineService.init();
+  const handleLineLoginAction = async () => {
+    const { lineService } = await import('../services/lineService');
+    const initialized = isLineReady || await lineService.init();
 
-  if (!initialized) {
-    alert('尚未設定 LINE LIFF ID。\n\n請聯絡管理員在系統設定 (.env.local) 中填入 VITE_LINE_LIFF_ID，才能啟用 LINE 登入功能。');
-    return;
-  }
-  lineService.login();
-};
+    if (!initialized) {
+      alert('尚未設定 LINE LIFF ID。\n\n請聯絡管理員在系統設定 (.env.local) 中填入 VITE_LINE_LIFF_ID，才能啟用 LINE 登入功能。');
+      return;
+    }
+    lineService.login();
+  };
 
-const handleQuickAccess = () => {
-  setIsLoading(true);
-  setTimeout(() => {
-    onLoginSuccess({
-      id: 'GUEST-USER',
-      name: "體驗帳戶",
-      email: "guest@lifequality.ai",
-      picture: `https://ui-avatars.com/api/?name=Guest&background=1e293b&color=fff`,
-      role: 'Guest',
-      department: selectedDept
-    }, selectedDept);
-  }, 500);
-};
+  const handleQuickAccess = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      onLoginSuccess({
+        id: 'GUEST-USER',
+        name: "體驗帳戶",
+        email: "guest@lifequality.ai",
+        picture: `https://ui-avatars.com/api/?name=Guest&background=1e293b&color=fff`,
+        role: 'Guest',
+        department: selectedDept
+      }, selectedDept);
+    }, 500);
+  };
 
-return (
-  <div className="min-h-screen bg-stone-950 flex items-center justify-center p-4 lg:p-8 relative overflow-hidden font-sans">
-    {/* 動態背景裝飾 */}
-    <div className={`absolute top-[-15%] left-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-orange-600/10' : 'bg-blue-600/10'}`}></div>
-    <div className={`absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse [animation-delay:2s] transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-amber-600/10' : 'bg-cyan-600/10'}`}></div>
+  return (
+    <div className="min-h-screen bg-stone-950 flex items-center justify-center p-4 lg:p-8 relative overflow-hidden font-sans">
+      {/* 動態背景裝飾 */}
+      <div className={`absolute top-[-15%] left-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-orange-600/10' : 'bg-blue-600/10'}`}></div>
+      <div className={`absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] blur-[150px] rounded-full animate-pulse [animation-delay:2s] transition-colors duration-1000 ${selectedDept === 'FirstDept' ? 'bg-amber-600/10' : 'bg-cyan-600/10'}`}></div>
 
-    <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-stone-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative z-10 overflow-hidden">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-stone-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative z-10 overflow-hidden">
 
-      {/* 左側：品牌形象區 */}
-      <div className={`hidden lg:flex lg:col-span-5 flex-col justify-between p-16 bg-gradient-to-br transition-all duration-1000 border-r border-white/5 relative ${selectedDept === 'FirstDept' ? 'from-stone-900 to-stone-950' : 'from-slate-900 to-slate-950'}`}>
-        <div className="relative z-10">
-          <div className="bg-white/10 w-16 h-16 rounded-3xl flex items-center justify-center border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] mb-10 group hover:scale-110 transition-transform duration-500 overflow-hidden">
-            <img src="./pwa-icon.png" alt="Logo" className="w-10 h-10 object-contain" />
-          </div>
-          <h1 className="text-4xl font-black text-white leading-tight tracking-tighter mb-6">
-            生活品質<br />
-            <span className={`transition-colors duration-500 ${selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'}`}>工程管理系統</span>
-          </h1>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-8">
-            <Sparkles size={14} className={selectedDept === 'FirstDept' ? 'text-amber-400' : 'text-cyan-400'} />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">2026 Professional Edition</span>
-          </div>
-          <div className="space-y-4">
-            <div onClick={() => setSelectedDept('FirstDept')} className={`cursor-pointer p-4 rounded-2xl border transition-all ${selectedDept === 'FirstDept' ? 'bg-orange-500/20 border-orange-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-white">生活品質<br />第一工程部</span>
-                {selectedDept === 'FirstDept' && <Check size={16} className="text-orange-500" />}
-              </div>
-              <p className="text-xs text-stone-400">住宅修繕、防水工程、空間改造</p>
+        {/* 左側：品牌形象區 */}
+        <div className={`hidden lg:flex lg:col-span-5 flex-col justify-between p-16 bg-gradient-to-br transition-all duration-1000 border-r border-white/5 relative ${selectedDept === 'FirstDept' ? 'from-stone-900 to-stone-950' : 'from-slate-900 to-slate-950'}`}>
+          <div className="relative z-10">
+            <div className="bg-white/10 w-16 h-16 rounded-3xl flex items-center justify-center border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] mb-10 group hover:scale-110 transition-transform duration-500 overflow-hidden">
+              <img src="./pwa-icon.png" alt="Logo" className="w-10 h-10 object-contain" />
             </div>
-            <div onClick={() => setSelectedDept('ThirdDept')} className={`cursor-pointer p-4 rounded-2xl border transition-all ${selectedDept === 'ThirdDept' ? 'bg-blue-500/20 border-blue-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-white">傑凱工程<br />第三工程部</span>
-                {selectedDept === 'ThirdDept' && <Check size={16} className="text-blue-500" />}
+            <h1 className="text-4xl font-black text-white leading-tight tracking-tighter mb-6">
+              生活品質<br />
+              <span className={`transition-colors duration-500 ${selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'}`}>工程管理系統</span>
+            </h1>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-8">
+              <Sparkles size={14} className={selectedDept === 'FirstDept' ? 'text-amber-400' : 'text-cyan-400'} />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">2026 Professional Edition</span>
+            </div>
+            <div className="space-y-4">
+              <div onClick={() => setSelectedDept('FirstDept')} className={`cursor-pointer p-4 rounded-2xl border transition-all ${selectedDept === 'FirstDept' ? 'bg-orange-500/20 border-orange-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-white">生活品質<br />第一工程部</span>
+                  {selectedDept === 'FirstDept' && <Check size={16} className="text-orange-500" />}
+                </div>
+                <p className="text-xs text-stone-400">住宅修繕、防水工程、空間改造</p>
               </div>
-              <p className="text-xs text-stone-400">大型建案、公設維護、機電整合</p>
+              <div onClick={() => setSelectedDept('ThirdDept')} className={`cursor-pointer p-4 rounded-2xl border transition-all ${selectedDept === 'ThirdDept' ? 'bg-blue-500/20 border-blue-500/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-white">傑凱工程<br />第三工程部</span>
+                  {selectedDept === 'ThirdDept' && <Check size={16} className="text-blue-500" />}
+                </div>
+                <p className="text-xs text-stone-400">大型建案、公設維護、機電整合</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 右側：登錄操作區 */}
-      <div className="lg:col-span-7 p-8 lg:p-20 flex flex-col justify-center">
-        <form onSubmit={handleLogin} className="space-y-8 max-w-md mx-auto w-full">
-          <div className="text-center lg:text-left space-y-2">
-            <h1 className="text-3xl font-black text-stone-900 tracking-tight">Quality of Life</h1>
-            <p className="text-stone-500 font-bold uppercase tracking-widest text-xs mt-2">
-              Login to <span className={selectedDept === 'FirstDept' ? 'text-orange-600' : 'text-blue-600'}>
-                {selectedDept === 'FirstDept' ? 'First Dept.' : 'Third Dept.'}
-              </span>
-            </p>
+        {/* 右側：登錄操作區 */}
+        <div className="lg:col-span-7 p-8 lg:p-20 flex flex-col justify-center">
+          <form onSubmit={handleLogin} className="space-y-8 max-w-md mx-auto w-full">
+            <div className="text-center lg:text-left space-y-2">
+              <h1 className="text-3xl font-black text-stone-900 tracking-tight">Quality of Life</h1>
+              <p className="text-stone-500 font-bold uppercase tracking-widest text-xs mt-2">
+                Login to <span className={selectedDept === 'FirstDept' ? 'text-orange-600' : 'text-blue-600'}>
+                  {selectedDept === 'FirstDept' ? 'First Dept.' : 'Third Dept.'}
+                </span>
+              </p>
 
-            {/* Mobile Selector */}
-            <div className="lg:hidden flex gap-2 mt-4 p-1 bg-stone-100 rounded-xl">
-              <button type="button" onClick={() => setSelectedDept('FirstDept')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${selectedDept === 'FirstDept' ? 'bg-white shadow text-orange-600' : 'text-stone-400'}`}>生活品質<br />第一工程部</button>
-              <button type="button" onClick={() => setSelectedDept('ThirdDept')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${selectedDept === 'ThirdDept' ? 'bg-white shadow text-blue-600' : 'text-stone-400'}`}>傑凱工程<br />第三工程部</button>
+              {/* Mobile Selector */}
+              <div className="lg:hidden flex gap-2 mt-4 p-1 bg-stone-100 rounded-xl">
+                <button type="button" onClick={() => setSelectedDept('FirstDept')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${selectedDept === 'FirstDept' ? 'bg-white shadow text-orange-600' : 'text-stone-400'}`}>生活品質<br />第一工程部</button>
+                <button type="button" onClick={() => setSelectedDept('ThirdDept')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${selectedDept === 'ThirdDept' ? 'bg-white shadow text-blue-600' : 'text-stone-400'}`}>傑凱工程<br />第三工程部</button>
+              </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-              <AlertCircle className="text-rose-500 shrink-0" size={18} />
-              <p className="text-rose-200 text-xs font-bold">{error}</p>
-            </div>
-          )}
+            {error && (
+              <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="text-rose-500 shrink-0" size={18} />
+                <p className="text-rose-200 text-xs font-bold">{error}</p>
+              </div>
+            )}
 
-          {/* 帳號密碼 */}
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.25em] pl-1 flex items-center gap-2">
-                <Hash size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'} /> 員工編號 Employee ID
-              </label>
-              <div className="group relative">
+            {/* 帳號密碼 */}
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.25em] pl-1 flex items-center gap-2">
+                  <Hash size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'} /> 員工編號 Employee ID
+                </label>
+                <div className="group relative">
+                  <input
+                    type="text"
+                    placeholder="輸入員工編號"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-opacity-50 transition-all placeholder:text-stone-700 uppercase"
+                    style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : 'rgb(37 99 235)' } as any}
+                    value={employeeId}
+                    onChange={(e) => setEmployeeId(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.25em] pl-1 flex items-center gap-2">
+                  <Lock size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'} /> 登入密碼 Password
+                </label>
                 <input
-                  type="text"
-                  placeholder="輸入員工編號"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-opacity-50 transition-all placeholder:text-stone-700 uppercase"
+                  type="password"
+                  placeholder="••••••••"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-opacity-50 transition-all placeholder:text-stone-700"
                   style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : 'rgb(37 99 235)' } as any}
-                  value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-stone-500 text-[10px] font-black uppercase tracking-[0.25em] pl-1 flex items-center gap-2">
-                <Lock size={14} className={selectedDept === 'FirstDept' ? 'text-orange-500' : 'text-blue-500'} /> 登入密碼 Password
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-opacity-50 transition-all placeholder:text-stone-700"
-                style={{ '--tw-ring-color': selectedDept === 'FirstDept' ? 'rgb(234 88 12)' : 'rgb(37 99 235)' } as any}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
 
-          <div className="space-y-4 pt-4">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black text-sm tracking-[0.2em] uppercase transition-all shadow-2xl active:scale-[0.98] ${isLoading
-                ? 'bg-stone-800 text-stone-600 cursor-not-allowed'
-                : selectedDept === 'FirstDept'
-                  ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-900/20'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20'
-                }`}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  驗證中
-                </>
-              ) : (
-                <>
-                  進入系統
-                  <ArrowRight size={20} />
-                </>
-              )}
-            </button>
+            <div className="space-y-4 pt-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black text-sm tracking-[0.2em] uppercase transition-all shadow-2xl active:scale-[0.98] ${isLoading
+                  ? 'bg-stone-800 text-stone-600 cursor-not-allowed'
+                  : selectedDept === 'FirstDept'
+                    ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-900/20'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20'
+                  }`}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    驗證中
+                  </>
+                ) : (
+                  <>
+                    進入系統
+                    <ArrowRight size={20} />
+                  </>
+                )}
+              </button>
 
-            <button
-              type="button"
-              onClick={handleLineLoginAction}
-              disabled={isLoading}
-              className="w-full py-5 bg-[#06C755] hover:bg-[#05b34c] text-white rounded-2xl flex items-center justify-center gap-3 font-black text-sm tracking-[0.2em] uppercase transition-all shadow-xl shadow-[#06c755]/20 active:scale-[0.98]"
-            >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" className="w-6 h-6" alt="LINE" />
-              LINE 快速登入
-            </button>
+              <button
+                type="button"
+                onClick={handleLineLoginAction}
+                disabled={isLoading}
+                className="w-full py-5 bg-[#06C755] hover:bg-[#05b34c] text-white rounded-2xl flex items-center justify-center gap-3 font-black text-sm tracking-[0.2em] uppercase transition-all shadow-xl shadow-[#06c755]/20 active:scale-[0.98]"
+              >
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" className="w-6 h-6" alt="LINE" />
+                LINE 快速登入
+              </button>
 
-            <button
-              type="button"
-              onClick={handleQuickAccess}
-              disabled={isLoading}
-              className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-black text-[11px] uppercase tracking-[0.3em] text-stone-500 hover:text-white border border-white/5 hover:border-white/10 hover:bg-white/5 transition-all duration-300"
-            >
-              <Sparkles size={14} className="text-amber-500" />
-              訪客模式預覽 (唯讀)
-            </button>
+              <button
+                type="button"
+                onClick={handleQuickAccess}
+                disabled={isLoading}
+                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-black text-[11px] uppercase tracking-[0.3em] text-stone-500 hover:text-white border border-white/5 hover:border-white/10 hover:bg-white/5 transition-all duration-300"
+              >
+                <Sparkles size={14} className="text-amber-500" />
+                訪客模式預覽 (唯讀)
+              </button>
 
-            <div className="pt-6 relative">
-              <div className="absolute inset-x-0 top-0 flex items-center justify-center">
-                <span className="bg-[#1c1917] px-4 text-[9px] font-black text-stone-600 uppercase tracking-[0.3em]">First Time Login</span>
-              </div>
-              <div className="pt-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmployeeId('test');
-                    setPassword('test');
-                  }}
-                  className="w-full py-6 bg-gradient-to-r from-stone-800 to-stone-900 hover:from-stone-700 hover:to-stone-800 border border-white/5 rounded-[2rem] flex flex-col items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] group"
-                >
-                  <div className="flex items-center gap-2">
-                    <Cloud size={20} className="text-stone-400 group-hover:text-white transition-colors" />
-                    <span className="text-sm font-black text-stone-300 group-hover:text-white tracking-widest uppercase">新設備同步初始化</span>
-                  </div>
-                </button>
+              <div className="pt-6 relative">
+                <div className="absolute inset-x-0 top-0 flex items-center justify-center">
+                  <span className="bg-[#1c1917] px-4 text-[9px] font-black text-stone-600 uppercase tracking-[0.3em]">First Time Login</span>
+                </div>
+                <div className="pt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmployeeId('test');
+                      setPassword('test');
+                    }}
+                    className="w-full py-6 bg-gradient-to-r from-stone-800 to-stone-900 hover:from-stone-700 hover:to-stone-800 border border-white/5 rounded-[2rem] flex flex-col items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Cloud size={20} className="text-stone-400 group-hover:text-white transition-colors" />
+                      <span className="text-sm font-black text-stone-300 group-hover:text-white tracking-widest uppercase">新設備同步初始化</span>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default Login;
