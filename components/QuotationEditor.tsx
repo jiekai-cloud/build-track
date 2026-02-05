@@ -714,35 +714,38 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                         </div>
 
                         <div className="p-6 overflow-y-auto bg-stone-50 grid gap-4">
-                            {presets.map(preset => (
-                                <button
-                                    key={preset.id}
-                                    onClick={() => handleApplyTemplate(preset)}
-                                    className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm hover:shadow-md hover:border-orange-300 hover:ring-2 hover:ring-orange-100 transition-all text-left group"
-                                >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="text-lg font-bold text-stone-800 group-hover:text-orange-700 transition-colors">
-                                            {preset.name}
-                                        </h4>
-                                        <div className="bg-stone-100 text-stone-500 text-xs px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600">
-                                            {preset.categories.length} 個分類
+                            {presets.map(preset => {
+                                if (!preset) return null;
+                                return (
+                                    <button
+                                        key={preset.id}
+                                        onClick={() => handleApplyTemplate(preset)}
+                                        className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm hover:shadow-md hover:border-orange-300 hover:ring-2 hover:ring-orange-100 transition-all text-left group"
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="text-lg font-bold text-stone-800 group-hover:text-orange-700 transition-colors">
+                                                {preset.name}
+                                            </h4>
+                                            <div className="bg-stone-100 text-stone-500 text-xs px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600">
+                                                {preset.categories?.length || 0} 個分類
+                                            </div>
                                         </div>
-                                    </div>
-                                    <p className="text-stone-500 text-sm mb-4">
-                                        {preset.description}
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {preset.categories.slice(0, 3).map((cat, idx) => (
-                                            <span key={idx} className="text-xs bg-stone-50 text-stone-400 border border-stone-100 px-2 py-0.5 rounded">
-                                                分類 {cat.code}
-                                            </span>
-                                        ))}
-                                        {preset.categories.length > 3 && (
-                                            <span className="text-xs text-stone-400 px-1">...</span>
-                                        )}
-                                    </div>
-                                </button>
-                            ))}
+                                        <p className="text-stone-500 text-sm mb-4">
+                                            {preset.description}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {preset.categories?.slice(0, 3).map((cat, idx) => (
+                                                <span key={idx} className="text-xs bg-stone-50 text-stone-400 border border-stone-100 px-2 py-0.5 rounded">
+                                                    分類 {cat.code}
+                                                </span>
+                                            ))}
+                                            {(preset.categories?.length || 0) > 3 && (
+                                                <span className="text-xs text-stone-400 px-1">...</span>
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         <div className="p-4 border-t border-stone-200 bg-stone-50 text-center text-sm text-stone-500">
