@@ -3,7 +3,8 @@ import { X, Plus, Trash2, FileText, Save, Download, Calculator, ChevronDown, Che
 import { Quotation, QuotationItem, ItemCategory, QuotationOption, Customer, Project, QuotationSummary } from '../types';
 import { generateQuotationPDF } from '../services/quotationPdfService';
 import { STANDARD_QUOTATION_ITEMS, StandardItem } from '../data/standardItems';
-import { QUOTATION_PRESETS, createQuotationFromPreset, QuotationPreset } from '../data/quotationPresets';
+import { QUOTATION_PRESETS as STATIC_PRESETS, createQuotationFromPreset, QuotationPreset } from '../data/quotationPresets';
+import { useQuotationPresets } from '../hooks/useQuotationPresets';
 
 interface QuotationEditorProps {
     isOpen: boolean;
@@ -65,6 +66,9 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     const [showTemplateSelector, setShowTemplateSelector] = useState(false); // Template Selector State
     const [selectedStandardItems, setSelectedStandardItems] = useState<StandardItem[]>([]);
     const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
+
+    // Live Presets from Google Sheet
+    const { presets, loading: loadingPresets, refresh: refreshPresets } = useQuotationPresets();
 
     // 初始化資料
     useEffect(() => {
@@ -690,17 +694,27 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                             <h3 className="text-xl font-black text-stone-800 flex items-center gap-2">
                                 <Copy className="text-stone-600" />
                                 選擇報價範本
+                                {loadingPresets && <span className="text-sm font-normal text-orange-600 animate-pulse">(更新中...)</span>}
                             </h3>
-                            <button
-                                onClick={() => setShowTemplateSelector(false)}
-                                className="p-2 hover:bg-stone-200 rounded-full transition-colors"
-                            >
-                                <X size={24} className="text-stone-500" />
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={refreshPresets}
+                                    className="p-2 hover:bg-stone-200 rounded-full transition-colors text-stone-500"
+                                    title="重新同步 Google Sheet"
+                                >
+                                    <Database size={20} />
+                                </button>
+                                <button
+                                    onClick={() => setShowTemplateSelector(false)}
+                                    className="p-2 hover:bg-stone-200 rounded-full transition-colors"
+                                >
+                                    <X size={24} className="text-stone-500" />
+                                </button>
+                            </div>
                         </div>
 
                         <div className="p-6 overflow-y-auto bg-stone-50 grid gap-4">
-                            {QUOTATION_PRESETS.map(preset => (
+                            {presets.map(preset => (
                                 <button
                                     key={preset.id}
                                     onClick={() => handleApplyTemplate(preset)}
