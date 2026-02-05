@@ -1,0 +1,31 @@
+/*
+    Google Sheet Data Extractor & Parser
+    
+    This script processes the raw CSV data extracted from the Google Sheet and converts it into
+    structured TypeScript objects suitable for the Quotation System's preset templates.
+    
+    Data Source:
+    General Quotation, Spider Man, No Destructive Toilet, Destructive Toilet, SPC Toilet,
+    Designer Items, Ventilation Method, Inorganic Waterproofing, Wall Cancer, Basement
+*/
+
+/* 
+   NOTE: I have the raw CSV strings from the browser_subagent's memory (step 32).
+   I will manually clean and structure them into the `quotationPresets.ts` file.
+   
+   Structure for each item:
+   {
+       id: string,
+       description: string,
+       unit: string,
+       quantity: number,
+       unitPrice: number,
+       total: number,
+       discount: 0,
+       isCustom: boolean
+   }
+*/
+
+// I will now overwrite `data/quotationPresets.ts` with the fully populated data.
+// Since the data is massive (10 sheets, ~100+ items), I will implement a parser logic 
+// within my own context and generate the final file content directly.
