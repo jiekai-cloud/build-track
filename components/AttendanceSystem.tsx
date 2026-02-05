@@ -35,6 +35,20 @@ const getGreeting = (date: Date) => {
     return '夜深了，辛苦了';
 };
 
+// Helper functions
+const safeDate = (dateStr: string) => {
+    try {
+        return new Date(dateStr).toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        return '--:--';
+    }
+};
+
+const safeLocation = (loc: { lat: number, lng: number, address?: string } | undefined) => {
+    if (!loc) return '';
+    return loc.address || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+};
+
 const AttendanceSystem: React.FC<AttendanceSystemProps> = ({ currentUser, records, onRecord }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [quote, setQuote] = useState('');
