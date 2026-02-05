@@ -380,11 +380,14 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                     className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none appearance-none bg-white"
                                 >
                                     <option value="">-- 獨立報價單 (無關聯案件) --</option>
-                                    {projects.map(p => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name} ({p.client})
-                                        </option>
-                                    ))}
+                                    {projects
+                                        .filter(p => !p.deletedAt)
+                                        .sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())
+                                        .map(p => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.name} ({p.client})
+                                            </option>
+                                        ))}
                                 </select>
                                 <ChevronDown className="absolute right-3 top-2.5 text-stone-400 pointer-events-none" size={16} />
                             </div>
