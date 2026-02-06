@@ -579,12 +579,20 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                                     <tr key={item.id} className="group hover:bg-stone-50">
                                                         <td className="p-2 text-center text-stone-400">{itemIndex + 1}</td>
                                                         <td className="p-2">
-                                                            <input
-                                                                value={item.name}
-                                                                onChange={(e) => updateItem(catIndex, itemIndex, 'name', e.target.value)}
-                                                                className="w-full p-1 border border-transparent hover:border-stone-300 rounded focus:border-orange-500 outline-none"
-                                                                placeholder="輸入項目說明"
-                                                            />
+                                                            <div className="space-y-1">
+                                                                <input
+                                                                    value={item.name}
+                                                                    onChange={(e) => updateItem(catIndex, itemIndex, 'name', e.target.value)}
+                                                                    className="w-full p-1 border border-transparent hover:border-stone-300 rounded focus:border-orange-500 outline-none font-bold text-stone-700"
+                                                                    placeholder="輸入項目說明"
+                                                                />
+                                                                <input
+                                                                    value={item.notes || ''}
+                                                                    onChange={(e) => updateItem(catIndex, itemIndex, 'notes', e.target.value)}
+                                                                    className="w-full p-1 text-xs text-stone-500 border border-transparent hover:border-stone-300 rounded focus:border-orange-500 outline-none bg-stone-50/50"
+                                                                    placeholder="項目備註 (選填)"
+                                                                />
+                                                            </div>
                                                         </td>
                                                         <td className="p-2 centered">
                                                             <input
@@ -653,6 +661,71 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                         </div>
                     </div>
 
+                    {/* 條款與備註設定 */}
+                    <div className="bg-stone-50 rounded-xl p-6 border border-stone-200 space-y-4">
+                        <h3 className="text-lg font-bold text-stone-800 flex items-center gap-2">
+                            <FileText size={20} className="text-stone-500" />
+                            條款與備註設定
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-stone-500">付款方式</label>
+                                    <input
+                                        type="text"
+                                        value={formData.terms?.paymentTerms || ''}
+                                        onChange={(e) => setFormData({ ...formData, terms: { ...formData.terms, paymentTerms: e.target.value } })}
+                                        className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
+                                        placeholder="例如：訂金30%、完工驗收70%"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-stone-500">工期說明</label>
+                                    <input
+                                        type="text"
+                                        value={formData.terms?.workSchedule || ''}
+                                        onChange={(e) => setFormData({ ...formData, terms: { ...formData.terms, workSchedule: e.target.value } })}
+                                        className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
+                                        placeholder="例如：預計 25 個工作天"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-stone-500">有效期限</label>
+                                        <input
+                                            type="text"
+                                            value={formData.terms?.validityPeriod || ''}
+                                            onChange={(e) => setFormData({ ...formData, terms: { ...formData.terms, validityPeriod: e.target.value } })}
+                                            className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
+                                            placeholder="例如：30天"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-stone-500">保固年限 (年)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.terms?.warrantyYears || ''}
+                                            onChange={(e) => setFormData({ ...formData, terms: { ...formData.terms, warrantyYears: parseFloat(e.target.value) || 0 } })}
+                                            className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
+                                            placeholder="例如：1"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-stone-500">其他備註</label>
+                                    <textarea
+                                        value={formData.terms?.otherNotes?.[0] || ''}
+                                        onChange={(e) => setFormData({ ...formData, terms: { ...formData.terms, otherNotes: [e.target.value] } })}
+                                        className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm resize-none h-20"
+                                        placeholder="輸入其他備註事項..."
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* 總計摘要 */}
                     <div className="flex justify-end">
                         <div className="w-80 bg-stone-800 text-white rounded-xl p-6 shadow-xl">
@@ -684,310 +757,316 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
             </div>
 
             {/* AI Smart Selector Modal */}
-            {showAISelector && (
-                <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="p-6 border-b border-indigo-100 flex justify-between items-center bg-gradient-to-r from-violet-50 to-indigo-50">
-                            <h3 className="text-xl font-black text-indigo-900 flex items-center gap-2">
-                                <Sparkles className="text-indigo-600" />
-                                AI 智慧選單
-                            </h3>
-                            <button
-                                onClick={() => setShowAISelector(false)}
-                                className="p-2 hover:bg-white/50 rounded-full transition-colors"
-                            >
-                                <X size={24} className="text-indigo-400" />
-                            </button>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            {!aiResults.length ? (
-                                <div className="space-y-4">
-                                    <div className="bg-indigo-50 p-4 rounded-xl text-indigo-800 text-sm leading-relaxed">
-                                        <p className="font-bold flex items-center gap-2 mb-1">
-                                            <Bot size={16} /> AI 助理
-                                        </p>
-                                        請告訴我您需要施作的工程內容，我會自動為您從資料庫中挑選合適的工項。<br />
-                                        例如：「浴室防水重做，包含拆除磁磚和更換衛浴設備」
-                                    </div>
-                                    <div className="relative">
-                                        <textarea
-                                            value={aiDescription}
-                                            onChange={(e) => setAiDescription(e.target.value)}
-                                            placeholder="請輸入工程描述，或點擊右下角麥克風用語音輸入..."
-                                            className="w-full h-32 p-4 border border-stone-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-stone-800 text-lg pr-12"
-                                            autoFocus
-                                        />
-                                        <button
-                                            onClick={startListening}
-                                            className={`absolute right-3 bottom-3 p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}
-                                            title="語音輸入"
-                                        >
-                                            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-                                        </button>
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <button
-                                            onClick={handleAIAnalysis}
-                                            disabled={aiLoading || !aiDescription.trim()}
-                                            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-indigo-500/30"
-                                        >
-                                            {aiLoading ? (
-                                                <>
-                                                    <Loader2 size={18} className="animate-spin" />
-                                                    AI 正在分析工項...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Sparkles size={18} />
-                                                    開始智慧分析
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="font-bold text-stone-700">AI 為您挑選了 {aiResults.length} 個相關工項：</h4>
-                                        <button
-                                            onClick={() => setAiResults([])}
-                                            className="text-sm text-stone-400 hover:text-stone-600"
-                                        >
-                                            重新輸入
-                                        </button>
-                                    </div>
-
-                                    <div className="bg-stone-50 rounded-xl p-2 max-h-[40vh] overflow-y-auto border border-stone-200">
-                                        {aiResults.map(id => {
-                                            // Find item details
-                                            let itemDetail = null;
-                                            STANDARD_QUOTATION_ITEMS.forEach(cat => {
-                                                const found = cat.items.find(i => i.id === id);
-                                                if (found) itemDetail = found;
-                                            });
-
-                                            if (!itemDetail) return null;
-
-                                            return (
-                                                <div key={id} className="p-3 bg-white border border-stone-100 rounded-lg mb-2 flex justify-between items-center shadow-sm">
-                                                    <div className="flex-1">
-                                                        <div className="font-bold text-stone-800">{(itemDetail as any).name}</div>
-                                                        <div className="text-xs text-stone-500">單位: {(itemDetail as any).unit} | 預算: ${(itemDetail as any).defaultPrice}</div>
-                                                    </div>
-                                                    <Check size={18} className="text-green-500" />
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <div className="flex gap-3 pt-2">
-                                        <button
-                                            onClick={() => setShowAISelector(false)}
-                                            className="flex-1 py-3 text-stone-500 font-bold hover:bg-stone-100 rounded-xl transition-colors"
-                                        >
-                                            取消
-                                        </button>
-                                        <button
-                                            onClick={handleApplyAIResults}
-                                            className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg"
-                                        >
-                                            確認並帶入選單
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Item Selector Modal */}
-            {showItemSelector && (
-                <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col h-[80vh] overflow-hidden">
-                        <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-stone-50">
-                            <h3 className="text-xl font-black text-stone-800 flex items-center gap-2">
-                                <Database className="text-stone-600" />
-                                標準工項資料庫
-                            </h3>
-                            <button
-                                onClick={() => setShowItemSelector(false)}
-                                className="p-2 hover:bg-stone-200 rounded-full transition-colors"
-                            >
-                                <X size={24} className="text-stone-500" />
-                            </button>
-                        </div>
-
-                        <div className="flex flex-1 overflow-hidden">
-                            {/* Sidebar: Categories */}
-                            <div className="w-64 bg-stone-50 border-r border-stone-200 overflow-y-auto p-4 space-y-2">
+            {
+                showAISelector && (
+                    <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                            <div className="p-6 border-b border-indigo-100 flex justify-between items-center bg-gradient-to-r from-violet-50 to-indigo-50">
+                                <h3 className="text-xl font-black text-indigo-900 flex items-center gap-2">
+                                    <Sparkles className="text-indigo-600" />
+                                    AI 智慧選單
+                                </h3>
                                 <button
-                                    onClick={() => setActiveCategoryFilter('all')}
-                                    className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${activeCategoryFilter === 'all'
-                                        ? 'bg-orange-100 text-orange-700 shadow-sm'
-                                        : 'text-stone-600 hover:bg-stone-100'
-                                        }`}
+                                    onClick={() => setShowAISelector(false)}
+                                    className="p-2 hover:bg-white/50 rounded-full transition-colors"
                                 >
-                                    全部工項
+                                    <X size={24} className="text-indigo-400" />
                                 </button>
-                                {STANDARD_QUOTATION_ITEMS.map(cat => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setActiveCategoryFilter(cat.id)}
-                                        className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-between ${activeCategoryFilter === cat.id
-                                            ? 'bg-orange-100 text-orange-700 shadow-sm'
-                                            : 'text-stone-600 hover:bg-stone-100'
-                                            }`}
-                                    >
-                                        <span>{cat.name}</span>
-                                        <span className="text-xs bg-white px-2 py-0.5 rounded-full border border-stone-200 text-stone-400">
-                                            {cat.items.length}
-                                        </span>
-                                    </button>
-                                ))}
                             </div>
 
-                            {/* Main: Items Grid */}
-                            <div className="flex-1 overflow-y-auto p-6 bg-white">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {STANDARD_QUOTATION_ITEMS
-                                        .filter(cat => activeCategoryFilter === 'all' || cat.id === activeCategoryFilter)
-                                        .map(cat => (
-                                            cat.items.map(item => {
-                                                const isSelected = selectedStandardItems.some(i => i.id === item.id);
+                            <div className="p-6 space-y-6">
+                                {!aiResults.length ? (
+                                    <div className="space-y-4">
+                                        <div className="bg-indigo-50 p-4 rounded-xl text-indigo-800 text-sm leading-relaxed">
+                                            <p className="font-bold flex items-center gap-2 mb-1">
+                                                <Bot size={16} /> AI 助理
+                                            </p>
+                                            請告訴我您需要施作的工程內容，我會自動為您從資料庫中挑選合適的工項。<br />
+                                            例如：「浴室防水重做，包含拆除磁磚和更換衛浴設備」
+                                        </div>
+                                        <div className="relative">
+                                            <textarea
+                                                value={aiDescription}
+                                                onChange={(e) => setAiDescription(e.target.value)}
+                                                placeholder="請輸入工程描述，或點擊右下角麥克風用語音輸入..."
+                                                className="w-full h-32 p-4 border border-stone-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-stone-800 text-lg pr-12"
+                                                autoFocus
+                                            />
+                                            <button
+                                                onClick={startListening}
+                                                className={`absolute right-3 bottom-3 p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}
+                                                title="語音輸入"
+                                            >
+                                                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                                            </button>
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <button
+                                                onClick={handleAIAnalysis}
+                                                disabled={aiLoading || !aiDescription.trim()}
+                                                className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-indigo-500/30"
+                                            >
+                                                {aiLoading ? (
+                                                    <>
+                                                        <Loader2 size={18} className="animate-spin" />
+                                                        AI 正在分析工項...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles size={18} />
+                                                        開始智慧分析
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-bold text-stone-700">AI 為您挑選了 {aiResults.length} 個相關工項：</h4>
+                                            <button
+                                                onClick={() => setAiResults([])}
+                                                className="text-sm text-stone-400 hover:text-stone-600"
+                                            >
+                                                重新輸入
+                                            </button>
+                                        </div>
+
+                                        <div className="bg-stone-50 rounded-xl p-2 max-h-[40vh] overflow-y-auto border border-stone-200">
+                                            {aiResults.map(id => {
+                                                // Find item details
+                                                let itemDetail = null;
+                                                STANDARD_QUOTATION_ITEMS.forEach(cat => {
+                                                    const found = cat.items.find(i => i.id === id);
+                                                    if (found) itemDetail = found;
+                                                });
+
+                                                if (!itemDetail) return null;
+
                                                 return (
-                                                    <div
-                                                        key={item.id}
-                                                        onClick={() => toggleStandardItemSelection(item)}
-                                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md relative group ${isSelected
-                                                            ? 'border-orange-500 bg-orange-50'
-                                                            : 'border-stone-100 hover:border-orange-200 bg-white'
-                                                            }`}
-                                                    >
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <span className={`font-bold text-lg ${isSelected ? 'text-orange-900' : 'text-stone-800'}`}>
-                                                                {item.name}
-                                                            </span>
-                                                            {isSelected && (
-                                                                <div className="bg-orange-500 text-white p-1 rounded-full">
-                                                                    <Check size={14} />
-                                                                </div>
-                                                            )}
+                                                    <div key={id} className="p-3 bg-white border border-stone-100 rounded-lg mb-2 flex justify-between items-center shadow-sm">
+                                                        <div className="flex-1">
+                                                            <div className="font-bold text-stone-800">{(itemDetail as any).name}</div>
+                                                            <div className="text-xs text-stone-500">單位: {(itemDetail as any).unit} | 預算: ${(itemDetail as any).defaultPrice}</div>
                                                         </div>
-                                                        <div className="flex items-center gap-4 text-sm text-stone-500">
-                                                            <span className="bg-stone-100 px-2 py-0.5 rounded text-xs font-medium">
-                                                                {cat.name}
-                                                            </span>
-                                                            <span>單位: {item.unit}</span>
-                                                            <span className="font-bold text-stone-700">${item.defaultPrice.toLocaleString()}</span>
-                                                        </div>
-                                                        {item.notes && (
-                                                            <div className="mt-2 text-xs text-stone-400">
-                                                                備註: {item.notes}
-                                                            </div>
-                                                        )}
+                                                        <Check size={18} className="text-green-500" />
                                                     </div>
                                                 );
-                                            })
-                                        ))}
-                                </div>
-                            </div>
-                        </div>
+                                            })}
+                                        </div>
 
-                        <div className="p-6 border-t border-stone-200 bg-stone-50 flex justify-between items-center">
-                            <div className="text-stone-600 font-medium">
-                                已選擇 <span className="font-bold text-orange-600">{selectedStandardItems.length}</span> 個項目
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowItemSelector(false)}
-                                    className="px-6 py-2.5 rounded-xl font-bold text-stone-500 hover:bg-stone-200 transition-colors"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    onClick={handleImportItems}
-                                    disabled={selectedStandardItems.length === 0}
-                                    className="px-6 py-2.5 rounded-xl font-bold text-white bg-orange-600 hover:bg-orange-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                >
-                                    <Plus size={18} />
-                                    加入報價單
-                                </button>
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                onClick={() => setShowAISelector(false)}
+                                                className="flex-1 py-3 text-stone-500 font-bold hover:bg-stone-100 rounded-xl transition-colors"
+                                            >
+                                                取消
+                                            </button>
+                                            <button
+                                                onClick={handleApplyAIResults}
+                                                className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg"
+                                            >
+                                                確認並帶入選單
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-            {/* Template Selector Modal */}
-            {showTemplateSelector && (
-                <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
-                        <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-stone-50">
-                            <h3 className="text-xl font-black text-stone-800 flex items-center gap-2">
-                                <Copy className="text-stone-600" />
-                                選擇報價範本
-                                {loadingPresets && <span className="text-sm font-normal text-orange-600 animate-pulse">(更新中...)</span>}
-                            </h3>
-                            <div className="flex gap-2">
+                )
+            }
+
+            {/* Item Selector Modal */}
+            {
+                showItemSelector && (
+                    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col h-[80vh] overflow-hidden">
+                            <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-stone-50">
+                                <h3 className="text-xl font-black text-stone-800 flex items-center gap-2">
+                                    <Database className="text-stone-600" />
+                                    標準工項資料庫
+                                </h3>
                                 <button
-                                    onClick={refreshPresets}
-                                    className="p-2 hover:bg-stone-200 rounded-full transition-colors text-stone-500"
-                                    title="重新同步 Google Sheet"
-                                >
-                                    <Database size={20} />
-                                </button>
-                                <button
-                                    onClick={() => setShowTemplateSelector(false)}
+                                    onClick={() => setShowItemSelector(false)}
                                     className="p-2 hover:bg-stone-200 rounded-full transition-colors"
                                 >
                                     <X size={24} className="text-stone-500" />
                                 </button>
                             </div>
-                        </div>
 
-                        <div className="p-6 overflow-y-auto bg-stone-50 grid gap-4">
-                            {presets.map(preset => {
-                                if (!preset) return null;
-                                return (
+                            <div className="flex flex-1 overflow-hidden">
+                                {/* Sidebar: Categories */}
+                                <div className="w-64 bg-stone-50 border-r border-stone-200 overflow-y-auto p-4 space-y-2">
                                     <button
-                                        key={preset.id}
-                                        onClick={() => handleApplyTemplate(preset)}
-                                        className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm hover:shadow-md hover:border-orange-300 hover:ring-2 hover:ring-orange-100 transition-all text-left group"
+                                        onClick={() => setActiveCategoryFilter('all')}
+                                        className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${activeCategoryFilter === 'all'
+                                            ? 'bg-orange-100 text-orange-700 shadow-sm'
+                                            : 'text-stone-600 hover:bg-stone-100'
+                                            }`}
                                     >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="text-lg font-bold text-stone-800 group-hover:text-orange-700 transition-colors">
-                                                {preset.name}
-                                            </h4>
-                                            <div className="bg-stone-100 text-stone-500 text-xs px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600">
-                                                {preset.categories?.length || 0} 個分類
-                                            </div>
-                                        </div>
-                                        <p className="text-stone-500 text-sm mb-4">
-                                            {preset.description}
-                                        </p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {preset.categories?.slice(0, 3).map((cat, idx) => (
-                                                <span key={idx} className="text-xs bg-stone-50 text-stone-400 border border-stone-100 px-2 py-0.5 rounded">
-                                                    分類 {cat.code}
-                                                </span>
-                                            ))}
-                                            {(preset.categories?.length || 0) > 3 && (
-                                                <span className="text-xs text-stone-400 px-1">...</span>
-                                            )}
-                                        </div>
+                                        全部工項
                                     </button>
-                                );
-                            })}
-                        </div>
+                                    {STANDARD_QUOTATION_ITEMS.map(cat => (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setActiveCategoryFilter(cat.id)}
+                                            className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-between ${activeCategoryFilter === cat.id
+                                                ? 'bg-orange-100 text-orange-700 shadow-sm'
+                                                : 'text-stone-600 hover:bg-stone-100'
+                                                }`}
+                                        >
+                                            <span>{cat.name}</span>
+                                            <span className="text-xs bg-white px-2 py-0.5 rounded-full border border-stone-200 text-stone-400">
+                                                {cat.items.length}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
 
-                        <div className="p-4 border-t border-stone-200 bg-stone-50 text-center text-sm text-stone-500">
-                            選擇範本將會新增一個新的報價方案
+                                {/* Main: Items Grid */}
+                                <div className="flex-1 overflow-y-auto p-6 bg-white">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {STANDARD_QUOTATION_ITEMS
+                                            .filter(cat => activeCategoryFilter === 'all' || cat.id === activeCategoryFilter)
+                                            .map(cat => (
+                                                cat.items.map(item => {
+                                                    const isSelected = selectedStandardItems.some(i => i.id === item.id);
+                                                    return (
+                                                        <div
+                                                            key={item.id}
+                                                            onClick={() => toggleStandardItemSelection(item)}
+                                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md relative group ${isSelected
+                                                                ? 'border-orange-500 bg-orange-50'
+                                                                : 'border-stone-100 hover:border-orange-200 bg-white'
+                                                                }`}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <span className={`font-bold text-lg ${isSelected ? 'text-orange-900' : 'text-stone-800'}`}>
+                                                                    {item.name}
+                                                                </span>
+                                                                {isSelected && (
+                                                                    <div className="bg-orange-500 text-white p-1 rounded-full">
+                                                                        <Check size={14} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-4 text-sm text-stone-500">
+                                                                <span className="bg-stone-100 px-2 py-0.5 rounded text-xs font-medium">
+                                                                    {cat.name}
+                                                                </span>
+                                                                <span>單位: {item.unit}</span>
+                                                                <span className="font-bold text-stone-700">${item.defaultPrice.toLocaleString()}</span>
+                                                            </div>
+                                                            {item.notes && (
+                                                                <div className="mt-2 text-xs text-stone-400">
+                                                                    備註: {item.notes}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })
+                                            ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-stone-200 bg-stone-50 flex justify-between items-center">
+                                <div className="text-stone-600 font-medium">
+                                    已選擇 <span className="font-bold text-orange-600">{selectedStandardItems.length}</span> 個項目
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setShowItemSelector(false)}
+                                        className="px-6 py-2.5 rounded-xl font-bold text-stone-500 hover:bg-stone-200 transition-colors"
+                                    >
+                                        取消
+                                    </button>
+                                    <button
+                                        onClick={handleImportItems}
+                                        disabled={selectedStandardItems.length === 0}
+                                        className="px-6 py-2.5 rounded-xl font-bold text-white bg-orange-600 hover:bg-orange-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    >
+                                        <Plus size={18} />
+                                        加入報價單
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+            {/* Template Selector Modal */}
+            {
+                showTemplateSelector && (
+                    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
+                            <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-stone-50">
+                                <h3 className="text-xl font-black text-stone-800 flex items-center gap-2">
+                                    <Copy className="text-stone-600" />
+                                    選擇報價範本
+                                    {loadingPresets && <span className="text-sm font-normal text-orange-600 animate-pulse">(更新中...)</span>}
+                                </h3>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={refreshPresets}
+                                        className="p-2 hover:bg-stone-200 rounded-full transition-colors text-stone-500"
+                                        title="重新同步 Google Sheet"
+                                    >
+                                        <Database size={20} />
+                                    </button>
+                                    <button
+                                        onClick={() => setShowTemplateSelector(false)}
+                                        className="p-2 hover:bg-stone-200 rounded-full transition-colors"
+                                    >
+                                        <X size={24} className="text-stone-500" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto bg-stone-50 grid gap-4">
+                                {presets.map(preset => {
+                                    if (!preset) return null;
+                                    return (
+                                        <button
+                                            key={preset.id}
+                                            onClick={() => handleApplyTemplate(preset)}
+                                            className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm hover:shadow-md hover:border-orange-300 hover:ring-2 hover:ring-orange-100 transition-all text-left group"
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="text-lg font-bold text-stone-800 group-hover:text-orange-700 transition-colors">
+                                                    {preset.name}
+                                                </h4>
+                                                <div className="bg-stone-100 text-stone-500 text-xs px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600">
+                                                    {preset.categories?.length || 0} 個分類
+                                                </div>
+                                            </div>
+                                            <p className="text-stone-500 text-sm mb-4">
+                                                {preset.description}
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {preset.categories?.slice(0, 3).map((cat, idx) => (
+                                                    <span key={idx} className="text-xs bg-stone-50 text-stone-400 border border-stone-100 px-2 py-0.5 rounded">
+                                                        分類 {cat.code}
+                                                    </span>
+                                                ))}
+                                                {(preset.categories?.length || 0) > 3 && (
+                                                    <span className="text-xs text-stone-400 px-1">...</span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="p-4 border-t border-stone-200 bg-stone-50 text-center text-sm text-stone-500">
+                                選擇範本將會新增一個新的報價方案
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 
