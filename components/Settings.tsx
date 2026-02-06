@@ -617,15 +617,33 @@ const Settings: FC<SettingsProps> = ({
                       const finalProjectMap = new Map();
                       projects.forEach(p => finalProjectMap.set(p.id, p));
 
-                      // 2. Force overwrite with backup projects
-                      backupProjects.forEach((bp: any) => {
-                        // CRITICAL FIX: If we are intentionally restoring, we must clear the deleted flag
-                        // Otherwise it restores a "deleted" project which remains hidden
+                      // 2. Insert backup projects (Handle Conflict: Create Copy if ID exists)
+                      backupProjects.forEach((bpItem: any) => {
+                        const bp = { ...bpItem }; // Clone to avoid mutating original
+
+                        // Clear deleted flag to ensure visibility
                         if (bp.deletedAt) {
                           delete bp.deletedAt;
-                          bp.updatedAt = new Date().toISOString(); // Bump timestamp to ensure it wins future merges
+                          bp.updatedAt = new Date().toISOString();
                         }
-                        finalProjectMap.set(bp.id, bp);
+
+                        if (finalProjectMap.has(bp.id)) {
+                          // CONFLICT DETECTED: Don't overwrite. Create a copy.
+                          const timestampSuffix = Date.now().toString().slice(-4);
+                          const newId = `${bp.id}_copy_${timestampSuffix}`;
+
+                          bp.id = newId;
+                          bp.name = `${bp.name} (還原備份)`;
+
+                          // Add as NEW project
+                          finalProjectMap.set(newId, bp);
+                        } else {
+                          // No conflict, restore normally (overwriting if map somehow had it but logic says otherwise - actually map has current projects, so this branch means it's a NEW or DELETED-not-in-map project)
+                          // Wait, strict speaking: "finalProjectMap" has ALL current projects.
+                          // If it's NOT in map, it means it's a strictly new/deleted project.
+                          // If it IS in map, we just handled it in the 'if' block.
+                          finalProjectMap.set(bp.id, bp);
+                        }
                       });
 
                       // 3. Convert back to array
@@ -636,7 +654,7 @@ const Settings: FC<SettingsProps> = ({
 
                       onImportData(overwriteData, 'overwrite');
                       setPendingData(null);
-                      alert(`✅ 已成功復原 ${selectedProjectIds.size} 個專案`);
+                      alert(`✅ 已成功復原 ${selectedProjectIds.size} 個專案 (重複項目已建立為副本)`);
                     }}
                     className="bg-orange-600 text-white px-10 py-4 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-orange-100 hover:bg-orange-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center gap-3"
                   >
