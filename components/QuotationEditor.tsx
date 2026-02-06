@@ -185,6 +185,13 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                     if (proj) {
                         newQuotation.header.projectName = proj.name; // Also pre-fill project name
                         newQuotation.header.to = proj.client; // And client name
+                        // Auto-fill address
+                        if (proj.location) {
+                            const addr = typeof proj.location === 'object' && proj.location.address
+                                ? proj.location.address
+                                : (typeof proj.location === 'string' ? proj.location : '');
+                            if (addr) newQuotation.header.projectAddress = addr;
+                        }
                     }
                 }
 
