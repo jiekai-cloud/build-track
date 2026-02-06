@@ -619,6 +619,12 @@ const Settings: FC<SettingsProps> = ({
 
                       // 2. Force overwrite with backup projects
                       backupProjects.forEach((bp: any) => {
+                        // CRITICAL FIX: If we are intentionally restoring, we must clear the deleted flag
+                        // Otherwise it restores a "deleted" project which remains hidden
+                        if (bp.deletedAt) {
+                          delete bp.deletedAt;
+                          bp.updatedAt = new Date().toISOString(); // Bump timestamp to ensure it wins future merges
+                        }
                         finalProjectMap.set(bp.id, bp);
                       });
 
