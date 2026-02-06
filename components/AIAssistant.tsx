@@ -1,16 +1,32 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, Bot, Loader2, Sparkles, PieChart, Search, Link as LinkIcon, Gavel, Coins, Mic, MicOff } from 'lucide-react';
-import { getProjectInsights, getPortfolioAnalysis, searchEngineeringKnowledge, parseVoiceCommand } from '../services/geminiService';
+import {
+  getProjectInsights,
+  getPortfolioAnalysis,
+  searchEngineeringKnowledge,
+  parseVoiceCommand,
+  analyzeProjectFinancials,
+  suggestProjectSchedule,
+  generatePreConstructionPrep
+} from '../services/geminiService';
 import { Project, Message } from '../types';
 
 interface AIAssistantProps {
   projects: Project[];
+  activeTab?: string;
+  selectedProjectId?: string | null;
   onAddProject?: (data: any) => void;
   onProjectClick?: (id: string) => void;
 }
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onProjectClick }) => {
+const AIAssistant: React.FC<AIAssistantProps> = ({
+  projects,
+  activeTab,
+  selectedProjectId,
+  onAddProject,
+  onProjectClick
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<(Message & { chunks?: any[] })[]>([
@@ -184,7 +200,16 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onPro
       } else if (messageText.includes('法規') || messageText.includes('價格') || messageText.includes('行情') || messageText.includes('查詢')) {
         result = await searchEngineeringKnowledge(messageText);
       } else {
-        result = await getProjectInsights(projects[0], messageText);
+        // Contextual QA
+        const targetProject = selectedProjectId
+          ? projects.find(p => p.id === selectedProjectId)
+          : projects[0];
+
+        if (targetProject) {
+          result = await getProjectInsights(targetProject, messageText);
+        } else {
+          result = { text: "目前沒有可分析的專案資料。" };
+        }
       }
 
       setMessages(prev => [...prev, {
@@ -194,6 +219,43 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onPro
       }]);
     } catch (e) {
       setMessages(prev => [...prev, { role: 'assistant', content: "發生意外錯誤或無法連線 AI 服務。" }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSpecializedAction = async (action: 'financial' | 'schedule' | 'prep') => {
+    const targetProject = projects.find(p => p.id === selectedProjectId);
+    if (!targetProject) return;
+
+    setIsLoading(true);
+    setMessages(prev => [...prev, { role: 'user', content: action === 'financial' ? '財務與盈虧預測' : action === 'schedule' ? '排程建議' : '施工前準備' }]);
+
+    try {
+      let result;
+      if (action === 'financial') {
+        result = await analyzeProjectFinancials(targetProject);
+      } else if (action === 'schedule') {
+        result = await suggestProjectSchedule(targetProject);
+      } else {
+        // For prep, the result is JSON, we need to format it nicely
+        const prepData = await generatePreConstructionPrep(targetProject);
+        let text = "### 施工前準備建議\n\n";
+        if (prepData.materialsAndTools) {
+          text += `**🛠 建議材料機具：**\n${prepData.materialsAndTools}\n\n`;
+        }
+        if (prepData.notice) {
+          text += `**📢 建議施工公告：**\n\`\`\`\n${prepData.notice}\n\`\`\``;
+        }
+        result = { text };
+      }
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: result.text || "分析完成，但我無法產生文字。",
+      }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: "分析發生錯誤，請稍後再試。" }]);
     } finally {
       setIsLoading(false);
     }
@@ -297,12 +359,35 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ projects, onAddProject, onPro
 
           {/* Action Chips */}
           <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar border-t border-stone-100 bg-white shrink-0">
-            <button
-              onClick={() => handleSendMessage('全案場風險報告')}
-              className="flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-100 px-3 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap hover:bg-orange-100 transition-colors"
-            >
-              <PieChart size={12} /> 風險報告
-            </button>
+            {selectedProjectId ? (
+              <>
+                <button
+                  onClick={() => handleSpecializedAction('financial')}
+                  className="flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-100 px-3 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap hover:bg-green-100 transition-colors"
+                >
+                  <Coins size={12} /> 財務診斷
+                </button>
+                <button
+                  onClick={() => handleSpecializedAction('schedule')}
+                  className="flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap hover:bg-blue-100 transition-colors"
+                >
+                  <PieChart size={12} /> 排程建議
+                </button>
+                <button
+                  onClick={() => handleSpecializedAction('prep')}
+                  className="flex items-center gap-1.5 bg-purple-50 text-purple-700 border border-purple-100 px-3 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap hover:bg-purple-100 transition-colors"
+                >
+                  <Sparkles size={12} /> 開工準備
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => handleSendMessage('全案場風險報告')}
+                className="flex items-center gap-1.5 bg-orange-50 text-orange-700 border border-orange-100 px-3 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap hover:bg-orange-100 transition-colors"
+              >
+                <PieChart size={12} /> 風險報告
+              </button>
+            )}
             <button
               onClick={() => handleSendMessage('查詢最新室內裝修消防法規')}
               className="flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-100 px-3 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap hover:bg-amber-100 transition-colors"

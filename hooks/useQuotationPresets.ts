@@ -80,6 +80,10 @@ export const useQuotationPresets = () => {
 
             // Safe access
             const name = row[1];
+
+            // Filter garbage rows (e.g. "500,1", "000,,,,")
+            if (/^\d+,/.test(name) || name.includes(',,,,')) continue;
+
             // const spec = row[2];
             const unit = row[3] || '式';
             const qtyStr = row[4] || '1';

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { FileText, Plus, Search, Filter, Download, Eye, Edit2, Trash2, Copy, CheckCircle2, XCircle, Clock, Send } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, Eye, Edit2, Trash2, Copy, CheckCircle2, XCircle, Clock, Send, Pen, Link } from 'lucide-react';
 import { Quotation, QuotationItem, ItemCategory, Customer, Project } from '../types';
 import QuotationEditor from './QuotationEditor';
 import QuotationPrintTemplate from './QuotationPrintTemplate';
@@ -30,6 +30,7 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
     const [showNewQuotationModal, setShowNewQuotationModal] = useState(false);
+    const [isCopyMode, setIsCopyMode] = useState(false);
 
     // PDF Generation State
     const [printingQuotation, setPrintingQuotation] = useState<Quotation | null>(null);
@@ -95,7 +96,8 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
             draft: quotations.filter(q => q.status === 'draft' && !q.deletedAt).length,
             sent: quotations.filter(q => q.status === 'sent' && !q.deletedAt).length,
             approved: quotations.filter(q => q.status === 'approved' && !q.deletedAt).length,
-            converted: quotations.filter(q => q.status === 'converted' && !q.deletedAt).length
+            converted: quotations.filter(q => q.status === 'converted' && !q.deletedAt).length,
+            signed: quotations.filter(q => q.status === 'signed' && !q.deletedAt).length // New
         };
     }, [quotations]);
 
@@ -126,7 +128,8 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
             approved: 'bg-green-100 text-green-700 border-green-300',
             rejected: 'bg-red-100 text-red-700 border-red-300',
             expired: 'bg-orange-100 text-orange-700 border-orange-300',
-            converted: 'bg-purple-100 text-purple-700 border-purple-300'
+            converted: 'bg-purple-100 text-purple-700 border-purple-300',
+            signed: 'bg-indigo-100 text-indigo-700 border-indigo-300'
         };
 
         const labels = {
@@ -135,7 +138,8 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
             approved: '已核准',
             rejected: '已拒絕',
             expired: '已過期',
-            converted: '已成交'
+            converted: '已成交',
+            signed: '已簽署'
         };
 
         const icons = {
@@ -144,10 +148,11 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
             approved: CheckCircle2,
             rejected: XCircle,
             expired: Clock,
-            converted: CheckCircle2
+            converted: CheckCircle2,
+            signed: Pen
         };
 
-        const Icon = icons[status];
+        const Icon = icons[status] || Edit2;
 
         return (
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${styles[status]}`}>
@@ -171,7 +176,10 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                     <p className="text-stone-500 mt-2 text-sm">專業工程報價單管理與追蹤</p>
                 </div>
                 <button
-                    onClick={() => setShowNewQuotationModal(true)}
+                    onClick={() => {
+                        setIsCopyMode(false);
+                        setShowNewQuotationModal(true);
+                    }}
                     className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-lg hover:shadow-xl font-bold"
                 >
                     <Plus size={20} />
@@ -180,7 +188,7 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
             </div>
 
             {/* 統計卡片 */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <div className="bg-white rounded-2xl p-5 border-2 border-stone-200 shadow-sm">
                     <div className="text-stone-500 text-xs font-bold uppercase">全部報價單</div>
                     <div className="text-3xl font-black text-stone-900 mt-2">{stats.total}</div>
@@ -192,6 +200,10 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 <div className="bg-white rounded-2xl p-5 border-2 border-blue-200 shadow-sm">
                     <div className="text-blue-600 text-xs font-bold uppercase">已送出</div>
                     <div className="text-3xl font-black text-blue-600 mt-2">{stats.sent}</div>
+                </div>
+                <div className="bg-white rounded-2xl p-5 border-2 border-indigo-200 shadow-sm">
+                    <div className="text-indigo-600 text-xs font-bold uppercase">已簽署</div>
+                    <div className="text-3xl font-black text-indigo-600 mt-2">{stats.signed}</div>
                 </div>
                 <div className="bg-white rounded-2xl p-5 border-2 border-green-200 shadow-sm">
                     <div className="text-green-600 text-xs font-bold uppercase">已核准</div>
@@ -229,6 +241,7 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                             <option value="all">全部狀態</option>
                             <option value="draft">草稿</option>
                             <option value="sent">已送出</option>
+                            <option value="signed">已簽署</option>
                             <option value="approved">已核准</option>
                             <option value="rejected">已拒絕</option>
                             <option value="expired">已過期</option>
@@ -253,7 +266,10 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                         </p>
                         {!searchTerm && statusFilter === 'all' && (
                             <button
-                                onClick={() => setShowNewQuotationModal(true)}
+                                onClick={() => {
+                                    setIsCopyMode(false);
+                                    setShowNewQuotationModal(true);
+                                }}
                                 className="inline-flex items-center gap-2 px-5 py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors font-bold"
                             >
                                 <Plus size={20} />
@@ -315,6 +331,22 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-end gap-2">
+                                                {/* Copy Signing Link */}
+                                                <button
+                                                    onClick={() => {
+                                                        const link = `${window.location.protocol}//${window.location.host}/contract/sign/${quotation.id}`;
+                                                        navigator.clipboard.writeText(link).then(() => {
+                                                            alert(`已複製簽約連結：\n${link}\n\n請將此連結傳送給業主。`);
+                                                        }).catch(() => {
+                                                            prompt('請複製以下連結：', link);
+                                                        });
+                                                    }}
+                                                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                    title="複製簽約連結"
+                                                >
+                                                    <Link size={18} />
+                                                </button>
+
                                                 <button
                                                     onClick={() => handleDownloadPDF(quotation)}
                                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -330,12 +362,40 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <button
+                                                    onClick={() => {
+                                                        // 複製邏輯
+                                                        const year = new Date().getFullYear();
+                                                        const randomId = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                                                        const newId = `Q${year}-${randomId}`;
+
+                                                        const copy: Quotation = {
+                                                            ...quotation,
+                                                            id: newId,
+                                                            quotationNumber: newId,
+                                                            version: 1,
+                                                            status: 'draft',
+                                                            createdAt: new Date().toISOString(),
+                                                            updatedAt: new Date().toISOString(),
+                                                            header: {
+                                                                ...quotation.header,
+                                                                quotationDate: new Date().toISOString().split('T')[0]
+                                                            }
+                                                        };
+
+                                                        setIsCopyMode(true);
+                                                        setSelectedQuotation(copy);
+                                                    }}
                                                     className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                                                     title="複製"
                                                 >
                                                     <Copy size={18} />
                                                 </button>
                                                 <button
+                                                    onClick={() => {
+                                                        if (window.confirm(`確定要刪除報價單 ${quotation.quotationNumber} 嗎？`)) {
+                                                            onDeleteQuotation?.(quotation.id);
+                                                        }
+                                                    }}
                                                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                     title="刪除"
                                                 >
@@ -351,38 +411,25 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 )}
             </div>
 
-            {/* 開發中提示 */}
-            <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 rounded-2xl p-6">
-                <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
-                        <FileText className="text-white" size={24} />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-lg font-black text-orange-900 mb-2">報價系統開發中 🚀</h3>
-                        <div className="text-sm text-orange-800 space-y-1">
-                            <p>✅ 已完成：資料結構定義、模組註冊、基礎界面</p>
-                            <p>🔄 開發中：報價單編輯器、PDF 產生功能</p>
-                            <p className="mt-3 font-bold">💡 可用資料：客戶數 {customers.length} | 專案數 {projects.length}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
             <QuotationEditor
                 isOpen={showNewQuotationModal || !!selectedQuotation}
                 onClose={() => {
                     setShowNewQuotationModal(false);
                     setSelectedQuotation(null);
+                    setIsCopyMode(false);
                 }}
                 onSave={(newQuotation) => {
-                    if (selectedQuotation) {
+                    if (selectedQuotation && !isCopyMode) {
                         // Update
                         if (onUpdateQuotation) onUpdateQuotation(newQuotation);
                     } else {
-                        // Create
+                        // Create (or Copy)
                         if (onAddQuotation) onAddQuotation(newQuotation);
                     }
                     setShowNewQuotationModal(false);
                     setSelectedQuotation(null);
+                    setIsCopyMode(false);
                 }}
                 initialData={selectedQuotation}
                 customers={customers}

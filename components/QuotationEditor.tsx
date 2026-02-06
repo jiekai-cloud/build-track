@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, FileText, Save, Download, Calculator, ChevronDown, ChevronRight, Copy, Database, Check } from 'lucide-react';
+import { X, Plus, Trash2, FileText, Save, Download, Calculator, ChevronDown, ChevronRight, Copy, Database, Check, Sparkles, Loader2, Bot, Mic, MicOff } from 'lucide-react';
 import { Quotation, QuotationItem, ItemCategory, QuotationOption, Customer, Project, QuotationSummary } from '../types';
 import { generateQuotationPDF } from '../services/quotationPdfService';
 import { STANDARD_QUOTATION_ITEMS, StandardItem } from '../data/standardItems';
 import { QUOTATION_PRESETS as STATIC_PRESETS, createQuotationFromPreset, QuotationPreset } from '../data/quotationPresets';
 import { useQuotationPresets } from '../hooks/useQuotationPresets';
+import { findQuotationItems } from '../services/geminiService';
 
 interface QuotationEditorProps {
     isOpen: boolean;
@@ -66,6 +67,83 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     const [showTemplateSelector, setShowTemplateSelector] = useState(false); // Template Selector State
     const [selectedStandardItems, setSelectedStandardItems] = useState<StandardItem[]>([]);
     const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
+
+    // AI Assistant State
+    const [showAISelector, setShowAISelector] = useState(false);
+    const [aiDescription, setAiDescription] = useState('');
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiResults, setAiResults] = useState<string[]>([]);
+
+    // Voice Recognition State
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = React.useRef<any>(null);
+
+    const startListening = () => {
+        if (!('webkitSpeechRecognition' in window)) {
+            alert("您的瀏覽器不支援語音辨識功能，請使用 Chrome 或 Safari。");
+            return;
+        }
+
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+            return;
+        }
+
+        const recognition = new (window as any).webkitSpeechRecognition();
+        recognition.lang = 'zh-TW';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => setIsListening(true);
+        recognition.onresult = (event: any) => {
+            const text = event.results[0][0].transcript;
+            setAiDescription(prev => prev ? `${prev}，${text}` : text);
+        };
+        recognition.onerror = (event: any) => {
+            console.error("Speech recognition error", event.error);
+            setIsListening(false);
+        };
+        recognition.onend = () => setIsListening(false);
+
+        recognitionRef.current = recognition;
+        recognition.start();
+    };
+
+    const handleAIAnalysis = async () => {
+        if (!aiDescription.trim()) return;
+        setAiLoading(true);
+        try {
+            const results = await findQuotationItems(aiDescription, STANDARD_QUOTATION_ITEMS);
+            setAiResults(results);
+        } catch (error) {
+            console.error("AI Analysis failed:", error);
+            alert("AI 分析失敗，請稍後再試。");
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    const handleApplyAIResults = () => {
+        const itemsToAdd: StandardItem[] = [];
+
+        // Flatten standard items for lookup
+        const allStandardItems: StandardItem[] = [];
+        STANDARD_QUOTATION_ITEMS.forEach(cat => allStandardItems.push(...cat.items));
+
+        aiResults.forEach(id => {
+            const item = allStandardItems.find(i => i.id === id);
+            if (item) itemsToAdd.push(item);
+        });
+
+        if (itemsToAdd.length > 0) {
+            setSelectedStandardItems(itemsToAdd);
+            setShowAISelector(false);
+            setShowItemSelector(true); // Open the standard item selector with these items pre-selected
+        } else {
+            alert("沒有找到匹配的工項。");
+        }
+    };
 
     // Live Presets from Google Sheet
     const { presets, loading: loadingPresets, refresh: refreshPresets } = useQuotationPresets();
@@ -239,10 +317,18 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
         });
     };
 
-    const handleGeneratePDF = () => {
-        if (formData) {
-            alert('正在產生 PDF，請注意：目前 PDF 僅支援基礎英數字型，中文可能會顯示異常。完整的中文支援需要另外載入字型檔。');
-            generateQuotationPDF(formData);
+    const handleGeneratePDF = async () => {
+        if (!formData) {
+            alert('報價資料不完整');
+            return;
+        }
+
+        try {
+            alert('正在產生 PDF，請稍候...');
+            await generateQuotationPDF(formData);
+        } catch (error: any) {
+            console.error('PDF generation failed:', error);
+            alert(error.message || '生成 PDF 時發生錯誤，請檢查報價資料是否完整');
         }
     };
 
@@ -319,6 +405,12 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                         <p className="text-sm text-stone-500 mt-1">單號: {formData.quotationNumber}</p>
                     </div>
                     <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowAISelector(true)}
+                            className="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 rounded-lg font-bold transition-all text-sm flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                        >
+                            <Sparkles size={16} className="animate-pulse" /> AI 智慧選單
+                        </button>
                         <button
                             onClick={() => setShowItemSelector(true)}
                             className="px-4 py-2 bg-stone-800 text-white hover:bg-stone-700 rounded-lg font-bold transition-colors text-sm flex items-center gap-2 shadow-sm"
@@ -571,6 +663,125 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* AI Smart Selector Modal */}
+            {showAISelector && (
+                <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-indigo-100 flex justify-between items-center bg-gradient-to-r from-violet-50 to-indigo-50">
+                            <h3 className="text-xl font-black text-indigo-900 flex items-center gap-2">
+                                <Sparkles className="text-indigo-600" />
+                                AI 智慧選單
+                            </h3>
+                            <button
+                                onClick={() => setShowAISelector(false)}
+                                className="p-2 hover:bg-white/50 rounded-full transition-colors"
+                            >
+                                <X size={24} className="text-indigo-400" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {!aiResults.length ? (
+                                <div className="space-y-4">
+                                    <div className="bg-indigo-50 p-4 rounded-xl text-indigo-800 text-sm leading-relaxed">
+                                        <p className="font-bold flex items-center gap-2 mb-1">
+                                            <Bot size={16} /> AI 助理
+                                        </p>
+                                        請告訴我您需要施作的工程內容，我會自動為您從資料庫中挑選合適的工項。<br />
+                                        例如：「浴室防水重做，包含拆除磁磚和更換衛浴設備」
+                                    </div>
+                                    <div className="relative">
+                                        <textarea
+                                            value={aiDescription}
+                                            onChange={(e) => setAiDescription(e.target.value)}
+                                            placeholder="請輸入工程描述，或點擊右下角麥克風用語音輸入..."
+                                            className="w-full h-32 p-4 border border-stone-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-stone-800 text-lg pr-12"
+                                            autoFocus
+                                        />
+                                        <button
+                                            onClick={startListening}
+                                            className={`absolute right-3 bottom-3 p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}
+                                            title="語音輸入"
+                                        >
+                                            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                                        </button>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={handleAIAnalysis}
+                                            disabled={aiLoading || !aiDescription.trim()}
+                                            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-indigo-500/30"
+                                        >
+                                            {aiLoading ? (
+                                                <>
+                                                    <Loader2 size={18} className="animate-spin" />
+                                                    AI 正在分析工項...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles size={18} />
+                                                    開始智慧分析
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="font-bold text-stone-700">AI 為您挑選了 {aiResults.length} 個相關工項：</h4>
+                                        <button
+                                            onClick={() => setAiResults([])}
+                                            className="text-sm text-stone-400 hover:text-stone-600"
+                                        >
+                                            重新輸入
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-stone-50 rounded-xl p-2 max-h-[40vh] overflow-y-auto border border-stone-200">
+                                        {aiResults.map(id => {
+                                            // Find item details
+                                            let itemDetail = null;
+                                            STANDARD_QUOTATION_ITEMS.forEach(cat => {
+                                                const found = cat.items.find(i => i.id === id);
+                                                if (found) itemDetail = found;
+                                            });
+
+                                            if (!itemDetail) return null;
+
+                                            return (
+                                                <div key={id} className="p-3 bg-white border border-stone-100 rounded-lg mb-2 flex justify-between items-center shadow-sm">
+                                                    <div className="flex-1">
+                                                        <div className="font-bold text-stone-800">{(itemDetail as any).name}</div>
+                                                        <div className="text-xs text-stone-500">單位: {(itemDetail as any).unit} | 預算: ${(itemDetail as any).defaultPrice}</div>
+                                                    </div>
+                                                    <Check size={18} className="text-green-500" />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            onClick={() => setShowAISelector(false)}
+                                            className="flex-1 py-3 text-stone-500 font-bold hover:bg-stone-100 rounded-xl transition-colors"
+                                        >
+                                            取消
+                                        </button>
+                                        <button
+                                            onClick={handleApplyAIResults}
+                                            className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg"
+                                        >
+                                            確認並帶入選單
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Item Selector Modal */}
             {showItemSelector && (

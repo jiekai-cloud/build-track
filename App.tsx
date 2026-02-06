@@ -1994,6 +1994,8 @@ const App: React.FC = () => {
         <div className="no-print">
           <AIAssistant
             projects={filteredData.projects}
+            activeTab={activeTab}
+            selectedProjectId={selectedProjectId}
             onAddProject={(initialData) => {
               setEditingProject({
                 id: '',

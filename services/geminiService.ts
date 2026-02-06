@@ -1,123 +1,109 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { Project } from "../types";
 
-// 優先採用的穩定模型列表 (依序備援)
-// 優先採用的穩定模型列表 (依序備援，涵蓋穩定版與最新版)
+// 根據最新 API Key 權限更新的模型列表
 const FALLBACK_MODELS = [
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-001',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-pro',
-  'gemini-1.5-pro-001'
+  'gemini-2.5-flash',       // 這是你先前診斷清單中顯示可用的穩定模型
+  'gemini-3-flash-preview', // 這是你清單中唯一的 Gemini 3 預覽版
+  'gemini-1.5-flash'
 ];
 
-const STABLE_MODEL = 'gemini-1.5-flash-latest';
-const EXPERIMENTAL_MODEL = 'gemini-2.0-flash-exp';
+let cachedValidModel: string | null = null;
 
-// Always use an named parameter for apiKey and fetch from process.env.API_KEY
-const getAI = () => {
+const getApiKey = () => {
   const savedKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
-  // Vite environment variables or process.env (fallback)
   const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
-  const hardcodedKey = ''; // Removed for security reasons
 
-  const isInvalid = (k: string | null | undefined) => !k || k === 'PLACEHOLDER_API_KEY' || k === 'undefined' || k === '';
+  let key = '';
+  if (envKey && envKey !== 'undefined' && envKey !== 'PLACEHOLDER_API_KEY') key = envKey as string;
+  if (savedKey && savedKey !== 'undefined') key = savedKey;
 
-  // Priority: localStorage > env > hardcoded
-  let key = ''; // Removed leaked hardcoded key for security
-  if (!isInvalid(envKey)) key = envKey! as string;
-  if (!isInvalid(savedKey)) key = savedKey!;
-
-  if (isInvalid(key)) {
-    console.error("Gemini API Key is missing or invalid.");
-    throw new Error("Gemini API 金鑰未設定或無效。請點擊右上角「AI 服務」來配置金鑰。");
+  if (!key) {
+    console.error("Gemini API Key is missing.");
+    throw new Error("Gemini API 金鑰未設定。請點擊右上角「AI 服務」來配置金鑰。");
   }
-
-  // Debug log (masked)
-  console.log(`Using AI Key: ${key.substring(0, 8)}... (GenAI SDK - ${STABLE_MODEL})`);
-
-  try {
-    return new GoogleGenAI({ apiKey: key });
-  } catch (e) {
-    console.error("GenAI Initialization failed:", e);
-    throw e;
-  }
+  return key;
 };
 
+async function callGeminiViaFetch(model: string, payload: any, apiKey: string) {
+  const apiVersion = 'v1beta';
+
+  // 核心修正：有些 API Key 需要完整的資源路徑格式
+  // 將 'gemini-3.0-flash' 轉換為 'models/gemini-3.0-flash'
+  const fullModelName = model.startsWith('models/') ? model : `models/${model}`;
+
+  const url = `https://generativelanguage.googleapis.com/${apiVersion}/${fullModelName}:generateContent?key=${apiKey}`;
+
+  console.log(`[AI Debug] 嘗試完整路徑: ${url}`);
+
+  const body = {
+    contents: payload.contents,
+    generationConfig: payload.generationConfig || { temperature: 0.7 }
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    // 輸出最詳細的錯誤，這能告訴我們是不是 Key 被封鎖了
+    console.error(`[AI Critical Error]`, data);
+    throw {
+      message: data.error?.message || "存取被拒",
+      status: response.status,
+      reason: data.error?.status // 這裡會顯示是 PERMISSION_DENIED 還是其他
+    };
+  }
+
+  return {
+    text: data.candidates?.[0]?.content?.parts?.[0]?.text || "",
+    candidates: data.candidates
+  };
+}
+
 /**
- * 集中處理 AI 報錯，提供更友善的資訊
- */
-const handleAIError = (error: any, context: string, modelUsed: string = STABLE_MODEL) => {
-  console.warn(`${context} 使用 ${modelUsed} 失敗:`, error); // Changed to warn
-
-  const errorMsg = error?.message || "";
-
-  // 429: Too Many Requests / Resource Exhausted
-  if (errorMsg.includes("limit: 0") || errorMsg.includes("RESOURCE_EXHAUSTED") || errorMsg.includes("429")) {
-    return "QUOTA_EXCEEDED";
-  }
-
-  // 403 PERMISSION_DENIED: Often means leaked or disabled key
-  if (errorMsg.includes("403") || errorMsg.includes("PERMISSION_DENIED") || errorMsg.includes("leaked")) {
-    return "KEY_INVALID";
-  }
-
-  // 503 Service Unavailable
-  if (errorMsg.includes("503") || errorMsg.includes("overloaded")) {
-    return "SERVER_OVERLOADED";
-  }
-
-  throw error;
-};
-
-/**
- * 具備自動備援機制的 AI 調用函式
+ * 具備自動備援機制的調用函式
  */
 async function callAIWithFallback(payload: any, context: string) {
-  const ai = getAI();
+  const apiKey = getApiKey();
+
+  // --- 診斷代碼已移除 (效能優化) ---
+
   let lastError: any = null;
 
-  console.log('[AI Config] Fallback list:', FALLBACK_MODELS);
-  for (const modelId of FALLBACK_MODELS) {
+  // 優先嘗試快取模型
+  const targetModels = cachedValidModel ? [cachedValidModel, ...FALLBACK_MODELS] : FALLBACK_MODELS;
+
+  // 移除重複項
+  const uniqueModels = Array.from(new Set(targetModels));
+
+  for (const modelId of uniqueModels) {
     try {
-      console.log(`[AI v2.1] 嘗試調用模型: ${modelId} (${context})`);
-      const response = await ai.models.generateContent({
-        ...payload,
-        model: modelId
-      });
+      console.log(`[AI] 嘗試調用: ${modelId} (${context})`);
+      const response = await callGeminiViaFetch(modelId, payload, apiKey);
+
+      console.log(`[AI] 成功接通: ${modelId}`);
+      cachedValidModel = modelId; // 記錄成功的模型
       return response;
     } catch (err: any) {
       lastError = err;
-      const status = handleAIError(err, context, modelId);
+      console.error(`[AI] ${modelId} 失敗:`, err.message);
 
-      if (status === "QUOTA_EXCEEDED") {
-        console.warn(`[AI] 模型 ${modelId} 配額已滿 (429)，等待 2 秒後嘗試下一個備援模型...`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Simple backoff
+      // 如果是找不到模型 (404)，直接換下一個
+      if (err.status === 404) continue;
+
+      // 如果是配額限制，稍等一下再換
+      if (err.status === 429) {
+        await new Promise(r => setTimeout(r, 1000));
         continue;
       }
-
-      if (status === "SERVER_OVERLOADED") {
-        console.warn(`[AI] 模型 ${modelId} 服務忙碌 (503)，等待 1 秒後嘗試下一個備援模型...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        continue;
-      }
-
-      if (status === "MODEL_NOT_FOUND" || status === "KEY_INVALID") {
-        const msg = status === "KEY_INVALID" ? "您的 API 金鑰已失效 (外洩) 或權限不足" : `模型 ${modelId} 不存在`;
-        console.warn(`[AI] ${msg}，嘗試下一個備援模型...`);
-        if (status === "KEY_INVALID" && modelId === FALLBACK_MODELS[FALLBACK_MODELS.length - 1]) {
-          alert("⚠️ AI 服務金鑰失效：Google 已封鎖目前外洩的 API Key。請點擊右上角「AI 服務」配置您個人的金鑰以恢復功能。");
-        }
-        continue;
-      }
-
-      // 如果是其他錯誤 (例如安全攔截)，則直接報錯不續試
-      throw err;
     }
   }
 
-  throw lastError || new Error(`${context} 失敗：所有備援模型均無法連線 (配額已滿或網路問題)。請稍後再試。`);
+  throw new Error(`AI 呼叫失敗，最後錯誤: ${lastError?.message}`);
 }
 
 /**
@@ -133,7 +119,6 @@ const cleanJsonString = (str: string) => {
  */
 export const getPortfolioAnalysis = async (projects: Project[]) => {
   try {
-    const ai = getAI();
     // 再次確保排除測試專案
     const realProjects = projects.filter(p => !p.name.toLowerCase().includes('test') && !p.name.includes('測試'));
     const totalCount = realProjects.length;
@@ -177,7 +162,6 @@ ${projectSummary}
  * 針對特定專案提供深入洞察
  */
 export const getProjectInsights = async (project: Project, question: string) => {
-  const ai = getAI();
   try {
     const response = await callAIWithFallback({
       contents: [{
@@ -330,7 +314,6 @@ export const searchNearbyResources = async (address: string, lat: number, lng: n
  * 解析日報文字為結構化派工數據
  */
 export const parseWorkDispatchText = async (text: string, members: any[] = []) => {
-  const ai = getAI();
   try {
     const memberContext = members.length > 0
       ? `目前團隊成員名單 (包含所有外號)：\n${members.map(m => `- ${m.name}${m.nicknames?.length ? ` (外號: ${m.nicknames.join(', ')})` : ''}`).join('\n')}\n\n`
@@ -355,7 +338,8 @@ ${memberContext}
     const jsonStr = cleanJsonString(response.text || "[]");
     return JSON.parse(jsonStr);
   } catch (error) {
-    return handleAIError(error, "日報解析");
+    console.error("日報解析失敗:", error);
+    return [];
   }
 };
 
@@ -392,7 +376,6 @@ export const scanBusinessCard = async (base64Image: string) => {
  * 智慧發票收據辨識 - 提取支出資訊
  */
 export const scanReceipt = async (base64Image: string) => {
-  const ai = getAI();
   try {
     const response = await callAIWithFallback({
       contents: [
@@ -472,7 +455,8 @@ export const analyzeQuotationItems = async (base64Image: string) => {
       return [];
     }
   } catch (error) {
-    return handleAIError(error, "報價單分析");
+    console.error("報價單分析失敗:", error);
+    return [];
   }
 };
 /**
@@ -558,7 +542,8 @@ export const parseScheduleFromImage = async (base64Image: string, startDate: str
       return [];
     }
   } catch (error) {
-    return handleAIError(error, "排程解析");
+    console.error("排程解析失敗:", error);
+    return [];
   }
 };
 
@@ -730,5 +715,58 @@ export const getAddressFromCoords = async (lat: number, lng: number) => {
   } catch (error) {
     console.warn("Gemini Geocoding 失敗:", error);
     return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  }
+};
+
+/**
+ * 智慧報價單選單 - 根據描述推薦工項
+ */
+export const findQuotationItems = async (userDescription: string, availableItems: any[]) => {
+  try {
+    // Simplify available items to reduce token usage
+    // We flatten the category structure if passed fully, or expect a flat list. 
+    let flatItems: any[] = [];
+    if (availableItems.length > 0 && availableItems[0].items) {
+      // It's a category list
+      availableItems.forEach(cat => {
+        cat.items.forEach((item: any) => flatItems.push(item));
+      });
+    } else {
+      flatItems = availableItems;
+    }
+
+    // Limit to reasonable amount of items to prevent Context Limit issues (though Gemini has large context, latency matters)
+    const serializedItems = flatItems.map((item: any) =>
+      `ID: ${item.id} | 名稱: ${item.name} | 單位: ${item.unit} | 備註: ${item.notes || ''}`
+    ).join('\n');
+
+    const response = await callAIWithFallback({
+      contents: [{
+        parts: [{
+          text: `妳是專業的工程估價師。請根據使用者的工程需求描述，從下方的「標準工項資料庫」中挑選最合適的項目。
+
+使用者描述：
+"${userDescription}"
+
+標準工項資料庫：
+${serializedItems}
+
+請遵循以下規則：
+1. 僅選擇與描述高度相關的項目。例如提到「浴室拆除」，應包含拆除天花板、拆除地磚、拆除衛浴設備等相關項目。
+2. 如果描述很模糊，請嘗試推斷最可能的相關項目。
+3. 僅回傳一個 JSON 字串陣列，內容為被選中的項目 ID。
+4. 不需要任何 markdown 標記或解釋。
+
+範例輸出：
+["demo-1", "demo-5", "mas-2"]`
+        }]
+      }]
+    }, "智慧工項推薦");
+
+    const jsonStr = cleanJsonString(response.text || "[]");
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error("智慧工項推薦失敗:", error);
+    return [];
   }
 };

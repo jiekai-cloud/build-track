@@ -30,8 +30,8 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
             {/* 1. Header: 公司抬頭 */}
             <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold mb-2">Taiwan Life Quality Development Co., Ltd.</h1>
-                <h1 className="text-2xl font-bold tracking-widest text-stone-900 mb-2">台灣生活品質發展股份有限公司</h1>
+                <h1 className="text-2xl font-bold text-stone-900 mb-1">台灣生活品質發展股份有限公司</h1>
+                <h2 className="text-sm font-bold text-stone-500 tracking-[0.2em] mb-4">Taiwan Quality of Life Development Co., Ltd.</h2>
                 <h2 className="text-xl font-bold uppercase border-b-2 border-stone-800 inline-block pb-1">Quotation 報 價 單</h2>
             </div>
 
@@ -40,27 +40,27 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 {/* 左側：客戶資訊 */}
                 <div className="w-[55%] space-y-1">
                     <div className="flex">
-                        <span className="font-bold w-16">TO (客戶):</span>
+                        <span className="font-bold min-w-20 whitespace-nowrap">TO (客戶):</span>
                         <span className="font-medium">{quotation.header.to}</span>
                     </div>
                     {quotation.header.attn && (
                         <div className="flex">
-                            <span className="font-bold w-16">ATTN (聯絡):</span>
+                            <span className="font-bold min-w-20 whitespace-nowrap">ATTN (聯絡):</span>
                             <span>{quotation.header.attn}</span>
                         </div>
                     )}
                     {quotation.header.tel && (
                         <div className="flex">
-                            <span className="font-bold w-16">TEL (電話):</span>
+                            <span className="font-bold min-w-20 whitespace-nowrap">TEL (電話):</span>
                             <span>{quotation.header.tel}</span>
                         </div>
                     )}
                     <div className="flex mt-2">
-                        <span className="font-bold w-16">專案:</span>
+                        <span className="font-bold min-w-20 whitespace-nowrap">專案:</span>
                         <span className="font-medium">{quotation.header.projectName}</span>
                     </div>
                     <div className="flex">
-                        <span className="font-bold w-16">地址:</span>
+                        <span className="font-bold min-w-20 whitespace-nowrap">地址:</span>
                         <span>{quotation.header.projectAddress}</span>
                     </div>
                 </div>
@@ -192,10 +192,26 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
             </div>
 
+            {/* 客戶簽名區 (只有已簽署時顯示) */}
+            {(quotation as any).signature && (
+                <div className="mt-8 flex justify-end">
+                    <div className="w-64 border-b-2 border-stone-800 pb-2">
+                        <div className="text-sm font-bold mb-2">客戶簽名 Customer Signature:</div>
+                        <img src={(quotation as any).signature} alt="Client Signature" className="max-h-24 object-contain" />
+                        <div className="text-xs text-stone-500 mt-1 text-right">
+                            Signed on: {(quotation as any).signedAt ? new Date((quotation as any).signedAt).toLocaleString() : ''}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 頁尾 */}
-            <div className="mt-12 text-center text-xs text-stone-400">
-                <p>感謝您選擇台灣生活品質發展股份有限公司，期待為您服務。</p>
-                <p className="mt-1">Copyright © Taiwan Life Quality Development Co., Ltd.</p>
+            <div className="mt-12 text-center text-xs text-stone-500 space-y-1">
+                <p className="mb-4">感謝您選擇台灣生活品質發展股份有限公司，期待為您服務。</p>
+                <div className="border-t border-stone-200 w-full mb-2"></div>
+                <p>台北: 111 台北市士林區中山北路五段500號7樓</p>
+                <p>新北: 235 新北市中和區景平路71號之7號2樓本號</p>
+                <p>統編: 60618756  |  Tel: 02-2242-1955  |  Fax: 02-2242-1905  |  Email: service@tqldc.com.tw</p>
             </div>
 
         </div>

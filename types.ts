@@ -682,3 +682,9 @@ export interface QuotationTemplate {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface RecordItem {
+  type: 'diagnosis' | 'AI' | string;
+  description: string;
+  result: string;
+}
