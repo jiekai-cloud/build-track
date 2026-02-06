@@ -157,9 +157,8 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                 setFormData(JSON.parse(JSON.stringify(initialData)));
             } else {
                 // 建立新報價單預設值
-                const year = new Date().getFullYear();
-                const randomId = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-                const newId = 'Q' + year + '-' + randomId;
+                // Init with independent ID first, or defaultProject's ID if present
+                const newId = generateQuotationNumber(defaultProjectId, quotations);
 
                 const newQuotation: Quotation = {
                     id: newId,
@@ -178,6 +177,7 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
+
                 // Apply Default Project ID if provided
                 if (defaultProjectId) {
                     newQuotation.projectId = defaultProjectId;
@@ -191,7 +191,7 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                 setFormData(newQuotation);
             }
         }
-    }, [isOpen, initialData, user, defaultProjectId, projects]);
+    }, [isOpen, initialData, user, defaultProjectId, projects, quotations]);
 
     // 自動計算金額
     useEffect(() => {

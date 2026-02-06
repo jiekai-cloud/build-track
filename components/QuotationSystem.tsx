@@ -3,6 +3,7 @@ import { FileText, Plus, Search, Filter, Download, Eye, Edit2, Trash2, Copy, Che
 import { Quotation, QuotationItem, ItemCategory, Customer, Project } from '../types';
 import QuotationEditor from './QuotationEditor';
 import QuotationPrintTemplate from './QuotationPrintTemplate';
+import { generateQuotationNumber } from '../utils/quotationIdGenerator';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -377,10 +378,7 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                                                 </button>
                                                 <button
                                                     onClick={() => {
-                                                        // 複製邏輯
-                                                        const year = new Date().getFullYear();
-                                                        const randomId = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-                                                        const newId = `Q${year}-${randomId}`;
+                                                        const newId = generateQuotationNumber(quotation.projectId, quotations);
 
                                                         const copy: Quotation = {
                                                             ...quotation,
@@ -425,7 +423,6 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 )}
             </div>
 
-
             <QuotationEditor
                 isOpen={showNewQuotationModal || !!selectedQuotation}
                 onClose={() => {
@@ -449,7 +446,8 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 customers={customers}
                 projects={projects}
                 user={user}
-                defaultProjectId={initialProjectId} // Pass initialProjectId as default for new quotations
+                defaultProjectId={initialProjectId}
+                quotations={quotations}
             />
 
             {/* Hidden Print Container */}
