@@ -14,6 +14,8 @@ interface QuotationSystemProps {
     onAddQuotation?: (quotation: Quotation) => void;
     onUpdateQuotation?: (quotation: Quotation) => void;
     onDeleteQuotation?: (quotationId: string) => void;
+    initialProjectId?: string;
+    initialQuotationId?: string;
 }
 
 const QuotationSystem: React.FC<QuotationSystemProps> = ({
@@ -23,7 +25,9 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
     user,
     onAddQuotation,
     onUpdateQuotation,
-    onDeleteQuotation
+    onDeleteQuotation,
+    initialProjectId,
+    initialQuotationId
 }) => {
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +35,16 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
     const [showNewQuotationModal, setShowNewQuotationModal] = useState(false);
     const [isCopyMode, setIsCopyMode] = useState(false);
+
+    // Deep Link Logic
+    React.useEffect(() => {
+        if (initialQuotationId) {
+            const target = quotations.find(q => q.id === initialQuotationId);
+            if (target) setSelectedQuotation(target);
+        } else if (initialProjectId) {
+            setShowNewQuotationModal(true);
+        }
+    }, [initialProjectId, initialQuotationId, quotations]);
 
     // PDF Generation State
     const [printingQuotation, setPrintingQuotation] = useState<Quotation | null>(null);
@@ -435,6 +449,7 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 customers={customers}
                 projects={projects}
                 user={user}
+                defaultProjectId={initialProjectId} // Pass initialProjectId as default for new quotations
             />
 
             {/* Hidden Print Container */}

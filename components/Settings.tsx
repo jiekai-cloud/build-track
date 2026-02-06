@@ -30,20 +30,13 @@ const Settings: FC<SettingsProps> = ({
   const [activeSection, setActiveSection] = useState('cloud');
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [pendingData, setPendingData] = useState<any>(null);
-  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
+  const [pendingData, setPendingData] = useState<any>(null); // Legacy removed
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set()); // Legacy removed
+
   const [restoreData, setRestoreData] = useState<any>(null);
-  const [restoreOptions, setRestoreOptions] = useState({
-    projects: true,
-    dispatch: true,
-    customers: true,
-    vendors: true,
-    teamMembers: true,
-    inventory: true,
-    attendance: true,
-    payroll: true,
-    leads: true
-  });
+  const [restoreOptions, setRestoreOptions] = useState<Record<string, boolean>>({});
+  const [selectedItemsMap, setSelectedItemsMap] = useState<Record<string, Set<string>>>({});
+  const [selectionCategory, setSelectionCategory] = useState<string | null>(null);
 
   const [importMode, setImportMode] = useState<'overwrite' | 'merge'>('merge');
   const isReadOnly = user.role === 'Guest';
@@ -295,22 +288,27 @@ const Settings: FC<SettingsProps> = ({
                                   const jsonStr = event.target?.result as string;
                                   const parsed = JSON.parse(jsonStr);
 
-                                  // Smart Detection Logic
-                                  // 1. Check if it's a full backup (has multiple known keys)
-                                  const keys = Object.keys(parsed);
-                                  const knownKeys = ['projects', 'customers', 'teamMembers', 'inventory', 'vendors'];
-                                  const matchCount = knownKeys.filter(k => keys.includes(k)).length;
+                                  // Initialize restore options and selected items map
+                                  const initialOptions: any = {};
+                                  const initialSelection: Record<string, Set<string>> = {};
 
-                                  if (matchCount >= 2) {
-                                    // It's likely a full backup
+                                  // Define all known categories
+                                  const possibleKeys = ['projects', 'customers', 'vendors', 'teamMembers', 'inventory', 'attendance', 'payroll', 'leads', 'approvalRequests', 'approvalTemplates', 'locations', 'purchaseOrders'];
+
+                                  possibleKeys.forEach(key => {
+                                    if (parsed[key] && Array.isArray(parsed[key]) && parsed[key].length > 0) {
+                                      initialOptions[key] = true;
+                                      initialSelection[key] = new Set(parsed[key].map((item: any) => item.id));
+                                    }
+                                  });
+
+                                  if (Object.keys(initialOptions).length > 0) {
+                                    setRestoreOptions(initialOptions);
+                                    setSelectedItemsMap(initialSelection);
                                     setRestoreData(parsed);
-                                  } else if (parsed.projects && Array.isArray(parsed.projects) && parsed.projects.length > 0) {
-                                    // It's mainly projects
-                                    setPendingData(parsed);
-                                    setSelectedProjectIds(new Set(parsed.projects.map((p: any) => p.id)));
                                   } else {
-                                    // Fallback for simple imports
-                                    onImportData(jsonStr, importMode);
+                                    // Format not recognized or empty
+                                    alert('備份檔案格式不符或內容為空');
                                   }
                                 } catch (err) {
                                   alert('檔案解析失敗：請確認上傳的是有效的 .json 備份檔');
@@ -342,6 +340,17 @@ const Settings: FC<SettingsProps> = ({
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.projects} onChange={(e) => setRestoreOptions({ ...restoreOptions, projects: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">專案 ({restoreData.projects.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectedProjectIds(new Set(restoreData.projects.map((p: any) => p.id)));
+                                      setImportMode('merge'); // Force merge mode for safety when selecting specific items
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.customers && (
@@ -600,11 +609,11 @@ const Settings: FC<SettingsProps> = ({
                     disabled={selectedProjectIds.size === 0}
                     onClick={() => {
                       const filteredData = {
-                        ...pendingData,
                         projects: pendingData.projects.filter((p: any) => selectedProjectIds.has(p.id))
                       };
-                      onImportData(filteredData, importMode);
+                      onImportData(filteredData, 'merge'); // Always merge when doing granular restore
                       setPendingData(null);
+                      alert(`✅ 已成功復原 ${selectedProjectIds.size} 個專案`);
                     }}
                     className="bg-orange-600 text-white px-10 py-4 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-orange-100 hover:bg-orange-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center gap-3"
                   >

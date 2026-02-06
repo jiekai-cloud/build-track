@@ -7,7 +7,7 @@ import {
   Layers, Camera, HardHat, CheckCircle, ShieldCheck, Edit2, Wrench, ClipboardList, Construction, FileImage, Zap, Lock, ChevronDown,
   ChevronLeft, ChevronRight, Plus, Minus, ZoomOut, AlertTriangle, Wallet, Users
 } from 'lucide-react';
-import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage } from '../types';
+import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage, Quotation } from '../types';
 import { suggestProjectSchedule, searchNearbyResources, analyzeProjectFinancials, parseScheduleFromImage, generatePreConstructionPrep, scanReceipt, analyzeQuotationItems, analyzeSitePhoto, refineSiteNotes } from '../services/geminiService';
 import GanttChart from './GanttChart';
 import MapLocation from './MapLocation';
@@ -46,6 +46,8 @@ interface ProjectDetailProps {
   onUpdatePayments: (payments: PaymentStage[]) => void;
   onUpdateContractUrl: (url: string) => void;
   onUpdateDefectRecords: (records: any[]) => void;
+  onNavigateToQuotation: (projectId: string, quotationId?: string) => void;
+  quotations: Quotation[];
 }
 
 const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
@@ -54,10 +56,10 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
     onUpdateTasks, onUpdateProgress, onUpdateStatus, onAddComment, onDeleteComment,
     onUpdateExpenses, onUpdateWorkAssignments, onUpdateFiles, onUpdatePhases,
     onAddDailyLog, onDeleteDailyLog, onUpdateChecklist, onUpdatePayments, onUpdateContractUrl,
-    onUpdateDefectRecords
+    onUpdateDefectRecords, onNavigateToQuotation, quotations
   } = props;
   const [newComment, setNewComment] = useState('');
-  const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep' | 'defects'>('logs');
+  const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep' | 'defects' | 'quotations'>('logs');
   const [selectedImage, setSelectedImage] = useState<ProjectFile | null>(null);
   const [isReportMode, setIsReportMode] = useState(false);
   const [isCompletionReportMode, setIsCompletionReportMode] = useState(false);
@@ -634,7 +636,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
             { id: 'prep', label: '施工前準備', icon: Construction },
             { id: 'map', label: '案場定位', icon: Navigation },
             { id: 'photos', label: '照片庫', icon: ImageIcon },
-            { id: 'defects', label: '缺失改善', icon: AlertTriangle }
+            { id: 'defects', label: '缺失改善', icon: AlertTriangle },
+            { id: 'quotations', label: '報價單', icon: Receipt }
           ].map(item => (
             <button
               key={item.id}
@@ -649,6 +652,58 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
 
       {/* 視圖內容區 */}
       <div className="flex-1 lg:min-h-0 flex flex-col p-4 sm:p-6 lg:overflow-hidden">
+        {activeView === 'quotations' && (
+          <div className="animate-in fade-in space-y-6 h-full overflow-y-auto p-1">
+            <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
+              <div>
+                <h3 className="text-xl font-black text-stone-900">專案報價單</h3>
+                <p className="text-sm text-stone-500 font-bold">管理此專案的所有報價紀錄</p>
+              </div>
+              {!isReadOnly && (
+                <button
+                  onClick={() => onNavigateToQuotation(project.id)}
+                  className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 rounded-2xl font-black text-xs hover:bg-stone-800 transition-colors shadow-lg shadow-stone-200 active:scale-95"
+                >
+                  <Plus size={16} /> 新增報價單
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {quotations.filter(q => q.projectId === project.id || q.convertedProjectId === project.id).map(q => (
+                <div key={q.id} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group relative cursor-pointer" onClick={() => onNavigateToQuotation(project.id, q.id)}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="bg-stone-100 text-stone-600 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider w-fit">{q.quotationNumber}</span>
+                      <span className="text-[10px] text-stone-400 font-bold">v{q.version} • {q.createdAt ? q.createdAt.split('T')[0] : '無日期'}</span>
+                    </div>
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${q.status === 'approved' ? 'bg-emerald-100 text-emerald-600' :
+                        q.status === 'rejected' ? 'bg-rose-100 text-rose-600' :
+                          'bg-orange-100 text-orange-600'
+                      }`}>{q.status === 'approved' ? '已核准' : q.status === 'rejected' ? '已駁回' : q.status === 'sent' ? '已送出' : '草稿'}</span>
+                  </div>
+                  <h4 className="text-lg font-black text-stone-900 mb-4 line-clamp-2 min-h-[3.5rem]">{q.header.projectName}</h4>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-stone-100">
+                    <span className="text-xs font-black text-stone-400 uppercase tracking-widest">總金額</span>
+                    <span className="text-lg font-black text-stone-900 font-mono">${(q.options[q.selectedOptionIndex]?.summary.totalAmount || 0).toLocaleString()}</span>
+                  </div>
+
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Edit2 size={16} className="text-stone-400 hover:text-blue-600" />
+                  </div>
+                </div>
+              ))}
+              {quotations.filter(q => q.projectId === project.id || q.convertedProjectId === project.id).length === 0 && (
+                <div className="col-span-full py-20 flex flex-col items-center justify-center text-stone-300 gap-4 opacity-50 border-2 border-dashed border-stone-200 rounded-[2rem] bg-stone-50/50">
+                  <Receipt size={48} />
+                  <p className="text-xs font-black uppercase tracking-widest">尚無報價單</p>
+                  {!isReadOnly && <p className="text-[10px] font-bold">點擊右上角按鈕建立第一張報價單</p>}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {activeView === 'inspection' && (
           <div className="space-y-6 animate-in fade-in">
             {project.inspectionData ? (

@@ -148,6 +148,7 @@ const App: React.FC = () => {
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [aiApiKey, setAiApiKey] = useState(localStorage.getItem('GEMINI_API_KEY') || '');
+  const [quotationSystemParams, setQuotationSystemParams] = useState<{ projectId?: string; quotationId?: string } | null>(null);
   const [isMasterTab, setIsMasterTab] = useState(false);
   const tabId = useMemo(() => Math.random().toString(36).substring(7), []);
 
@@ -1648,7 +1649,14 @@ const App: React.FC = () => {
               onUpdatePreConstruction={(prep) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, preConstruction: prep, updatedAt: new Date().toISOString() } : p))}
               onUpdateContractUrl={(url) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, contractUrl: url, updatedAt: new Date().toISOString() } : p))}
               onUpdateDefectRecords={(records) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, defectRecords: records, updatedAt: new Date().toISOString() } : p))}
+              onDeleteDefectRecord={(recordId) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, defectRecords: p.defectRecords?.filter(r => r.id !== recordId), updatedAt: new Date().toISOString() } : p))}
               onLossClick={() => handleUpdateStatus(selectedProjectId!, ProjectStatus.LOST)}
+              quotations={quotations}
+              onNavigateToQuotation={(projectId, quotationId) => {
+                setSelectedProjectId(null); // Exit project detail
+                setQuotationSystemParams({ projectId, quotationId }); // Set context
+                setActiveTab('quotations'); // Switch tab
+              }}
             />
           ) : (
             <div className="p-4 lg:p-8 animate-in fade-in duration-500">
@@ -1703,6 +1711,8 @@ const App: React.FC = () => {
                       addActivityLog('刪除了報價單', q.header.projectName, id, 'system');
                     }
                   }}
+                  initialProjectId={quotationSystemParams?.projectId}
+                  initialQuotationId={quotationSystemParams?.quotationId}
                 />
               )}
               {activeTab === 'dashboard' && !isCloudConnected && user.role !== 'Guest' && (

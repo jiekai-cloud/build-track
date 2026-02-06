@@ -15,6 +15,7 @@ interface QuotationEditorProps {
     customers: Customer[];
     projects: Project[];
     user: any;
+    defaultProjectId?: string;
 }
 
 const EmptyItem: QuotationItem = {
@@ -57,7 +58,8 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     initialData,
     customers,
     projects,
-    user
+    user,
+    defaultProjectId
 }) => {
     const [formData, setFormData] = useState<Quotation | null>(null);
     const [activeOptionIndex, setActiveOptionIndex] = useState(0);
@@ -176,10 +178,20 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
+                // Apply Default Project ID if provided
+                if (defaultProjectId) {
+                    newQuotation.projectId = defaultProjectId;
+                    const proj = projects.find(p => p.id === defaultProjectId);
+                    if (proj) {
+                        newQuotation.header.projectName = proj.name; // Also pre-fill project name
+                        newQuotation.header.to = proj.client; // And client name
+                    }
+                }
+
                 setFormData(newQuotation);
             }
         }
-    }, [isOpen, initialData, user]);
+    }, [isOpen, initialData, user, defaultProjectId, projects]);
 
     // 自動計算金額
     useEffect(() => {
