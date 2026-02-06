@@ -608,10 +608,27 @@ const Settings: FC<SettingsProps> = ({
                   <button
                     disabled={selectedProjectIds.size === 0}
                     onClick={() => {
-                      const filteredData = {
-                        projects: pendingData.projects.filter((p: any) => selectedProjectIds.has(p.id))
-                      };
-                      onImportData(filteredData, 'merge'); // Always merge when doing granular restore
+                      // Force Merge Strategy:
+                      // Construct a new project list where selected backup items FORCEFULLY replace existing ones,
+                      // regardless of timestamps. This is critical for restoration.
+                      const backupProjects = pendingData.projects.filter((p: any) => selectedProjectIds.has(p.id));
+
+                      // 1. Create a map of current projects
+                      const finalProjectMap = new Map();
+                      projects.forEach(p => finalProjectMap.set(p.id, p));
+
+                      // 2. Force overwrite with backup projects
+                      backupProjects.forEach((bp: any) => {
+                        finalProjectMap.set(bp.id, bp);
+                      });
+
+                      // 3. Convert back to array
+                      const mergedProjects = Array.from(finalProjectMap.values());
+
+                      // 4. Send as 'overwrite' to ensure state is updated exactly as we prepared
+                      const overwriteData = { projects: mergedProjects };
+
+                      onImportData(overwriteData, 'overwrite');
                       setPendingData(null);
                       alert(`✅ 已成功復原 ${selectedProjectIds.size} 個專案`);
                     }}
