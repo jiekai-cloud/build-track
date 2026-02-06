@@ -2109,7 +2109,20 @@ const App: React.FC = () => {
               const tombstone = { ...originalProject, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
 
               // 2. 建立新 ID 的案件，繼承原有關聯資料
-              const newProject = { ...originalProject, ...data, id: finalId, statusChangedAt, updatedAt: new Date().toISOString() };
+              let determinedYear = data.year;
+              // 若 Year 未指定，嘗試從 ID 解析
+              if (!determinedYear) {
+                const yearMatch = finalId.match(/(20\d{2})/) || finalId.match(/^[A-Za-z]+(\d{2})/);
+                if (yearMatch) {
+                  determinedYear = yearMatch[1].length === 2 ? `20${yearMatch[1]}` : yearMatch[1];
+                }
+              }
+              // 若仍未指定，使用StartDate年份
+              if (!determinedYear && data.startDate) {
+                determinedYear = data.startDate.split('-')[0];
+              }
+
+              const newProject = { ...originalProject, ...data, id: finalId, year: determinedYear, statusChangedAt, updatedAt: new Date().toISOString() };
 
               // 3. 回傳新陣列：原地替換舊案為 Tombstone (或保留)，並加入新案
               // 為了列表穩定性，我們將舊案標記刪除，並將新案加入
