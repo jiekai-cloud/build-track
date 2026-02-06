@@ -1,4 +1,4 @@
-import React, { useMemo, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useMemo, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Project, TeamMember, AttendanceRecord, ProjectStatus, User } from '../types';
 import { Briefcase, Calendar, Plus, Search, Filter, ArrowUpRight, TrendingUp, DollarSign, Users, AlertTriangle, Wallet, LayoutGrid, List, FileSpreadsheet, RotateCcw, XCircle, Pencil, Trash2 } from 'lucide-react';
 
@@ -416,6 +416,14 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [yearFilter, setYearFilter] = useState<string>('2026'); // Updated default to 2026
+
+  // Auto-switch to 'all' years when viewing trash to prevent "hiding" deleted items
+  useEffect(() => {
+    if (showDeleted) {
+      setYearFilter('all');
+    }
+  }, [showDeleted]);
+
   // Removed custom sortConfig as Ag-Grid handles it internally
 
   const projectsWithFinancials = useMemo<ProjectWithFinancials[]>(() => {
