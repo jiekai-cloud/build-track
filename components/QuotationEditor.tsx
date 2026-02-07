@@ -159,7 +159,36 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
-                setFormData(JSON.parse(JSON.stringify(initialData)));
+                const quotationData = JSON.parse(JSON.stringify(initialData));
+
+                // If quotation has projectId but missing projectName or projectAddress,
+                // auto-fill from project data
+                if (quotationData.projectId && projects) {
+                    const linkedProject = projects.find(p => p.id === quotationData.projectId);
+                    if (linkedProject) {
+                        // Auto-fill projectName if missing
+                        if (!quotationData.header.projectName) {
+                            quotationData.header.projectName = linkedProject.name;
+                        }
+
+                        // Auto-fill client if missing
+                        if (!quotationData.header.to) {
+                            quotationData.header.to = linkedProject.client;
+                        }
+
+                        // Auto-fill projectAddress if missing
+                        if (!quotationData.header.projectAddress && linkedProject.location) {
+                            const addr = typeof linkedProject.location === 'object' && linkedProject.location.address
+                                ? linkedProject.location.address
+                                : (typeof linkedProject.location === 'string' ? linkedProject.location : '');
+                            if (addr) {
+                                quotationData.header.projectAddress = addr;
+                            }
+                        }
+                    }
+                }
+
+                setFormData(quotationData);
             } else {
                 // 建立新報價單預設值
                 // Init with independent ID first, or defaultProject's ID if present
