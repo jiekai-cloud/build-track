@@ -16,6 +16,7 @@ interface QuotationEditorProps {
     projects: Project[];
     user: any;
     defaultProjectId?: string;
+    quotations: Quotation[];
 }
 
 const EmptyItem: QuotationItem = {
@@ -59,7 +60,8 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     customers,
     projects,
     user,
-    defaultProjectId
+    defaultProjectId,
+    quotations
 }) => {
     const [formData, setFormData] = useState<Quotation | null>(null);
     const [activeOptionIndex, setActiveOptionIndex] = useState(0);
