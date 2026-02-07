@@ -671,7 +671,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quotations.filter(q => q.projectId === project.id || q.convertedProjectId === project.id).map(q => (
+              {quotations.filter(q => !q.deletedAt && (q.projectId === project.id || q.convertedProjectId === project.id)).map(q => (
                 <div key={q.id} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group relative cursor-pointer" onClick={() => onNavigateToQuotation(project.id, q.id)}>
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col gap-1">
@@ -711,7 +711,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                   </div>
                 </div>
               ))}
-              {quotations.filter(q => q.projectId === project.id || q.convertedProjectId === project.id).length === 0 && (
+              {quotations.filter(q => !q.deletedAt && (q.projectId === project.id || q.convertedProjectId === project.id)).length === 0 && (
                 <div className="col-span-full py-20 flex flex-col items-center justify-center text-stone-300 gap-4 opacity-50 border-2 border-dashed border-stone-200 rounded-[2rem] bg-stone-50/50">
                   <Receipt size={48} />
                   <p className="text-xs font-black uppercase tracking-widest">尚無報價單</p>
