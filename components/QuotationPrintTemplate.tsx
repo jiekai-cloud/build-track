@@ -26,7 +26,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
     return (
         // 外層容器：固定 A4寬度 (210mm approx 794px at 96dpi, but for high res we simplify)
         // 我們使用一個足夠寬的容器，透過 scale 來調整 PDF
-        <div ref={ref} className="bg-white text-black p-10 font-sans" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto' }}>
+        <div ref={ref} className="bg-white text-black p-12 font-sans" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', paddingBottom: '80px' }}>
 
             {/* 1. Header: 公司抬頭 */}
             <div className="text-center mb-8">
@@ -164,7 +164,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
             </div>
 
             {/* 6. 條款與備註 */}
-            <div className="border-t-2 border-stone-200 pt-6">
+            <div className="border-t-2 border-stone-200 pt-6 mt-8">
                 <h4 className="font-bold mb-3 text-sm uppercase tracking-wide text-stone-500">Terms & Conditions 條款與備註</h4>
                 <div className="text-xs space-y-2 text-stone-700">
                     {quotation.terms?.workSchedule && (
@@ -178,6 +178,21 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                     )}
                     {quotation.terms?.warrantyYears && (
                         <div className="flex gap-2"><span className="font-bold min-w-20">保固年限:</span><span>{quotation.terms.warrantyYears} 年</span></div>
+                    )}
+
+                    {/* 其他備註 */}
+                    {quotation.terms?.otherNotes && quotation.terms.otherNotes.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                            <div className="font-bold">備註</div>
+                            <div className="pl-4 space-y-1.5">
+                                {quotation.terms.otherNotes.map((note, index) => (
+                                    <div key={index} className="flex gap-2">
+                                        <span className="font-bold min-w-6">{index + 1}</span>
+                                        <span>{note}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
                     {/* 銀行帳號 */}
@@ -205,13 +220,13 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
             )}
 
-            {/* 頁尾 */}
-            <div className="mt-12 text-center text-xs text-stone-500 space-y-1">
+            {/* 頁尾 - 增加上邊距確保不會與內容太近 */}
+            <div className="mt-16 text-center text-xs text-stone-500 space-y-1">
                 <p className="mb-4">感謝您選擇台灣生活品質發展股份有限公司，期待為您服務。</p>
                 <div className="border-t border-stone-200 w-full mb-2"></div>
                 <p>台北: 111 台北市士林區中山北路五段500號7樓</p>
                 <p>新北: 235 新北市中和區景平路71號之7號2樓本號</p>
-                <p>統編: 60618756  |  Tel: 02-2242-1955  |  Fax: 02-2242-1905  |  Email: service@tqldc.com.tw</p>
+                <p className="bg-stone-800 text-white py-1 px-2 inline-block mt-2 rounded">統編: 60618756 | Tel: 02-2242-1955 | Fax: 02-2242-1905 | Email: service@tqldc.com.tw</p>
             </div>
 
         </div>
