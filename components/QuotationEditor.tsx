@@ -518,13 +518,62 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-stone-600">工程名稱</label>
-                            <input
-                                type="text"
-                                value={formData.header.projectName}
-                                onChange={(e) => updateHeader('projectName', e.target.value)}
-                                className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                                placeholder="輸入工程名稱"
-                            />
+                            {projects && projects.length > 0 ? (
+                                <div className="space-y-2">
+                                    <select
+                                        value={formData.projectId || ''}
+                                        onChange={(e) => {
+                                            const selectedProjectId = e.target.value;
+                                            if (selectedProjectId === 'custom') {
+                                                // Clear project ID to allow manual input
+                                                setFormData(prev => prev ? { ...prev, projectId: undefined } : null);
+                                            } else if (selectedProjectId) {
+                                                const selectedProject = projects.find(p => p.id === selectedProjectId);
+                                                if (selectedProject) {
+                                                    setFormData(prev => prev ? {
+                                                        ...prev,
+                                                        projectId: selectedProject.id,
+                                                        header: {
+                                                            ...prev.header,
+                                                            projectName: selectedProject.name,
+                                                            to: selectedProject.client,
+                                                            projectAddress: typeof selectedProject.location === 'object' && selectedProject.location.address
+                                                                ? selectedProject.location.address
+                                                                : (typeof selectedProject.location === 'string' ? selectedProject.location : prev.header.projectAddress)
+                                                        }
+                                                    } : null);
+                                                }
+                                            }
+                                        }}
+                                        className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+                                    >
+                                        <option value="">-- 選擇既有專案 --</option>
+                                        {projects.filter(p => !p.deletedAt).map(project => (
+                                            <option key={project.id} value={project.id}>
+                                                {project.id} - {project.name}
+                                            </option>
+                                        ))}
+                                        <option value="custom">✏️ 手動輸入工程名稱</option>
+                                    </select>
+                                    {!formData.projectId && (
+                                        <input
+                                            type="text"
+                                            value={formData.header.projectName}
+                                            onChange={(e) => updateHeader('projectName', e.target.value)}
+                                            className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                            placeholder="輸入自訂工程名稱"
+                                        />
+                                    )}
+                                </div>
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={formData.header.projectName}
+                                    onChange={(e) => updateHeader('projectName', e.target.value)}
+                                    className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                    placeholder="輸入工程名稱"
+                                />
+                            )}
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-stone-600">報價日期</label>
