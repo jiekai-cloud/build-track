@@ -7,6 +7,7 @@ import { QUOTATION_PRESETS as STATIC_PRESETS, createQuotationFromPreset, Quotati
 import { useQuotationPresets } from '../hooks/useQuotationPresets';
 import { findQuotationItems } from '../services/geminiService';
 import { generateQuotationNumber } from '../utils/quotationIdGenerator';
+import { STANDARD_NOTES, getCategories } from '../data/standardNotes';
 
 interface QuotationEditorProps {
     isOpen: boolean;
@@ -70,6 +71,7 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     // Standard Item Selector State
     const [showItemSelector, setShowItemSelector] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false); // Template Selector State
+    const [showNoteSelector, setShowNoteSelector] = useState(false); // Note Selector State
     const [selectedStandardItems, setSelectedStandardItems] = useState<StandardItem[]>([]);
     const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
 
@@ -776,14 +778,73 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-stone-500">其他備註</label>
-                                    <textarea
-                                        value={formData.terms?.otherNotes?.[0] || ''}
-                                        onChange={(e) => setFormData({ ...formData, terms: { ...formData.terms, otherNotes: [e.target.value] } })}
-                                        className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm resize-none h-20"
-                                        placeholder="輸入其他備註事項..."
-                                    />
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-stone-500">其他備註</label>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowNoteSelector(true)}
+                                                className="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1"
+                                            >
+                                                <Database size={14} />
+                                                從標準庫選擇
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newNote = prompt('請輸入自訂備註：');
+                                                    if (newNote?.trim()) {
+                                                        const currentNotes = formData.terms?.otherNotes || [];
+                                                        setFormData({
+                                                            ...formData,
+                                                            terms: {
+                                                                ...formData.terms,
+                                                                otherNotes: [...currentNotes, newNote.trim()]
+                                                            }
+                                                        });
+                                                    }
+                                                }}
+                                                className="px-3 py-1 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1"
+                                            >
+                                                <Plus size={14} />
+                                                自訂備註
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {formData.terms?.otherNotes && formData.terms.otherNotes.length > 0 ? (
+                                        <div className="space-y-2 max-h-60 overflow-y-auto border border-stone-200 rounded-lg p-3 bg-stone-50">
+                                            {formData.terms.otherNotes.map((note, index) => (
+                                                <div key={index} className="flex items-start gap-2 bg-white p-3 rounded-lg border border-stone-200">
+                                                    <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                                        {index + 1}
+                                                    </span>
+                                                    <p className="flex-1 text-sm text-stone-700">{note}</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newNotes = formData.terms?.otherNotes?.filter((_, i) => i !== index) || [];
+                                                            setFormData({
+                                                                ...formData,
+                                                                terms: {
+                                                                    ...formData.terms,
+                                                                    otherNotes: newNotes.length > 0 ? newNotes : undefined
+                                                                }
+                                                            });
+                                                        }}
+                                                        className="flex-shrink-0 p-1 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                        title="刪除"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 border-2 border-dashed border-stone-200 rounded-lg text-stone-400 text-xs">
+                                            點擊上方按鈕添加備註
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1124,6 +1185,103 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
 
                             <div className="p-4 border-t border-stone-200 bg-stone-50 text-center text-sm text-stone-500">
                                 選擇範本將會新增一個新的報價方案
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Standard Notes Selector Modal */}
+            {
+                showNoteSelector && (
+                    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
+                            <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-gradient-to-r from-blue-600 to-blue-700">
+                                <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                    <Database className="text-white" />
+                                    選擇標準備註
+                                </h3>
+                                <button
+                                    onClick={() => setShowNoteSelector(false)}
+                                    className="p-2 hover:bg-white/20 rounded-lg transition-colors text-white"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="space-y-6">
+                                    {getCategories().map(category => {
+                                        const notes = STANDARD_NOTES.filter(n => n.category === category);
+                                        return (
+                                            <div key={category} className="space-y-3">
+                                                <h4 className="text-sm font-bold text-stone-700 bg-stone-100 px-3 py-2 rounded-lg">
+                                                    {category}
+                                                </h4>
+                                                <div className="space-y-2 pl-4">
+                                                    {notes.map(note => {
+                                                        const isSelected = formData.terms?.otherNotes?.includes(note.content) || false;
+                                                        return (
+                                                            <button
+                                                                key={note.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const currentNotes = formData.terms?.otherNotes || [];
+                                                                    if (isSelected) {
+                                                                        // Remove
+                                                                        const newNotes = currentNotes.filter(n => n !== note.content);
+                                                                        setFormData({
+                                                                            ...formData,
+                                                                            terms: {
+                                                                                ...formData.terms,
+                                                                                otherNotes: newNotes.length > 0 ? newNotes : undefined
+                                                                            }
+                                                                        });
+                                                                    } else {
+                                                                        // Add
+                                                                        setFormData({
+                                                                            ...formData,
+                                                                            terms: {
+                                                                                ...formData.terms,
+                                                                                otherNotes: [...currentNotes, note.content]
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                className={`w-full text-left p-3 rounded-lg border-2 transition-all hover:shadow-md ${isSelected
+                                                                    ? 'border-blue-500 bg-blue-50'
+                                                                    : 'border-stone-200 bg-white hover:border-blue-300'
+                                                                    }`}
+                                                            >
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 ${isSelected
+                                                                        ? 'border-blue-500 bg-blue-500'
+                                                                        : 'border-stone-300'
+                                                                        }`}>
+                                                                        {isSelected && <Check size={14} className="text-white" />}
+                                                                    </div>
+                                                                    <p className="flex-1 text-sm text-stone-700">{note.content}</p>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-stone-200 bg-stone-50 flex justify-between items-center">
+                                <div className="text-stone-600 font-medium">
+                                    已選擇 <span className="font-bold text-blue-600">{formData.terms?.otherNotes?.length || 0}</span> 條備註
+                                </div>
+                                <button
+                                    onClick={() => setShowNoteSelector(false)}
+                                    className="px-6 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
+                                >
+                                    完成
+                                </button>
                             </div>
                         </div>
                     </div>
