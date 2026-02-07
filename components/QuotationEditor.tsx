@@ -526,13 +526,24 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                             const selectedProjectId = e.target.value;
                                             if (selectedProjectId === 'custom') {
                                                 // Clear project ID to allow manual input
-                                                setFormData(prev => prev ? { ...prev, projectId: undefined } : null);
+                                                // Regenerate quotation number without project ID
+                                                const newIndependentId = generateQuotationNumber(undefined, quotations);
+                                                setFormData(prev => prev ? {
+                                                    ...prev,
+                                                    projectId: undefined,
+                                                    quotationNumber: newIndependentId,
+                                                    id: newIndependentId
+                                                } : null);
                                             } else if (selectedProjectId) {
                                                 const selectedProject = projects.find(p => p.id === selectedProjectId);
                                                 if (selectedProject) {
+                                                    // Generate new quotation number based on selected project
+                                                    const newQuotationNumber = generateQuotationNumber(selectedProject.id, quotations);
                                                     setFormData(prev => prev ? {
                                                         ...prev,
                                                         projectId: selectedProject.id,
+                                                        quotationNumber: newQuotationNumber,
+                                                        id: newQuotationNumber,
                                                         header: {
                                                             ...prev.header,
                                                             projectName: selectedProject.name,
