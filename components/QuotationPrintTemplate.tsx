@@ -226,7 +226,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 <div className="border-t border-stone-200 w-full mb-2"></div>
                 <p>台北: 111 台北市士林區中山北路五段500號7樓</p>
                 <p>新北: 235 新北市中和區景平路71號之7號2樓本號</p>
-                <p className="bg-stone-800 text-white py-1 px-2 inline-block mt-2 rounded">統編: 60618756 | Tel: 02-2242-1955 | Fax: 02-2242-1905 | Email: service@tqldc.com.tw</p>
+                <p>統編: 60618756 | Tel: 02-2242-1955 | Fax: 02-2242-1905 | Email: service@tqldc.com.tw</p>
             </div>
 
         </div>
