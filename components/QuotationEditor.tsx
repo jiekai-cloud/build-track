@@ -609,6 +609,16 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                             )}
                         </div>
                         <div className="space-y-2">
+                            <label className="text-sm font-bold text-stone-600">工程地址</label>
+                            <input
+                                type="text"
+                                value={formData.header.projectAddress || ''}
+                                onChange={(e) => updateHeader('projectAddress', e.target.value)}
+                                className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                placeholder="輸入工程地址"
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <label className="text-sm font-bold text-stone-600">報價日期</label>
                             <input
                                 type="date"
