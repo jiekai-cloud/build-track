@@ -426,7 +426,27 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                             <FileText className="text-orange-600" />
                             {initialData ? '編輯報價單' : '新增報價單'}
                         </h2>
-                        <p className="text-sm text-stone-500 mt-1">單號: {formData.quotationNumber}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                            <p className="text-sm text-stone-500">單號: {formData.quotationNumber}</p>
+                            {/* Check if quotation number format doesn't match project binding */}
+                            {formData.projectId && !formData.quotationNumber.startsWith(formData.projectId) && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const newNumber = generateQuotationNumber(formData.projectId, quotations);
+                                        setFormData({
+                                            ...formData,
+                                            quotationNumber: newNumber,
+                                            id: newNumber
+                                        });
+                                    }}
+                                    className="px-2 py-1 text-xs bg-amber-100 text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-200 transition-colors flex items-center gap-1"
+                                    title="報價單號格式與專案不符，點擊重新生成"
+                                >
+                                    ⚠️ 編號格式錯誤 - 點擊修正
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="flex gap-3">
                         <button
