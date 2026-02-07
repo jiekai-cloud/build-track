@@ -13,7 +13,7 @@ interface QuotationSystemProps {
     projects: Project[];
     user: any;
     onAddQuotation?: (quotation: Quotation) => void;
-    onUpdateQuotation?: (quotation: Quotation) => void;
+    onUpdateQuotation?: (quotation: Quotation, originalId?: string) => void;
     onDeleteQuotation?: (quotationId: string) => void;
     initialProjectId?: string;
     initialQuotationId?: string;
@@ -432,8 +432,12 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 }}
                 onSave={(newQuotation) => {
                     if (selectedQuotation && !isCopyMode) {
-                        // Update
-                        if (onUpdateQuotation) onUpdateQuotation(newQuotation);
+                        // Update - use the original ID to find the quotation
+                        // This allows the quotation number (id) to be changed
+                        if (onUpdateQuotation) {
+                            // Pass both the updated quotation and the original ID
+                            onUpdateQuotation(newQuotation, selectedQuotation.id);
+                        }
                     } else {
                         // Create (or Copy)
                         if (onAddQuotation) onAddQuotation(newQuotation);

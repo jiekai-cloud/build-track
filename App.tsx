@@ -1708,8 +1708,11 @@ const App: React.FC = () => {
                     setQuotations(prev => [q, ...prev]);
                     addActivityLog('建立了報價單', q.header.projectName, q.id, 'system');
                   }}
-                  onUpdateQuotation={(q) => {
-                    setQuotations(prev => prev.map(item => item.id === q.id ? q : item));
+                  onUpdateQuotation={(q, originalId) => {
+                    // Use originalId if provided (for when quotation number changes)
+                    // Otherwise fall back to q.id for backwards compatibility
+                    const idToMatch = originalId || q.id;
+                    setQuotations(prev => prev.map(item => item.id === idToMatch ? q : item));
                     addActivityLog('更新了報價單', q.header.projectName, q.id, 'system');
                   }}
                   onDeleteQuotation={(id) => {
