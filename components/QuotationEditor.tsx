@@ -6,6 +6,7 @@ import { STANDARD_QUOTATION_ITEMS, StandardItem } from '../data/standardItems';
 import { QUOTATION_PRESETS as STATIC_PRESETS, createQuotationFromPreset, QuotationPreset } from '../data/quotationPresets';
 import { useQuotationPresets } from '../hooks/useQuotationPresets';
 import { findQuotationItems } from '../services/geminiService';
+import { generateQuotationNumber } from '../utils/quotationIdGenerator';
 
 interface QuotationEditorProps {
     isOpen: boolean;
