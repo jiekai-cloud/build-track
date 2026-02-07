@@ -1657,6 +1657,13 @@ const App: React.FC = () => {
                 setQuotationSystemParams({ projectId, quotationId }); // Set context
                 setActiveTab('quotations'); // Switch tab
               }}
+              onDeleteQuotation={(id) => {
+                const q = quotations.find(item => item.id === id);
+                if (q) {
+                  addActivityLog('刪除報價單', q.quotationNumber, id, 'quotation');
+                  setQuotations(prev => prev.map(item => item.id === id ? { ...item, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : item));
+                }
+              }}
             />
           ) : (
             <div className="p-4 lg:p-8 animate-in fade-in duration-500">

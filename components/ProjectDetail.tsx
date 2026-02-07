@@ -48,6 +48,7 @@ interface ProjectDetailProps {
   onUpdateDefectRecords: (records: any[]) => void;
   onNavigateToQuotation: (projectId: string, quotationId?: string) => void;
   quotations: Quotation[];
+  onDeleteQuotation?: (id: string) => void;
 }
 
 const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
@@ -56,7 +57,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
     onUpdateTasks, onUpdateProgress, onUpdateStatus, onAddComment, onDeleteComment,
     onUpdateExpenses, onUpdateWorkAssignments, onUpdateFiles, onUpdatePhases,
     onAddDailyLog, onDeleteDailyLog, onUpdateChecklist, onUpdatePayments, onUpdateContractUrl,
-    onUpdateDefectRecords, onNavigateToQuotation, quotations
+    onUpdateDefectRecords, onNavigateToQuotation, quotations, onDeleteQuotation
   } = props;
   const [newComment, setNewComment] = useState('');
   const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep' | 'defects' | 'quotations'>('logs');
@@ -678,8 +679,8 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                       <span className="text-[10px] text-stone-400 font-bold">v{q.version} • {q.createdAt ? q.createdAt.split('T')[0] : '無日期'}</span>
                     </div>
                     <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${q.status === 'approved' ? 'bg-emerald-100 text-emerald-600' :
-                        q.status === 'rejected' ? 'bg-rose-100 text-rose-600' :
-                          'bg-orange-100 text-orange-600'
+                      q.status === 'rejected' ? 'bg-rose-100 text-rose-600' :
+                        'bg-orange-100 text-orange-600'
                       }`}>{q.status === 'approved' ? '已核准' : q.status === 'rejected' ? '已駁回' : q.status === 'sent' ? '已送出' : '草稿'}</span>
                   </div>
                   <h4 className="text-lg font-black text-stone-900 mb-4 line-clamp-2 min-h-[3.5rem]">{q.header.projectName}</h4>
@@ -689,8 +690,24 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                     <span className="text-lg font-black text-stone-900 font-mono">${(q.options[q.selectedOptionIndex]?.summary.totalAmount || 0).toLocaleString()}</span>
                   </div>
 
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Edit2 size={16} className="text-stone-400 hover:text-blue-600" />
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    {!isReadOnly && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`確定要刪除報價單 ${q.quotationNumber} 嗎？此動作無法復原。`)) {
+                            onDeleteQuotation?.(q.id);
+                          }
+                        }}
+                        className="p-1 hover:bg-red-50 text-stone-400 hover:text-red-600 rounded-lg transition-colors"
+                        title="刪除"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                    <div className="p-1 text-stone-400 hover:text-blue-600">
+                      <Edit2 size={16} />
+                    </div>
                   </div>
                 </div>
               ))}
