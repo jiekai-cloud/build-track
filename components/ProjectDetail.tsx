@@ -690,7 +690,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
                     <span className="text-lg font-black text-stone-900 font-mono">${(q.options[q.selectedOptionIndex]?.summary.totalAmount || 0).toLocaleString()}</span>
                   </div>
 
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                  <div className="absolute top-4 right-4 flex gap-2 bg-white/80 backdrop-blur-sm rounded-lg p-1 shadow-sm">
                     {!isReadOnly && (
                       <button
                         onClick={(e) => {
