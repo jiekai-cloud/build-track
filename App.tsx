@@ -1395,9 +1395,10 @@ const App: React.FC = () => {
       projects: projects.filter(filterByDept),
       customers: customers.filter(filterByDept),
       teamMembers: teamMembers.filter(filterTeamMembers), // 使用特殊過濾邏輯
-      vendors: vendors.filter(filterByDept)
+      vendors: vendors.filter(filterByDept),
+      quotations: quotations.filter(filterByDept)
     };
-  }, [projects, customers, teamMembers, vendors, viewingDeptId]);
+  }, [projects, customers, teamMembers, vendors, quotations, viewingDeptId, showDeleted]);
 
   if (isInitializing) {
     return (
