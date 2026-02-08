@@ -23,7 +23,16 @@ const loadFont = async (url: string): Promise<string> => {
 // 中文字型支援
 const setupChinese = async (doc: jsPDF) => {
     try {
+        console.log('[PDF] Loading Chinese font from /fonts/NotoSansTC-Regular.ttf...');
+
         const fontBase64 = await loadFont('/fonts/NotoSansTC-Regular.ttf');
+
+        if (!fontBase64) {
+            console.error('[PDF] Font base64 is empty');
+            return false;
+        }
+
+        console.log(`[PDF] Font loaded successfully, base64 length: ${fontBase64.length}`);
 
         // Add font to VFS
         doc.addFileToVFS('NotoSansTC-Regular.ttf', fontBase64);
@@ -32,12 +41,26 @@ const setupChinese = async (doc: jsPDF) => {
         doc.addFont('NotoSansTC-Regular.ttf', 'NotoSansTC', 'normal');
         doc.addFont('NotoSansTC-Regular.ttf', 'NotoSansTC', 'bold');
 
+        // Set as default font
         doc.setFont('NotoSansTC');
+
+        // Verify font is set correctly
+        const currentFont = doc.getFont();
+        console.log('[PDF] Current font after setup:', currentFont);
+
+        if (currentFont.fontName !== 'NotoSansTC') {
+            console.error('[PDF] Font not set correctly. Current font:', currentFont.fontName);
+            return false;
+        }
+
+        console.log('[PDF] Font setup completed successfully');
         return true;
     } catch (error) {
-        console.error('Failed to load Chinese font:', error);
-        // Fallback
-        doc.setFont('helvetica');
+        console.error('[PDF] Failed to load Chinese font:', error);
+        console.error('[PDF] Error details:', {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+        });
         return false;
     }
 };
@@ -96,8 +119,21 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
         format: 'a4'
     });
 
-    // Setup Chinese font
-    await setupChinese(doc);
+    // Setup Chinese font - MUST succeed or throw error
+    const fontLoaded = await setupChinese(doc);
+    if (!fontLoaded) {
+        throw new Error(
+            '無法載入中文字體，PDF 生成失敗。\n\n' +
+            '可能原因：\n' +
+            '1. 字體檔案不存在或損壞\n' +
+            '2. 網路連線問題\n' +
+            '3. 瀏覽器快取問題\n\n' +
+            '建議：\n' +
+            '- 重新整理頁面 (Ctrl/Cmd + Shift + R)\n' +
+            '- 清除瀏覽器快取\n' +
+            '- 檢查網路連線'
+        );
+    }
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
