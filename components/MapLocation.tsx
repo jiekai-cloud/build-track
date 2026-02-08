@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Search, Loader2, HardHat, Store, Hammer, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, Search, Loader2, HardHat, Store, Hammer, ExternalLink, Key, X } from 'lucide-react';
 import { searchNearbyResources } from '../services/geminiService';
 
 interface MapLocationProps {
@@ -14,6 +14,20 @@ const MapLocation: React.FC<MapLocationProps> = ({ address, lat = 25.0330, lng =
     const [nearbyResources, setNearbyResources] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [activeResourceType, setActiveResourceType] = useState<string | null>(null);
+    const [apiKey, setApiKey] = useState<string>('');
+    const [showKeySetup, setShowKeySetup] = useState(false);
+
+    useEffect(() => {
+        // Priority: localStorage > environment variable
+        const storedKey = localStorage.getItem('GOOGLE_MAPS_API_KEY');
+        const envKey = (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY) || process.env.GOOGLE_MAPS_API_KEY;
+
+        if (storedKey && storedKey !== 'undefined') {
+            setApiKey(storedKey);
+        } else if (envKey && envKey !== 'undefined') {
+            setApiKey(envKey);
+        }
+    }, []);
 
     const handleSearchResources = async (type: string) => {
         setIsSearching(true);
@@ -30,15 +44,24 @@ const MapLocation: React.FC<MapLocationProps> = ({ address, lat = 25.0330, lng =
         }
     };
 
+    const handleSaveApiKey = () => {
+        const key = prompt('請輸入您的 Google Maps API 金鑰：\n\n取得方式：\n1. 前往 https://console.cloud.google.com/\n2. 啟用 Maps JavaScript API\n3. 建立 API 金鑰並設定限制');
+
+        if (key && key.trim()) {
+            localStorage.setItem('GOOGLE_MAPS_API_KEY', key.trim());
+            setApiKey(key.trim());
+            setShowKeySetup(false);
+        }
+    };
+
+    const handleRemoveApiKey = () => {
+        if (confirm('確定要移除 Google Maps API 金鑰嗎？')) {
+            localStorage.removeItem('GOOGLE_MAPS_API_KEY');
+            setApiKey('');
+        }
+    };
+
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-
-    // Get API key from environment variable only (never hardcode API keys!)
-    const apiKey = (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY) || process.env.GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-        console.error('Google Maps API key is not configured');
-        return <div className="p-4 text-red-600">Google Maps API 金鑰未設定，請在環境變數中配置 VITE_GOOGLE_MAPS_API_KEY</div>;
-    }
     const hasApiKey = apiKey && apiKey !== 'undefined' && apiKey !== '' && apiKey !== 'PLACEHOLDER';
 
     return (
@@ -56,13 +79,23 @@ const MapLocation: React.FC<MapLocationProps> = ({ address, lat = 25.0330, lng =
                         allowFullScreen
                     ></iframe>
                 ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-stone-50">
-                        <div className="w-16 h-16 bg-stone-200 rounded-2xl flex items-center justify-center text-stone-400 mb-4">
-                            <MapPin size={32} />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-stone-50 to-stone-100">
+                        <div className="w-20 h-20 bg-stone-200 rounded-3xl flex items-center justify-center text-stone-400 mb-6 shadow-inner">
+                            <MapPin size={40} />
                         </div>
-                        <h4 className="text-sm font-black text-stone-600 uppercase tracking-widest">Google Maps 未就緒</h4>
-                        <p className="text-[10px] font-bold text-stone-400 mt-2 max-w-[240px] leading-relaxed">
-                            請在系統設定中配置您的 Google Maps API 金鑰以啟動案場定位與街景預覽功能。
+                        <h4 className="text-base font-black text-stone-700 uppercase tracking-widest mb-2">Google Maps 未設定</h4>
+                        <p className="text-xs font-medium text-stone-500 max-w-sm leading-relaxed mb-6">
+                            請設定 Google Maps API 金鑰以啟用地圖顯示、街景預覽和周邊資源搜尋功能
+                        </p>
+                        <button
+                            onClick={handleSaveApiKey}
+                            className="flex items-center gap-2 px-6 py-3 bg-stone-900 text-white rounded-2xl hover:bg-stone-800 transition-all shadow-lg hover:shadow-xl active:scale-95"
+                        >
+                            <Key size={18} />
+                            <span className="text-sm font-bold tracking-wide">設定 API 金鑰</span>
+                        </button>
+                        <p className="text-[10px] text-stone-400 mt-4 max-w-xs">
+                            金鑰將安全地儲存在您的瀏覽器中，不會上傳到任何伺服器
                         </p>
                     </div>
                 )}
@@ -75,6 +108,16 @@ const MapLocation: React.FC<MapLocationProps> = ({ address, lat = 25.0330, lng =
                         </div>
                         <p className="text-[10px] font-bold text-stone-500">{address}</p>
                     </div>
+
+                    {hasApiKey && (
+                        <button
+                            onClick={handleRemoveApiKey}
+                            className="bg-red-500/90 backdrop-blur-md text-white p-3 rounded-2xl shadow-lg hover:bg-red-600 transition-all pointer-events-auto group"
+                            title="移除 API 金鑰"
+                        >
+                            <X size={16} className="group-hover:rotate-90 transition-transform" />
+                        </button>
+                    )}
                 </div>
 
                 <a
