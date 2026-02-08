@@ -46,6 +46,14 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
             <div className="w-full">
                 {/* 1. Header: 公司抬頭 */}
                 <div className="text-center mb-4 break-inside-avoid">
+                    <div className="flex justify-center mb-2">
+                        <img
+                            src={`${import.meta.env.BASE_URL}pwa-icon.png`}
+                            alt="Company Logo"
+                            className="h-16 w-auto object-contain"
+                            onError={(e) => e.currentTarget.style.display = 'none'}
+                        />
+                    </div>
                     <h1 className="text-3xl font-black text-stone-900 tracking-wide mb-1">台灣生活品質發展股份有限公司</h1>
                     <h2 className="text-xs font-bold text-stone-400 uppercase tracking-[0.35em] mb-3 border-b border-stone-100 pb-3 mx-auto w-fit">
                         Taiwan Quality of Life Development Co., Ltd.
