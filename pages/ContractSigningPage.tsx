@@ -157,16 +157,16 @@ const ContractSigningPage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-stone-100 pb-20">
+        <div className="min-h-screen bg-stone-100 pb-32">
             {/* Header / Info Bar */}
             <div className="bg-stone-900 text-white p-4 sticky top-0 z-10 shadow-md flex justify-between items-center">
                 <div className="text-sm font-medium">電子合約簽署系統</div>
                 <div className="text-xs text-stone-400">Quote ID: {quotation.quotationNumber}</div>
             </div>
 
-            <div className="container mx-auto py-8 px-4 flex justify-center">
+            <div className="container mx-auto py-8 px-4 flex justify-center mb-24">
                 {/* PDF Scale Wrapper - Mobile friendly scaling */}
-                <div className="w-full overflow-auto flex justify-center">
+                <div className="w-full flex justify-center">
                     <div className="scale-[0.6] sm:scale-[0.8] md:scale-100 origin-top shadow-xl">
                         <QuotationPrintTemplate ref={printRef} quotation={quotation} />
                     </div>
