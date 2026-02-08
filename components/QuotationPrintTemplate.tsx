@@ -224,7 +224,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
             {/* 頁尾 - 使用 mt-12 增加間距，並確保在最底部 */}
             <div className="mt-12 pt-6 border-t border-stone-100 text-center text-[10px] text-stone-400 space-y-1">
-                <p className="font-bold text-stone-500 mb-2 text-xs">感謝您選擇台灣生活品質發展股份有限公司，期待為您服務。</p>
+                <p className="font-bold text-stone-500 mb-2 text-xs">感謝您選擇台灣生活品質發展股份有限公司，期待為您服務。 (Ver. Updated)</p>
                 <div className="flex flex-col gap-0.5">
                     <p>台北: 111 台北市士林區中山北路五段500號7樓</p>
                     <p>新北: 235 新北市中和區景平路71號之7號2樓本號</p>
