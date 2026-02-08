@@ -137,7 +137,9 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let currentY = 15;
+    const topMargin = 15;  // Top margin for all pages
+    const headerHeight = 42; // Height reserved for header on continuation pages
+    let currentY = topMargin;
 
     // 選擇的方案
     const selectedOption = quotation.options?.[quotation.selectedOptionIndex];
@@ -301,7 +303,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
         // 檢查是否需要新頁面
         if (currentY > pageHeight - 60) {
             doc.addPage();
-            currentY = 15;
+            currentY = headerHeight;  // Leave space for header
         }
 
         // 分類標題
@@ -358,7 +360,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     // ===== 金額總計 =====
     if (currentY > pageHeight - 80) {
         doc.addPage();
-        currentY = 15;
+        currentY = headerHeight;  // Leave space for header
     }
 
     const summaryX = pageWidth - 80;
@@ -416,7 +418,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     if (quotation.terms) {
         if (currentY > pageHeight - 60) {
             doc.addPage();
-            currentY = 15;
+            currentY = headerHeight;  // Leave space for header
         }
 
         doc.setFontSize(11);
@@ -469,7 +471,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
         if (currentY > pageHeight - 40) {
             doc.addPage();
-            currentY = 15;
+            currentY = headerHeight;  // Leave space for header
         }
 
         doc.setFontSize(11);
