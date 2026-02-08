@@ -25,7 +25,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
     return (
         // 外層容器：使用 flex column 佈局，確保頁尾在內容較少時也能置底
-        <div ref={ref} className="bg-white text-black font-sans flex flex-col justify-between relative" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', padding: '48px', boxSizing: 'border-box' }}>
+        <div ref={ref} className="bg-white text-black font-sans flex flex-col justify-between relative" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', padding: '48px 48px 96px 48px', boxSizing: 'border-box' }}>
 
             {/* 主要內容區域 (會撐開高度) */}
             <div className="flex-grow">
