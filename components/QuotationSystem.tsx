@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { FileText, Plus, Search, Filter, Download, Eye, Edit2, Trash2, Copy, CheckCircle2, XCircle, Clock, Send, Pen, Link } from 'lucide-react';
 import { Quotation, QuotationItem, ItemCategory, Customer, Project } from '../types';
 import QuotationEditor from './QuotationEditor';
