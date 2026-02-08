@@ -2123,7 +2123,45 @@ const App: React.FC = () => {
 
             // 如果 ID 沒有變更，直接更新原物件
             if (finalId === editingProject.id) {
-              return prev.map(p => p.id === editingProject.id ? { ...p, ...data, statusChangedAt, updatedAt: new Date().toISOString() } : p);
+              const updatedProjects = prev.map(p => p.id === editingProject.id ? { ...p, ...data, statusChangedAt, updatedAt: new Date().toISOString() } : p);
+
+              // Sync quotations linked to this project
+              if (data.name !== originalProject.name || data.client !== originalProject.client) {
+                setQuotations(prevQuotations => prevQuotations.map(q => {
+                  if (q.projectId === editingProject.id || q.convertedProjectId === editingProject.id) {
+                    const updatedHeader = { ...q.header };
+
+                    // Update project name if changed
+                    if (data.name !== originalProject.name) {
+                      updatedHeader.projectName = data.name;
+                    }
+
+                    // Update client name if changed
+                    if (data.client !== originalProject.client) {
+                      updatedHeader.to = data.client;
+                    }
+
+                    // Update project address if changed
+                    if (data.location !== originalProject.location) {
+                      const addr = typeof data.location === 'object' && data.location.address
+                        ? data.location.address
+                        : (typeof data.location === 'string' ? data.location : '');
+                      if (addr) {
+                        updatedHeader.projectAddress = addr;
+                      }
+                    }
+
+                    return {
+                      ...q,
+                      header: updatedHeader,
+                      updatedAt: new Date().toISOString()
+                    };
+                  }
+                  return q;
+                }));
+              }
+
+              return updatedProjects;
             } else {
               // ID 有變更：執行「舊案刪除、新案建立」的邏輯 (Rename)
               // 1. 標記舊案為已刪除 (Tombstone)，讓雲端同步知道此 ID 已失效
@@ -2147,7 +2185,45 @@ const App: React.FC = () => {
 
               // 3. 回傳新陣列：原地替換舊案為 Tombstone (或保留)，並加入新案
               // 為了列表穩定性，我們將舊案標記刪除，並將新案加入
-              return [...prev.map(p => p.id === editingProject.id ? tombstone : p), newProject];
+              const updatedProjects = [...prev.map(p => p.id === editingProject.id ? tombstone : p), newProject];
+
+              // Sync quotations linked to this project
+              if (data.name !== originalProject.name || data.client !== originalProject.client) {
+                setQuotations(prevQuotations => prevQuotations.map(q => {
+                  if (q.projectId === editingProject.id || q.convertedProjectId === editingProject.id) {
+                    const updatedHeader = { ...q.header };
+
+                    // Update project name if changed
+                    if (data.name !== originalProject.name) {
+                      updatedHeader.projectName = data.name;
+                    }
+
+                    // Update client name if changed
+                    if (data.client !== originalProject.client) {
+                      updatedHeader.to = data.client;
+                    }
+
+                    // Update project address if changed
+                    if (data.location !== originalProject.location) {
+                      const addr = typeof data.location === 'object' && data.location.address
+                        ? data.location.address
+                        : (typeof data.location === 'string' ? data.location : '');
+                      if (addr) {
+                        updatedHeader.projectAddress = addr;
+                      }
+                    }
+
+                    return {
+                      ...q,
+                      header: updatedHeader,
+                      updatedAt: new Date().toISOString()
+                    };
+                  }
+                  return q;
+                }));
+              }
+
+              return updatedProjects;
             }
           });
         } else {
