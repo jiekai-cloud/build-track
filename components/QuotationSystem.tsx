@@ -63,13 +63,14 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
     // Effect to trigger browser print dialog
     useEffect(() => {
         if (isPrinting && printingQuotation) {
-            // 暫時清除標題以避免列印出網頁標題
+            // 設定 PDF 檔案名稱 (瀏覽器會使用網頁標題作為預設檔名)
+            // 若用戶已取消勾選「頁首頁尾」，此標題不會出現在列印紙張上
             const originalTitle = document.title;
-            document.title = ' ';
+            document.title = `${printingQuotation.quotationNumber} ${printingQuotation.header.projectName}`;
 
             const timer = setTimeout(() => {
                 // 提示用戶關閉瀏覽器的頁首頁尾
-                alert('【列印設定提醒】\n\n為確保報價單格式正確且無多餘資訊（如日期、網址）：\n請在列印視窗的設定中，取消勾選「頁首與頁尾 (Headers and footers)」。');
+                alert('【列印設定提醒】\n\n為確保報價單格式正確且無多餘資訊（如日期、網址）：\n請在列印視窗的設定中，取消勾選「頁首與頁尾 (Headers and footers)」。\n\n(提示：現在的預設檔名已設為報價單編號)');
                 window.print();
             }, 500); // Wait for React to render the print template
 
