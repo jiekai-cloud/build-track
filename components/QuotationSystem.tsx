@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FileText, Plus, Search, Filter, Download, Eye, Edit2, Trash2, Copy, CheckCircle2, XCircle, Clock, Send, Pen, Link } from 'lucide-react';
 import { Quotation, QuotationItem, ItemCategory, Customer, Project } from '../types';
 import QuotationEditor from './QuotationEditor';
@@ -436,29 +437,30 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 quotations={quotations}
             />
 
-            {/* Print Template Overlay */}
-            {isPrinting && printingQuotation && (
+            {/* Print Template Overlay - Using Portal to ensure proper print layout */}
+            {isPrinting && printingQuotation && createPortal(
                 <>
                     <style>
                         {`
                             @media print {
-                                body > *:not(#print-overlay) { display: none !important; }
-                                #print-overlay { display: block !important; position: absolute; top: 0; left: 0; width: 100%; z-index: 9999; background: white; }
+                                body > *:not(#print-overlay-container) { display: none !important; }
+                                #print-overlay-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 9999; background: white; }
                                 @page { size: A4; margin: 0mm; }
                             }
                             @media screen {
-                                #print-overlay { opacity: 0; pointer-events: none; position: fixed; top: 0; left: 0; z-index: -1; }
+                                #print-overlay-container { opacity: 0; pointer-events: none; position: fixed; top: 0; left: 0; z-index: -1; }
                             }
                         `}
                     </style>
-                    <div id="print-overlay">
+                    <div id="print-overlay-container">
                         <QuotationPrintTemplate
                             ref={printRef}
                             quotation={printingQuotation}
                             showOptionName={printingQuotation.showOptionName ?? showOptionNameInPdf}
                         />
                     </div>
-                </>
+                </>,
+                document.body
             )}
         </div>
     );
