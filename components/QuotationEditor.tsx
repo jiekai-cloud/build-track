@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, FileText, Save, Download, Calculator, ChevronDown, ChevronRight, Copy, Database, Check, Sparkles, Loader2, Bot, Mic, MicOff } from 'lucide-react';
+import { X, Plus, Trash2, FileText, Save, Download, Calculator, ChevronDown, ChevronUp, ChevronRight, Copy, Database, Check, Sparkles, Loader2, Bot, Mic, MicOff } from 'lucide-react';
 import { Quotation, QuotationItem, ItemCategory, QuotationOption, Customer, Project, QuotationSummary } from '../types';
 import { generateQuotationPDF } from '../services/quotationPdfService';
 import { STANDARD_QUOTATION_ITEMS, StandardItem } from '../data/standardItems';
@@ -879,6 +879,49 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                                         {index + 1}
                                                     </span>
                                                     <p className="flex-1 text-sm text-stone-700">{note}</p>
+
+                                                    {/* Reorder buttons */}
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <button
+                                                            type="button"
+                                                            disabled={index === 0}
+                                                            onClick={() => {
+                                                                const newNotes = [...(formData.terms?.otherNotes || [])];
+                                                                [newNotes[index - 1], newNotes[index]] = [newNotes[index], newNotes[index - 1]];
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    terms: {
+                                                                        ...formData.terms,
+                                                                        otherNotes: newNotes
+                                                                    }
+                                                                });
+                                                            }}
+                                                            className={`p-0.5 rounded transition-colors ${index === 0 ? 'text-stone-300 cursor-not-allowed' : 'text-stone-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                                            title="上移"
+                                                        >
+                                                            <ChevronUp size={14} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            disabled={index === (formData.terms?.otherNotes?.length || 0) - 1}
+                                                            onClick={() => {
+                                                                const newNotes = [...(formData.terms?.otherNotes || [])];
+                                                                [newNotes[index], newNotes[index + 1]] = [newNotes[index + 1], newNotes[index]];
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    terms: {
+                                                                        ...formData.terms,
+                                                                        otherNotes: newNotes
+                                                                    }
+                                                                });
+                                                            }}
+                                                            className={`p-0.5 rounded transition-colors ${index === (formData.terms?.otherNotes?.length || 0) - 1 ? 'text-stone-300 cursor-not-allowed' : 'text-stone-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                                            title="下移"
+                                                        >
+                                                            <ChevronDown size={14} />
+                                                        </button>
+                                                    </div>
+
                                                     <button
                                                         type="button"
                                                         onClick={() => {
