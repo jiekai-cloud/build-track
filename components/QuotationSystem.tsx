@@ -68,6 +68,8 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
             document.title = ' ';
 
             const timer = setTimeout(() => {
+                // 提示用戶關閉瀏覽器的頁首頁尾
+                alert('【列印設定提醒】\n\n為確保報價單格式正確且無多餘資訊（如日期、網址）：\n請在列印視窗的設定中，取消勾選「頁首與頁尾 (Headers and footers)」。');
                 window.print();
             }, 500); // Wait for React to render the print template
 
@@ -450,9 +452,9 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                         {`
                             @media print {
                                 body > *:not(#print-overlay-container) { display: none !important; }
-                                #print-overlay-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 9999; background: white; padding: 20mm 0mm; }
-                                /* 設定頁面邊距為 0 以隱藏瀏覽器預設頁首頁尾 (日期、標題、網址) */
-                                @page { size: A4; margin: 0mm; }
+                                #print-overlay-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 9999; background: white; padding: 0mm; }
+                                /* 設定頁面邊距，確保每一頁都有上下留白 */
+                                @page { size: A4; margin: 15mm 0mm; }
                             }
                             @media screen {
                                 #print-overlay-container { opacity: 0; pointer-events: none; position: fixed; top: 0; left: 0; z-index: -1; }
