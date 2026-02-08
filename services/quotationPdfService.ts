@@ -137,8 +137,10 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const topMargin = 15;  // Top margin for all pages
+    const topMargin = 15;  // Top margin: 1.5cm
+    const bottomMargin = 15;  // Bottom margin: 1.5cm  
     const headerHeight = 42; // Height reserved for header on continuation pages
+    const maxContentY = pageHeight - bottomMargin - 8; // Reserve space for footer (page number)
     let currentY = topMargin;
 
     // 選擇的方案
@@ -301,7 +303,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     // ===== 項目明細表格 =====
     selectedOption.categories.forEach((category, catIndex) => {
         // 檢查是否需要新頁面
-        if (currentY > pageHeight - 60) {
+        if (currentY > maxContentY) {
             doc.addPage();
             currentY = headerHeight;  // Leave space for header
         }
@@ -358,7 +360,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     });
 
     // ===== 金額總計 =====
-    if (currentY > pageHeight - 80) {
+    if (currentY > maxContentY) {
         doc.addPage();
         currentY = headerHeight;  // Leave space for header
     }
@@ -416,7 +418,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
     // ===== 條款與備註 =====
     if (quotation.terms) {
-        if (currentY > pageHeight - 60) {
+        if (currentY > maxContentY) {
             doc.addPage();
             currentY = headerHeight;  // Leave space for header
         }
@@ -469,7 +471,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     if (quotation.responsibles) {
         currentY += 8;
 
-        if (currentY > pageHeight - 40) {
+        if (currentY > maxContentY) {
             doc.addPage();
             currentY = headerHeight;  // Leave space for header
         }
@@ -500,29 +502,15 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
+        doc.setFontSize(9);
         doc.setFont('NotoSansTC', 'normal');
-        doc.setTextColor(128, 128, 128);
+        doc.setTextColor(100, 100, 100);
 
-        // 頁尾分隔線
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.1);
-        doc.line(15, pageHeight - 15, pageWidth - 15, pageHeight - 15);
-
-        // 公司聯絡資訊
-        const address1 = '台北: 111 台北市士林區中山北路五段500號7樓';
-        const address2 = '新北: 235 新北市中和區景平路71號之7號2樓本號';
-        const contactInfo = '統編: 60618756  |  Tel: 02-2242-1955  |  Fax: 02-2242-1905  |  Email: service@tqldc.com.tw';
-
-        doc.text(address1, pageWidth / 2, pageHeight - 13, { align: 'center' });
-        doc.text(address2, pageWidth / 2, pageHeight - 10, { align: 'center' });
-        doc.text(contactInfo, pageWidth / 2, pageHeight - 7, { align: 'center' });
-
-        // 頁碼
+        // 頁碼（在底部邊距區域內，距離底部6mm）
         doc.text(
-            `Page ${i} of ${totalPages}`,
+            `${i}`,
             pageWidth / 2,
-            pageHeight - 3,
+            pageHeight - 6,
             { align: 'center' }
         );
     }
