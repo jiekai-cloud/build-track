@@ -24,111 +24,131 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
     const selectedOption = quotation.options[quotation.selectedOptionIndex];
 
     return (
-        // 外層容器：使用 flex column 佈局，確保頁尾在內容較少時也能置底
-        <div ref={ref} className="bg-white text-black font-sans flex flex-col justify-between relative" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', padding: '48px 48px 96px 48px', boxSizing: 'border-box' }}>
+        // 外層容器：A4 尺寸 (210mm x 297mm)
+        // 使用 Flex Column 確保頁尾置底
+        // padding 設定為標準文件邊界 (約 25mm 上下, 20mm 左右)
+        <div
+            ref={ref}
+            className="bg-white text-stone-900 font-sans flex flex-col justify-between relative"
+            style={{
+                width: '210mm',
+                minHeight: '297mm',
+                margin: '0 auto',
+                padding: '25mm 20mm',
+                boxSizing: 'border-box'
+            }}
+        >
 
-            {/* 主要內容區域 (會撐開高度) */}
+            {/* 主要內容區域 */}
             <div className="flex-grow">
-                {/* 1. Header: 公司抬頭 */}
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-stone-900 mb-1">台灣生活品質發展股份有限公司</h1>
-                    <h2 className="text-sm font-bold text-stone-500 tracking-[0.2em] mb-4">Taiwan Quality of Life Development Co., Ltd.</h2>
-                    <h2 className="text-xl font-bold uppercase border-b-2 border-stone-800 inline-block pb-1">Quotation 報 價 單</h2>
+                {/* 1. Header: 公司抬頭 - 重新設計排版 */}
+                <div className="text-center mb-10">
+                    <h1 className="text-3xl font-black text-stone-900 tracking-wide mb-2">台灣生活品質發展股份有限公司</h1>
+                    <h2 className="text-xs font-bold text-stone-400 uppercase tracking-[0.35em] mb-6 border-b border-stone-100 pb-4 mx-auto w-fit">
+                        Taiwan Quality of Life Development Co., Ltd.
+                    </h2>
+                    <h2 className="text-2xl font-black uppercase text-stone-800 tracking-widest inline-block border-2 border-stone-900 px-6 py-1">
+                        QUOTATION 報 價 單
+                    </h2>
                 </div>
 
-                {/* 2. Info Block: 客戶與報價資訊 */}
-                <div className="flex justify-between mb-8 text-sm">
+                {/* 2. Info Block: 客戶與報價資訊 - 優化間距與對齊 */}
+                <div className="flex justify-between mb-10 text-sm leading-relaxed text-stone-700">
                     {/* 左側：客戶資訊 */}
-                    <div className="w-[55%] space-y-1">
-                        <div className="flex">
-                            <span className="font-bold min-w-20 whitespace-nowrap">TO (客戶):</span>
-                            <span className="font-medium">{quotation.header.to}</span>
+                    <div className="w-[58%] bg-stone-50 p-4 rounded-lg border border-stone-100">
+                        <div className="flex mb-1">
+                            <span className="font-bold min-w-20 text-stone-500">TO 客戶</span>
+                            <span className="font-bold text-lg text-stone-900 -mt-1">{quotation.header.to}</span>
                         </div>
                         {quotation.header.attn && (
-                            <div className="flex">
-                                <span className="font-bold min-w-20 whitespace-nowrap">ATTN (聯絡):</span>
-                                <span>{quotation.header.attn}</span>
+                            <div className="flex mb-1">
+                                <span className="font-bold min-w-20 text-stone-500">ATTN 聯絡</span>
+                                <span className="font-medium">{quotation.header.attn}</span>
                             </div>
                         )}
                         {quotation.header.tel && (
-                            <div className="flex">
-                                <span className="font-bold min-w-20 whitespace-nowrap">TEL (電話):</span>
+                            <div className="flex mb-1">
+                                <span className="font-bold min-w-20 text-stone-500">TEL 電話</span>
                                 <span>{quotation.header.tel}</span>
                             </div>
                         )}
-                        <div className="flex mt-2">
-                            <span className="font-bold min-w-20 whitespace-nowrap">專案:</span>
-                            <span className="font-medium">{quotation.header.projectName}</span>
+                        <hr className="my-2 border-stone-200" />
+                        <div className="flex mb-1">
+                            <span className="font-bold min-w-20 text-stone-500">PROJECT</span>
+                            <span className="font-bold text-stone-800">{quotation.header.projectName}</span>
                         </div>
                         <div className="flex">
-                            <span className="font-bold min-w-20 whitespace-nowrap">地址:</span>
-                            <span>{quotation.header.projectAddress}</span>
+                            <span className="font-bold min-w-20 text-stone-500">ADDR.</span>
+                            <span className="text-stone-600">{quotation.header.projectAddress}</span>
                         </div>
                     </div>
 
                     {/* 右側：單號資訊 */}
-                    <div className="w-[40%] space-y-1 text-right">
-                        <div className="flex justify-end gap-2">
-                            <span className="font-bold">Quote No.:</span>
-                            <span className="font-medium">{quotation.quotationNumber}</span>
+                    <div className="w-[38%] flex flex-col justify-center space-y-2">
+                        <div className="flex justify-between items-center border-b border-stone-200 pb-1">
+                            <span className="font-bold text-stone-500 text-xs uppercase">Quote No.</span>
+                            <span className="font-black text-xl text-stone-900 font-mono">{quotation.quotationNumber}</span>
                         </div>
-                        <div className="flex justify-end gap-2">
-                            <span className="font-bold">Date:</span>
-                            <span>{formatDate(quotation.header.quotationDate)}</span>
+                        <div className="flex justify-between items-center border-b border-stone-200 pb-1">
+                            <span className="font-bold text-stone-500 text-xs uppercase">Date</span>
+                            <span className="font-medium">{formatDate(quotation.header.quotationDate)}</span>
                         </div>
-                        <div className="flex justify-end gap-2">
-                            <span className="font-bold">Ver:</span>
-                            <span>v{quotation.version}</span>
+                        <div className="flex justify-between items-center border-b border-stone-200 pb-1">
+                            <span className="font-bold text-stone-500 text-xs uppercase">Version</span>
+                            <span className="badge bg-stone-100 text-stone-600 px-2 py-0.5 rounded text-xs font-bold">v{quotation.version}</span>
                         </div>
-                        <div className="flex justify-end gap-2 mt-2">
-                            <span className="font-bold">負責人:</span>
-                            <span>{quotation.createdByName}</span>
+                        <div className="flex justify-between items-center pt-1">
+                            <span className="font-bold text-stone-500 text-xs uppercase">Prepared By</span>
+                            <span className="font-bold text-stone-800">{quotation.createdByName}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* 3. 方案名稱 */}
-                <div className="mb-4">
-                    <h3 className="font-bold text-lg border-l-4 border-orange-500 pl-3">
-                        {selectedOption.name}
-                        {selectedOption.description && <span className="text-base font-normal text-stone-600 ml-2">- {selectedOption.description}</span>}
-                    </h3>
-                </div>
+                {selectedOption.name && (
+                    <div className="mb-6">
+                        <h3 className="font-bold text-lg text-stone-900 flex items-center gap-3">
+                            <span className="w-2 h-8 bg-orange-600 rounded-full block"></span>
+                            {selectedOption.name}
+                            {selectedOption.description && <span className="text-sm font-normal text-stone-500 mt-1">{selectedOption.description}</span>}
+                        </h3>
+                    </div>
+                )}
 
-                {/* 4. 報價明細表格 */}
-                <div className="mb-8">
+                {/* 4. 報價明細表格 - 優化框線與間距 */}
+                <div className="mb-8 overflow-hidden rounded-lg border border-stone-200">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="bg-stone-800 text-white text-sm">
-                                <th className="py-2 px-3 border border-stone-800 w-12 text-center">No.</th>
-                                <th className="py-2 px-3 border border-stone-800 text-left">Description 項目說明</th>
-                                <th className="py-2 px-3 border border-stone-800 w-16 text-center">Unit</th>
-                                <th className="py-2 px-3 border border-stone-800 w-16 text-right">Qty</th>
-                                <th className="py-2 px-3 border border-stone-800 w-28 text-right">Unit Price</th>
-                                <th className="py-2 px-3 border border-stone-800 w-28 text-right">Amount</th>
+                            <tr className="bg-stone-900 text-white text-sm">
+                                <th className="py-3 px-3 w-12 text-center font-bold">No.</th>
+                                <th className="py-3 px-3 text-left font-bold border-l border-stone-700">Description 項目說明</th>
+                                <th className="py-3 px-3 w-16 text-center font-bold border-l border-stone-700">Unit</th>
+                                <th className="py-3 px-3 w-16 text-right font-bold border-l border-stone-700">Qty</th>
+                                <th className="py-3 px-3 w-28 text-right font-bold border-l border-stone-700">Price</th>
+                                <th className="py-3 px-3 w-28 text-right font-bold border-l border-stone-700 bg-orange-600">Amount</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm">
                             {selectedOption.categories.map((category) => (
                                 <React.Fragment key={category.id}>
                                     {/* 分類標題行 */}
-                                    <tr className="bg-stone-100 font-bold">
-                                        <td colSpan={6} className="py-2 px-3 border border-stone-300 text-stone-800">
-                                            {category.code}、{category.name}
+                                    <tr className="bg-stone-100">
+                                        <td colSpan={6} className="py-2 px-4 text-stone-800 font-bold text-xs uppercase tracking-wider border-b border-stone-200">
+                                            {category.code} — {category.name}
                                         </td>
                                     </tr>
                                     {/* 項目行 */}
-                                    {category.items.map((item) => (
-                                        <tr key={item.id}>
-                                            <td className="py-2 px-3 border border-stone-300 text-center text-stone-500">{item.itemNumber}</td>
-                                            <td className="py-2 px-3 border border-stone-300">
-                                                <div className="font-medium text-stone-800">{item.name}</div>
-                                                {item.notes && <div className="text-xs text-stone-500 mt-0.5">{item.notes}</div>}
+                                    {category.items.map((item, idx) => (
+                                        <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}>
+                                            <td className="py-3 px-3 text-center text-stone-400 text-xs border-r border-stone-100">{item.itemNumber}</td>
+                                            <td className="py-3 px-3 border-r border-stone-100">
+                                                <div className="font-bold text-stone-800">{item.name}</div>
+                                                {item.notes && <div className="text-xs text-stone-500 mt-1 leading-relaxed">{item.notes}</div>}
                                             </td>
-                                            <td className="py-2 px-3 border border-stone-300 text-center">{item.unit}</td>
-                                            <td className="py-2 px-3 border border-stone-300 text-right">{item.quantity.toLocaleString()}</td>
-                                            <td className="py-2 px-3 border border-stone-300 text-right">{formatCurrency(item.unitPrice).replace('$', '')}</td>
-                                            <td className="py-2 px-3 border border-stone-300 text-right font-medium">{formatCurrency(item.amount).replace('$', '')}</td>
+                                            <td className="py-3 px-3 text-center text-stone-600 border-r border-stone-100">{item.unit}</td>
+                                            <td className="py-3 px-3 text-right text-stone-600 border-r border-stone-100 font-mono">{item.quantity.toLocaleString()}</td>
+                                            <td className="py-3 px-3 text-right text-stone-600 border-r border-stone-100 font-mono">{formatCurrency(item.unitPrice).replace('$', '')}</td>
+                                            <td className="py-3 px-3 text-right font-bold text-stone-900 font-mono bg-stone-50">{formatCurrency(item.amount).replace('$', '')}</td>
                                         </tr>
                                     ))}
                                 </React.Fragment>
@@ -138,97 +158,115 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
 
                 {/* 5. 金額總計區 (靠右) */}
-                <div className="flex justify-end mb-10">
-                    <div className="w-1/2 space-y-2 text-sm">
-                        <div className="flex justify-between border-b border-stone-200 pb-1">
-                            <span className="text-stone-600">Subtotal 項目小計</span>
-                            <span className="font-medium">{formatCurrency(selectedOption.summary.subtotal)}</span>
+                <div className="flex justify-end mb-12">
+                    <div className="w-[45%] bg-stone-50 p-6 rounded-xl border border-stone-100 leading-relaxed">
+                        <div className="flex justify-between text-stone-600 mb-2">
+                            <span>小計 Subtotal</span>
+                            <span className="font-mono">{formatCurrency(selectedOption.summary.subtotal)}</span>
                         </div>
-                        <div className="flex justify-between border-b border-stone-200 pb-1">
-                            <span className="text-stone-600">Management Fee 工安管理費 ({selectedOption.summary.managementFeeRate}%)</span>
-                            <span className="font-medium">{formatCurrency(selectedOption.summary.managementFee)}</span>
+                        <div className="flex justify-between text-stone-600 mb-2">
+                            <span>工安管理費 ({selectedOption.summary.managementFeeRate}%)</span>
+                            <span className="font-mono">{formatCurrency(selectedOption.summary.managementFee)}</span>
                         </div>
-                        <div className="flex justify-between font-bold pt-1">
-                            <span>Subtotal Before Tax 未稅金額</span>
-                            <span>{formatCurrency(selectedOption.summary.beforeTaxAmount)}</span>
+                        <div className="h-px bg-stone-200 my-2"></div>
+                        <div className="flex justify-between text-stone-800 font-bold mb-2">
+                            <span>未稅金額 Before Tax</span>
+                            <span className="font-mono">{formatCurrency(selectedOption.summary.beforeTaxAmount)}</span>
                         </div>
-                        <div className="flex justify-between border-b border-stone-200 pb-1">
-                            <span className="text-stone-600">Tax 營業稅 ({selectedOption.summary.taxRate}%)</span>
-                            <span className="font-medium">{formatCurrency(selectedOption.summary.tax)}</span>
+                        <div className="flex justify-between text-stone-600 mb-2">
+                            <span>稅金 Tax ({selectedOption.summary.taxRate}%)</span>
+                            <span className="font-mono">{formatCurrency(selectedOption.summary.tax)}</span>
                         </div>
-                        {/* 總計醒目顯示 */}
-                        <div className="flex justify-between border-t-2 border-stone-800 pt-2 mt-2 text-lg">
-                            <span className="font-bold">TOTAL AMOUNT 總計金額</span>
-                            <span className="font-black text-orange-600">{formatCurrency(selectedOption.summary.totalAmount)}</span>
+                        <div className="h-px bg-stone-300 my-3"></div>
+                        <div className="flex justify-between items-end">
+                            <span className="font-black text-stone-900 text-lg">總計 Total</span>
+                            <span className="font-black text-2xl text-orange-600 font-mono">{formatCurrency(selectedOption.summary.totalAmount)}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* 6. 條款與備註 */}
-                <div className="border-t-2 border-stone-200 pt-6 mt-8">
-                    <h4 className="font-bold mb-3 text-sm uppercase tracking-wide text-stone-500">Terms & Conditions 條款與備註</h4>
-                    <div className="text-xs space-y-2 text-stone-700">
-                        {quotation.terms?.workSchedule && (
-                            <div className="flex gap-2"><span className="font-bold min-w-20">工期說明:</span><span>{quotation.terms.workSchedule}</span></div>
-                        )}
-                        {quotation.terms?.paymentTerms && (
-                            <div className="flex gap-2"><span className="font-bold min-w-20">付款方式:</span><span>{quotation.terms.paymentTerms}</span></div>
-                        )}
-                        {quotation.terms?.validityPeriod && (
-                            <div className="flex gap-2"><span className="font-bold min-w-20">有效期限:</span><span>{quotation.terms.validityPeriod}</span></div>
-                        )}
-                        {quotation.terms?.warrantyYears && (
-                            <div className="flex gap-2"><span className="font-bold min-w-20">保固年限:</span><span>{quotation.terms.warrantyYears} 年</span></div>
-                        )}
+                {/* 6. 條款與備註 - 底部區域前 */}
+                <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-1 h-5 bg-stone-400"></div>
+                        <h4 className="font-bold text-sm uppercase tracking-wide text-stone-600">Terms & Notes</h4>
+                    </div>
 
-                        {/* 其他備註 */}
-                        {quotation.terms?.otherNotes && quotation.terms.otherNotes.length > 0 && (
-                            <div className="mt-4 space-y-2">
-                                <div className="font-bold">備註</div>
-                                <div className="pl-4 space-y-1.5">
-                                    {quotation.terms.otherNotes.map((note, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <span className="font-bold min-w-6">{index + 1}</span>
-                                            <span>{note}</span>
-                                        </div>
-                                    ))}
+                    <div className="grid grid-cols-2 gap-8 text-xs text-stone-600 border-t border-stone-200 pt-4">
+                        <div className="space-y-3">
+                            {quotation.terms?.workSchedule && (
+                                <div className="flex gap-2"><span className="font-bold text-stone-800 min-w-16">工期說明</span><span className="text-stone-700">{quotation.terms.workSchedule}</span></div>
+                            )}
+                            {quotation.terms?.paymentTerms && (
+                                <div className="flex gap-2"><span className="font-bold text-stone-800 min-w-16">付款方式</span><span className="text-stone-700">{quotation.terms.paymentTerms}</span></div>
+                            )}
+                            {quotation.terms?.validityPeriod && (
+                                <div className="flex gap-2"><span className="font-bold text-stone-800 min-w-16">有效期限</span><span className="text-stone-700">{quotation.terms.validityPeriod}</span></div>
+                            )}
+                            {quotation.terms?.warrantyYears && (
+                                <div className="flex gap-2"><span className="font-bold text-stone-800 min-w-16">保固年限</span><span className="text-stone-700">{quotation.terms.warrantyYears} 年</span></div>
+                            )}
+                        </div>
+
+                        <div className="bg-stone-50 p-4 rounded border border-stone-200">
+                            <div className="font-bold text-stone-800 mb-2 border-b border-stone-200 pb-2">匯款帳號資料 Bank Account Info</div>
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between"><span>銀行 Code</span><span className="font-medium text-stone-900">{quotation.terms?.bankAccount?.bankName || '玉山銀行(808) 士林分行'}</span></div>
+                                <div className="flex justify-between"><span>戶名 Name</span><span className="font-medium text-stone-900 text-right">{quotation.terms?.bankAccount?.accountName || '台灣生活品質發展股份有限公司'}</span></div>
+                                <div className="flex justify-between bg-white p-1 rounded border border-stone-100 mt-1">
+                                    <span className="font-bold">帳號 No.</span>
+                                    <span className="font-mono font-bold text-stone-900">{quotation.terms?.bankAccount?.accountNumber || '0657-940-151307'}</span>
                                 </div>
                             </div>
-                        )}
-
-                        {/* 銀行帳號 */}
-                        <div className="mt-4 p-3 bg-stone-50 rounded border border-stone-200 inline-block w-full">
-                            <div className="font-bold mb-1">匯款帳號資料 Bank Account Info:</div>
-                            <div className="flex flex-wrap gap-x-8 gap-y-1">
-                                <div>銀行: <span className="font-medium">{quotation.terms?.bankAccount?.bankName || '玉山銀行(808) 士林分行'}</span></div>
-                                <div>戶名: <span className="font-medium">{quotation.terms?.bankAccount?.accountName || '台灣生活品質發展股份有限公司'}</span></div>
-                                <div className="font-mono text-sm">帳號: {quotation.terms?.bankAccount?.accountNumber || '0657-940-151307'}</div>
-                            </div>
                         </div>
                     </div>
+
+                    {/* 其他備註 */}
+                    {quotation.terms?.otherNotes && quotation.terms.otherNotes.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-stone-100">
+                            <div className="font-bold text-stone-800 mb-2 text-xs">其他備註 Notes</div>
+                            <div className="grid grid-cols-1 gap-1">
+                                {quotation.terms.otherNotes.map((note, index) => (
+                                    <div key={index} className="flex gap-2 text-xs text-stone-600">
+                                        <span className="font-bold text-stone-400 min-w-4">{index + 1}.</span>
+                                        <span>{note}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* 客戶簽名區 (只有已簽署時顯示) */}
+                {/* 客戶簽名區 */}
                 {(quotation as any).signature && (
-                    <div className="mt-8 flex justify-end">
-                        <div className="w-64 border-b-2 border-stone-800 pb-2">
-                            <div className="text-sm font-bold mb-2">客戶簽名 Customer Signature:</div>
-                            <img src={(quotation as any).signature} alt="Client Signature" className="max-h-24 object-contain" />
-                            <div className="text-xs text-stone-500 mt-1 text-right">
-                                Signed on: {(quotation as any).signedAt ? new Date((quotation as any).signedAt).toLocaleString() : ''}
+                    <div className="mb-12 flex justify-end">
+                        <div className="w-1/3">
+                            <div className="border-b-2 border-stone-900 pb-2 mb-2">
+                                <img src={(quotation as any).signature} alt="Signature" className="h-16 object-contain" />
+                            </div>
+                            <div className="text-xs font-bold text-stone-900">客戶簽名 Confirmation</div>
+                            <div className="text-[10px] text-stone-400">
+                                Signed at: {new Date((quotation as any).signedAt).toLocaleString()}
                             </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* 頁尾 - 使用 mt-12 增加間距，並確保在最底部 */}
-            <div className="mt-12 pt-6 border-t border-stone-100 text-center text-[10px] text-stone-400 space-y-1">
-                <p className="font-bold text-stone-500 mb-2 text-xs">感謝您選擇台灣生活品質發展股份有限公司，期待為您服務。 (Ver. Updated)</p>
-                <div className="flex flex-col gap-0.5">
-                    <p>台北: 111 台北市士林區中山北路五段500號7樓</p>
-                    <p>新北: 235 新北市中和區景平路71號之7號2樓本號</p>
-                    <p>統編: 60618756 | Tel: 02-2242-1955 | Fax: 02-2242-1905 | Email: service@tqldc.com.tw</p>
+            {/* 頁尾 - 專業置底設計 */}
+            <div className="mt-8 border-t-4 border-orange-500 pt-4">
+                <div className="flex justify-between items-end text-[10px] text-stone-500 leading-relaxed">
+                    <div>
+                        <p className="font-bold text-stone-800 text-xs mb-1">台灣生活品質發展股份有限公司</p>
+                        <p>台北總部: 111 台北市士林區中山北路五段500號7樓</p>
+                        <p>新北分部: 235 新北市中和區景平路71號之7號2樓</p>
+                    </div>
+                    <div className="text-right">
+                        <p>統編: 60618756</p>
+                        <p>Tel: 02-2242-1955 | Fax: 02-2242-1905</p>
+                        <p>Email: service@tqldc.com.tw</p>
+                        <p className="mt-1 font-mono text-stone-300">Generated by TQLDC System</p>
+                    </div>
                 </div>
             </div>
 
