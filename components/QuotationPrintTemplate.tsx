@@ -3,6 +3,7 @@ import { Quotation, QuotationItem, ItemCategory, QuotationOption, QuotationSumma
 
 interface QuotationPrintTemplateProps {
     quotation: Quotation;
+    showOptionName?: boolean;
 }
 
 // 數字轉中文大寫金錢 (例如 1500 -> 壹仟伍佰元整)
@@ -20,7 +21,7 @@ const formatDate = (dateString: string) => {
 };
 
 // 使用 forwardRef 讓我們可以從父組件取得這個 DOM 元素
-const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplateProps>(({ quotation }, ref) => {
+const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplateProps>(({ quotation, showOptionName = true }, ref) => {
     const selectedOption = quotation.options[quotation.selectedOptionIndex];
 
     return (
@@ -34,7 +35,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 width: '210mm',
                 minHeight: '297mm',
                 margin: '0 auto',
-                padding: '25mm 20mm',
+                padding: '12mm 20mm 25mm 20mm',
                 boxSizing: 'border-box'
             }}
         >
@@ -42,9 +43,9 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
             {/* 主要內容區域 */}
             <div className="flex-grow">
                 {/* 1. Header: 公司抬頭 - 重新設計排版 */}
-                <div className="text-center mb-10">
+                <div className="text-center mb-5">
                     <h1 className="text-3xl font-black text-stone-900 tracking-wide mb-2">台灣生活品質發展股份有限公司</h1>
-                    <h2 className="text-xs font-bold text-stone-400 uppercase tracking-[0.35em] mb-6 border-b border-stone-100 pb-4 mx-auto w-fit">
+                    <h2 className="text-xs font-bold text-stone-400 uppercase tracking-[0.35em] mb-3 border-b border-stone-100 pb-4 mx-auto w-fit">
                         Taiwan Quality of Life Development Co., Ltd.
                     </h2>
                     <h2 className="text-2xl font-black uppercase text-stone-800 tracking-widest inline-block border-2 border-stone-900 px-6 py-1">
@@ -105,7 +106,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
 
                 {/* 3. 方案名稱 */}
-                {selectedOption.name && (
+                {showOptionName && selectedOption.name && (
                     <div className="mb-6">
                         <h3 className="font-bold text-lg text-stone-900 flex items-center gap-3">
                             <span className="w-2 h-8 bg-orange-600 rounded-full block"></span>
