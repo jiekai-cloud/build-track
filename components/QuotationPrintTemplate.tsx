@@ -37,7 +37,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 width: '210mm',
                 minHeight: '297mm',
                 margin: '0 auto',
-                padding: '10mm 15mm 20mm 15mm', // 上:10mm, 下:20mm
+                padding: '0mm 15mm', // 上下交由 @page margin 控制 (各 15mm)，左右保持內縮
                 boxSizing: 'border-box'
             }}
         >

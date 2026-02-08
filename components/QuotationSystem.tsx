@@ -445,7 +445,8 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                             @media print {
                                 body > *:not(#print-overlay-container) { display: none !important; }
                                 #print-overlay-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 9999; background: white; }
-                                @page { size: A4; margin: 0mm; }
+                                /* 設定頁面邊距，確保每一頁都有上下留白 */
+                                @page { size: A4; margin: 15mm 0mm; }
                             }
                             @media screen {
                                 #print-overlay-container { opacity: 0; pointer-events: none; position: fixed; top: 0; left: 0; z-index: -1; }
