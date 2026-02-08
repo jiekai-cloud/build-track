@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+assets
 
 # Environment variables (contains sensitive API keys)
 .env
