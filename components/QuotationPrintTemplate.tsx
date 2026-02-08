@@ -28,6 +28,9 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
         // 外層容器：A4 尺寸 (210mm x 297mm)
         // 使用 Flex Column 確保頁尾置底
         // padding 設定為標準文件邊界 (約 25mm 上下, 20mm 左右)
+        // 外層容器：A4 尺寸 (210mm x 297mm)
+        // 使用 Flex Column 確保頁尾置底
+        // padding 設定為標準文件邊界 (約 20mm) - 根據用戶反饋調整
         <div
             ref={ref}
             className="bg-white text-stone-900 font-sans flex flex-col justify-between relative"
@@ -35,26 +38,27 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 width: '210mm',
                 minHeight: '297mm',
                 margin: '0 auto',
-                padding: '12mm 20mm 25mm 20mm',
+                padding: '10mm 15mm 20mm 15mm', // 上:10mm, 下:20mm (給頁尾更多空間)
                 boxSizing: 'border-box'
             }}
         >
 
             {/* 主要內容區域 */}
             <div className="flex-grow">
-                {/* 1. Header: 公司抬頭 - 重新設計排版 */}
-                <div className="text-center mb-5">
-                    <h1 className="text-3xl font-black text-stone-900 tracking-wide mb-2">台灣生活品質發展股份有限公司</h1>
-                    <h2 className="text-xs font-bold text-stone-400 uppercase tracking-[0.35em] mb-3 border-b border-stone-100 pb-4 mx-auto w-fit">
+                {/* 1. Header: 公司抬頭 */}
+                <div className="text-center mb-4">
+                    <h1 className="text-3xl font-black text-stone-900 tracking-wide mb-1">台灣生活品質發展股份有限公司</h1>
+                    <h2 className="text-xs font-bold text-stone-400 uppercase tracking-[0.35em] mb-3 border-b border-stone-100 pb-3 mx-auto w-fit">
                         Taiwan Quality of Life Development Co., Ltd.
                     </h2>
-                    <h2 className="text-2xl font-black uppercase text-stone-800 tracking-widest inline-block border-2 border-stone-900 px-6 py-1">
+                    {/* 移除邊框 */}
+                    <h2 className="text-2xl font-black uppercase text-stone-800 tracking-widest inline-block px-6 py-1">
                         QUOTATION 報 價 單
                     </h2>
                 </div>
 
-                {/* 2. Info Block: 客戶與報價資訊 - 優化間距與對齊 */}
-                <div className="flex justify-between mb-10 text-sm leading-relaxed text-stone-700">
+                {/* 2. Info Block: 客戶與報價資訊 */}
+                <div className="flex justify-between mb-8 text-sm leading-relaxed text-stone-700">
                     {/* 左側：客戶資訊 */}
                     <div className="w-[58%] bg-stone-50 p-4 rounded-lg border border-stone-100">
                         <div className="flex mb-1">
@@ -94,10 +98,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                             <span className="font-bold text-stone-500 text-xs uppercase">Date</span>
                             <span className="font-medium">{formatDate(quotation.header.quotationDate)}</span>
                         </div>
-                        <div className="flex justify-between items-center border-b border-stone-200 pb-1">
-                            <span className="font-bold text-stone-500 text-xs uppercase">Version</span>
-                            <span className="badge bg-stone-100 text-stone-600 px-2 py-0.5 rounded text-xs font-bold">v{quotation.version}</span>
-                        </div>
+                        {/* 移除 Version 欄位 */}
                         <div className="flex justify-between items-center pt-1">
                             <span className="font-bold text-stone-500 text-xs uppercase">Prepared By</span>
                             <span className="font-bold text-stone-800">{quotation.createdByName}</span>
@@ -105,7 +106,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                     </div>
                 </div>
 
-                {/* 3. 方案名稱 */}
+                {/* 3. 方案名稱 (可開關) */}
                 {showOptionName && selectedOption.name && (
                     <div className="mb-6">
                         <h3 className="font-bold text-lg text-stone-900 flex items-center gap-3">
@@ -116,17 +117,17 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                     </div>
                 )}
 
-                {/* 4. 報價明細表格 - 優化框線與間距 */}
+                {/* 4. 報價明細表格 */}
                 <div className="mb-8 overflow-hidden rounded-lg border border-stone-200">
                     <table className="w-full border-collapse">
                         <thead>
                             <tr className="bg-stone-900 text-white text-sm">
-                                <th className="py-3 px-3 w-12 text-center font-bold">No.</th>
-                                <th className="py-3 px-3 text-left font-bold border-l border-stone-700">Description 項目說明</th>
-                                <th className="py-3 px-3 w-16 text-center font-bold border-l border-stone-700">Unit</th>
-                                <th className="py-3 px-3 w-16 text-right font-bold border-l border-stone-700">Qty</th>
-                                <th className="py-3 px-3 w-28 text-right font-bold border-l border-stone-700">Price</th>
-                                <th className="py-3 px-3 w-28 text-right font-bold border-l border-stone-700 bg-orange-600">Amount</th>
+                                <th className="py-2 px-3 w-12 text-center font-bold">No.</th>
+                                <th className="py-2 px-3 text-left font-bold border-l border-stone-700">Description 項目說明</th>
+                                <th className="py-2 px-3 w-16 text-center font-bold border-l border-stone-700">Unit</th>
+                                <th className="py-2 px-3 w-16 text-right font-bold border-l border-stone-700">Qty</th>
+                                <th className="py-2 px-3 w-28 text-right font-bold border-l border-stone-700">Price</th>
+                                <th className="py-2 px-3 w-28 text-right font-bold border-l border-stone-700 bg-orange-600">Amount</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm">
@@ -134,22 +135,22 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                                 <React.Fragment key={category.id}>
                                     {/* 分類標題行 */}
                                     <tr className="bg-stone-100">
-                                        <td colSpan={6} className="py-2 px-4 text-stone-800 font-bold text-xs uppercase tracking-wider border-b border-stone-200">
+                                        <td colSpan={6} className="py-1.5 px-4 text-stone-800 font-bold text-xs uppercase tracking-wider border-b border-stone-200">
                                             {category.code} — {category.name}
                                         </td>
                                     </tr>
                                     {/* 項目行 */}
                                     {category.items.map((item, idx) => (
                                         <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}>
-                                            <td className="py-3 px-3 text-center text-stone-400 text-xs border-r border-stone-100">{item.itemNumber}</td>
-                                            <td className="py-3 px-3 border-r border-stone-100">
+                                            <td className="py-2 px-3 text-center text-stone-400 text-xs border-r border-stone-100">{item.itemNumber}</td>
+                                            <td className="py-2 px-3 border-r border-stone-100">
                                                 <div className="font-bold text-stone-800">{item.name}</div>
                                                 {item.notes && <div className="text-xs text-stone-500 mt-1 leading-relaxed">{item.notes}</div>}
                                             </td>
-                                            <td className="py-3 px-3 text-center text-stone-600 border-r border-stone-100">{item.unit}</td>
-                                            <td className="py-3 px-3 text-right text-stone-600 border-r border-stone-100 font-mono">{item.quantity.toLocaleString()}</td>
-                                            <td className="py-3 px-3 text-right text-stone-600 border-r border-stone-100 font-mono">{formatCurrency(item.unitPrice).replace('$', '')}</td>
-                                            <td className="py-3 px-3 text-right font-bold text-stone-900 font-mono bg-stone-50">{formatCurrency(item.amount).replace('$', '')}</td>
+                                            <td className="py-2 px-3 text-center text-stone-600 border-r border-stone-100">{item.unit}</td>
+                                            <td className="py-2 px-3 text-right text-stone-600 border-r border-stone-100 font-mono">{item.quantity.toLocaleString()}</td>
+                                            <td className="py-2 px-3 text-right text-stone-600 border-r border-stone-100 font-mono">{formatCurrency(item.unitPrice).replace('$', '')}</td>
+                                            <td className="py-2 px-3 text-right font-bold text-stone-900 font-mono bg-stone-50">{formatCurrency(item.amount).replace('$', '')}</td>
                                         </tr>
                                     ))}
                                 </React.Fragment>
@@ -159,7 +160,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
 
                 {/* 5. 金額總計區 (靠右) */}
-                <div className="flex justify-end mb-12">
+                <div className="flex justify-end mb-8">
                     <div className="w-[45%] bg-stone-50 p-6 rounded-xl border border-stone-100 leading-relaxed">
                         <div className="flex justify-between text-stone-600 mb-2">
                             <span>小計 Subtotal</span>
@@ -186,15 +187,15 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                     </div>
                 </div>
 
-                {/* 6. 條款與備註 - 底部區域前 */}
-                <div className="mb-8">
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="w-1 h-5 bg-stone-400"></div>
-                        <h4 className="font-bold text-sm uppercase tracking-wide text-stone-600">Terms & Notes</h4>
+                {/* 6. 條款與備註 */}
+                <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="w-1 h-4 bg-stone-400"></div>
+                        <h4 className="font-bold text-xs uppercase tracking-wide text-stone-600">Terms & Notes</h4>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8 text-xs text-stone-600 border-t border-stone-200 pt-4">
-                        <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-8 text-xs text-stone-600 border-t border-stone-200 pt-3">
+                        <div className="space-y-2">
                             {quotation.terms?.workSchedule && (
                                 <div className="flex gap-2"><span className="font-bold text-stone-800 min-w-16">工期說明</span><span className="text-stone-700">{quotation.terms.workSchedule}</span></div>
                             )}
@@ -209,9 +210,9 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                             )}
                         </div>
 
-                        <div className="bg-stone-50 p-4 rounded border border-stone-200">
-                            <div className="font-bold text-stone-800 mb-2 border-b border-stone-200 pb-2">匯款帳號資料 Bank Account Info</div>
-                            <div className="space-y-1.5">
+                        <div className="bg-stone-50 p-3 rounded border border-stone-200">
+                            <div className="font-bold text-stone-800 mb-1 border-b border-stone-200 pb-1">匯款帳號資料 Bank Account Info</div>
+                            <div className="space-y-1">
                                 <div className="flex justify-between"><span>銀行 Code</span><span className="font-medium text-stone-900">{quotation.terms?.bankAccount?.bankName || '玉山銀行(808) 士林分行'}</span></div>
                                 <div className="flex justify-between"><span>戶名 Name</span><span className="font-medium text-stone-900 text-right">{quotation.terms?.bankAccount?.accountName || '台灣生活品質發展股份有限公司'}</span></div>
                                 <div className="flex justify-between bg-white p-1 rounded border border-stone-100 mt-1">
@@ -224,8 +225,8 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
                     {/* 其他備註 */}
                     {quotation.terms?.otherNotes && quotation.terms.otherNotes.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-stone-100">
-                            <div className="font-bold text-stone-800 mb-2 text-xs">其他備註 Notes</div>
+                        <div className="mt-3 pt-3 border-t border-stone-100">
+                            <div className="font-bold text-stone-800 mb-1 text-xs">其他備註 Notes</div>
                             <div className="grid grid-cols-1 gap-1">
                                 {quotation.terms.otherNotes.map((note, index) => (
                                     <div key={index} className="flex gap-2 text-xs text-stone-600">
@@ -238,24 +239,21 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                     )}
                 </div>
 
-                {/* 客戶簽名區 */}
+                {/* 客戶簽名區 (如果有) */}
                 {(quotation as any).signature && (
-                    <div className="mb-12 flex justify-end">
+                    <div className="mb-8 flex justify-end">
                         <div className="w-1/3">
                             <div className="border-b-2 border-stone-900 pb-2 mb-2">
                                 <img src={(quotation as any).signature} alt="Signature" className="h-16 object-contain" />
                             </div>
                             <div className="text-xs font-bold text-stone-900">客戶簽名 Confirmation</div>
-                            <div className="text-[10px] text-stone-400">
-                                Signed at: {new Date((quotation as any).signedAt).toLocaleString()}
-                            </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* 頁尾 - 專業置底設計 */}
-            <div className="mt-8 border-t-4 border-orange-500 pt-4">
+            {/* 頁尾 - 置底設計 */}
+            <div className="mt-auto border-t-4 border-orange-500 pt-3">
                 <div className="flex justify-between items-end text-[10px] text-stone-500 leading-relaxed">
                     <div>
                         <p className="font-bold text-stone-800 text-xs mb-1">台灣生活品質發展股份有限公司</p>
@@ -266,7 +264,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                         <p>統編: 60618756</p>
                         <p>Tel: 02-2242-1955 | Fax: 02-2242-1905</p>
                         <p>Email: service@tqldc.com.tw</p>
-                        <p className="mt-1 font-mono text-stone-300">Generated by TQLDC System</p>
+                        {/* <p className="mt-1 font-mono text-stone-300">Generated by TQLDC System</p> */}
                     </div>
                 </div>
             </div>
