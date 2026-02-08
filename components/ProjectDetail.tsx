@@ -627,7 +627,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
 
       {/* 導覽標籤列 */}
       <div className="px-0 sm:px-4 py-3 bg-white border-b border-stone-100 shrink-0 no-print relative">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar desktop-scrollbar touch-scroll pb-1 px-4 sm:px-0 flex-nowrap w-full">
+        <div className="flex gap-2 overflow-x-auto touch-scroll pb-1 px-4 sm:px-0 flex-nowrap w-full" style={{ scrollbarWidth: 'thin' }}>
           {[
             { id: 'logs', label: '討論區', icon: MessageSquare },
             { id: 'inspection', label: 'AI 會勘', icon: Sparkles },
