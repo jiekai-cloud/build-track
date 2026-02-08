@@ -38,7 +38,7 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
     const [isCopyMode, setIsCopyMode] = useState(false);
 
     // Deep Link Logic
-    React.useEffect(() => {
+    useEffect(() => {
         if (initialQuotationId) {
             const target = quotations.find(q => q.id === initialQuotationId);
             if (target) setSelectedQuotation(target);
@@ -49,58 +49,36 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
 
     // PDF Generation State
     const [printingQuotation, setPrintingQuotation] = useState<Quotation | null>(null);
+    const [isPrinting, setIsPrinting] = useState(false); // New state for printing
     const printRef = useRef<HTMLDivElement>(null);
+    const [showOptionNameInPdf, setShowOptionNameInPdf] = useState(true); // Assuming this state exists for a checkbox
 
     const handleDownloadPDF = async (quotation: Quotation) => {
-        // 1. Set the quotation to be printed (mounts the hidden template)
+        // Set the quotation to be printed and trigger the print effect
         setPrintingQuotation(quotation);
-
-        // Allow React to render by waiting a tick
-        setTimeout(async () => {
-            if (!printRef.current) return;
-
-            try {
-                // 2. Capture with html2canvas (High scale for better quality)
-                const canvas = await html2canvas(printRef.current, {
-                    scale: 2, // 2x resolution for crisp text
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#ffffff'
-                });
-
-                // 3. Generate PDF
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                const imgWidth = pdfWidth;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-                let heightLeft = imgHeight;
-                let position = 0;
-
-                // First page
-                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pdfHeight;
-
-                // Multi-page handling (Simple cut)
-                while (heightLeft > 0) {
-                    position = heightLeft - imgHeight;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pdfHeight;
-                }
-
-                pdf.save(`Quote_${quotation.quotationNumber}.pdf`);
-            } catch (error) {
-                console.error('PDF Generation failed', error);
-                alert('PDF 產生失敗，請稍後再試');
-            } finally {
-                // Cleanup
-                setPrintingQuotation(null);
-            }
-        }, 100);
+        setIsPrinting(true);
     };
+
+    // Effect to trigger browser print dialog
+    useEffect(() => {
+        if (isPrinting && printingQuotation) {
+            const timer = setTimeout(() => {
+                window.print();
+            }, 500); // Wait for React to render the print template
+
+            const handleAfterPrint = () => {
+                setIsPrinting(false);
+                setPrintingQuotation(null);
+            };
+
+            window.addEventListener('afterprint', handleAfterPrint);
+
+            return () => {
+                clearTimeout(timer);
+                window.removeEventListener('afterprint', handleAfterPrint);
+            };
+        }
+    }, [isPrinting, printingQuotation]);
 
 
 
@@ -458,12 +436,30 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                 quotations={quotations}
             />
 
-            {/* Hidden Print Container */}
-            <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
-                {printingQuotation && (
-                    <QuotationPrintTemplate ref={printRef} quotation={printingQuotation} />
-                )}
-            </div>
+            {/* Print Template Overlay */}
+            {isPrinting && printingQuotation && (
+                <>
+                    <style>
+                        {`
+                            @media print {
+                                body > *:not(#print-overlay) { display: none !important; }
+                                #print-overlay { display: block !important; position: absolute; top: 0; left: 0; width: 100%; z-index: 9999; background: white; }
+                                @page { size: A4; margin: 0mm; }
+                            }
+                            @media screen {
+                                #print-overlay { opacity: 0; pointer-events: none; position: fixed; top: 0; left: 0; z-index: -1; }
+                            }
+                        `}
+                    </style>
+                    <div id="print-overlay">
+                        <QuotationPrintTemplate
+                            ref={printRef}
+                            quotation={printingQuotation}
+                            showOptionName={printingQuotation.showOptionName ?? showOptionNameInPdf}
+                        />
+                    </div>
+                </>
+            )}
         </div>
     );
 };

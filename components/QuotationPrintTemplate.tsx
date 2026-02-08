@@ -28,27 +28,24 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
     return (
         // 外層容器：A4 尺寸 (210mm x 297mm)
-        // 使用 Flex Column 確保頁尾置底
-        // padding 設定為標準文件邊界 (約 25mm 上下, 20mm 左右)
-        // 外層容器：A4 尺寸 (210mm x 297mm)
-        // 使用 Flex Column 確保頁尾置底
+        // 改用 Block Layout 以支援更好的原生分頁
         // padding 設定為標準文件邊界 (約 20mm) - 根據用戶反饋調整
         <div
             ref={ref}
-            className="bg-white text-stone-900 font-sans flex flex-col justify-between relative"
+            className="bg-white text-stone-900 font-sans relative"
             style={{
                 width: '210mm',
                 minHeight: '297mm',
                 margin: '0 auto',
-                padding: '10mm 15mm 20mm 15mm', // 上:10mm, 下:20mm (給頁尾更多空間)
+                padding: '10mm 15mm 20mm 15mm', // 上:10mm, 下:20mm
                 boxSizing: 'border-box'
             }}
         >
 
             {/* 主要內容區域 */}
-            <div className="flex-grow">
+            <div className="w-full">
                 {/* 1. Header: 公司抬頭 */}
-                <div className="text-center mb-4">
+                <div className="text-center mb-4 break-inside-avoid">
                     <h1 className="text-3xl font-black text-stone-900 tracking-wide mb-1">台灣生活品質發展股份有限公司</h1>
                     <h2 className="text-xs font-bold text-stone-400 uppercase tracking-[0.35em] mb-3 border-b border-stone-100 pb-3 mx-auto w-fit">
                         Taiwan Quality of Life Development Co., Ltd.
@@ -60,7 +57,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
 
                 {/* 2. Info Block: 客戶與報價資訊 */}
-                <div className="flex justify-between mb-8 text-sm leading-relaxed text-stone-700">
+                <div className="flex justify-between mb-8 text-sm leading-relaxed text-stone-700 break-inside-avoid">
                     {/* 左側：客戶資訊 */}
                     <div className="w-[58%] bg-stone-50 p-4 rounded-lg border border-stone-100">
                         <div className="flex mb-1">
@@ -110,7 +107,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
                 {/* 3. 方案名稱 (可開關) */}
                 {shouldShowOptionName && selectedOption.name && (
-                    <div className="mb-6">
+                    <div className="mb-6 break-inside-avoid">
                         <h3 className="font-bold text-lg text-stone-900 flex items-center gap-3">
                             <span className="w-2 h-8 bg-orange-600 rounded-full block"></span>
                             {selectedOption.name}
@@ -135,15 +132,15 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                         <tbody className="text-sm">
                             {selectedOption.categories.map((category) => (
                                 <React.Fragment key={category.id}>
-                                    {/* 分類標題行 */}
-                                    <tr className="bg-stone-100">
+                                    {/* 分類標題行 - 避免在標題後立即分頁 */}
+                                    <tr className="bg-stone-100 break-after-avoid">
                                         <td colSpan={6} className="py-1.5 px-4 text-stone-800 font-bold text-xs uppercase tracking-wider border-b border-stone-200">
                                             {category.code} — {category.name}
                                         </td>
                                     </tr>
                                     {/* 項目行 */}
                                     {category.items.map((item, idx) => (
-                                        <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}>
+                                        <tr key={item.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'} break-inside-avoid`}>
                                             <td className="py-2 px-3 text-center text-stone-400 text-xs border-r border-stone-100">{item.itemNumber}</td>
                                             <td className="py-2 px-3 border-r border-stone-100">
                                                 <div className="font-bold text-stone-800">{item.name}</div>
@@ -162,7 +159,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
 
                 {/* 5. 金額總計區 (靠右) */}
-                <div className="flex justify-end mb-8">
+                <div className="flex justify-end mb-8 break-inside-avoid">
                     <div className="w-[45%] bg-stone-50 p-6 rounded-xl border border-stone-100 leading-relaxed">
                         <div className="flex justify-between text-stone-600 mb-2">
                             <span>小計 Subtotal</span>
@@ -190,7 +187,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
 
                 {/* 6. 條款與備註 */}
-                <div className="mb-4">
+                <div className="mb-4 break-inside-avoid">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-1 h-4 bg-stone-400"></div>
                         <h4 className="font-bold text-xs uppercase tracking-wide text-stone-600">Terms & Notes</h4>
@@ -243,19 +240,22 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
                 {/* 客戶簽名區 (如果有) */}
                 {(quotation as any).signature && (
-                    <div className="mb-8 flex justify-end">
+                    <div className="mb-8 flex justify-end break-inside-avoid">
                         <div className="w-1/3">
                             <div className="border-b-2 border-stone-900 pb-2 mb-2">
                                 <img src={(quotation as any).signature} alt="Signature" className="h-16 object-contain" />
                             </div>
                             <div className="text-xs font-bold text-stone-900">客戶簽名 Confirmation</div>
+                            <div className="text-[10px] text-stone-400">
+                                Signed at: {new Date((quotation as any).signedAt).toLocaleString()}
+                            </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* 頁尾 - 置底設計 */}
-            <div className="mt-auto border-t-4 border-orange-500 pt-3">
+            {/* 頁尾 - 置底設計 (現在做為文檔尾部) */}
+            <div className="mt-12 border-t-4 border-orange-500 pt-3 break-inside-avoid">
                 <div className="flex justify-between items-end text-[10px] text-stone-500 leading-relaxed">
                     <div>
                         <p className="font-bold text-stone-800 text-xs mb-1">台灣生活品質發展股份有限公司</p>
