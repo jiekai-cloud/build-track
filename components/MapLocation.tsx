@@ -32,7 +32,13 @@ const MapLocation: React.FC<MapLocationProps> = ({ address, lat = 25.0330, lng =
 
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
-    const apiKey = (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY) || process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyAyzTWbM4BCrbyT32hoUT2kpe2vNIm95xc';
+    // Get API key from environment variable only (never hardcode API keys!)
+    const apiKey = (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY) || process.env.GOOGLE_MAPS_API_KEY;
+
+    if (!apiKey) {
+        console.error('Google Maps API key is not configured');
+        return <div className="p-4 text-red-600">Google Maps API 金鑰未設定，請在環境變數中配置 VITE_GOOGLE_MAPS_API_KEY</div>;
+    }
     const hasApiKey = apiKey && apiKey !== 'undefined' && apiKey !== '' && apiKey !== 'PLACEHOLDER';
 
     return (
