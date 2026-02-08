@@ -18,7 +18,9 @@ const ContractSigningPage: React.FC = () => {
     useEffect(() => {
         const loadQuotation = async () => {
             try {
-                // Try FirstDept
+                console.log('[Contract Signing] Loading quotation:', id);
+
+                // Strategy 1: Try localStorage (FirstDept and ThirdDept)
                 let allQuotes = await storageService.getItem<Quotation[]>('bt_quotations', []);
                 let target = allQuotes.find(q => q.id === id);
 
@@ -28,17 +30,72 @@ const ContractSigningPage: React.FC = () => {
                     target = allQuotes.find(q => q.id === id);
                 }
 
+                // Strategy 2: If not found in localStorage, try IndexedDB (cloud sync)
+                if (!target) {
+                    console.log('[Contract Signing] Not found in localStorage, trying IndexedDB...');
+                    try {
+                        // Open IndexedDB
+                        const dbName = 'BuildTrackDB';
+                        const request = indexedDB.open(dbName, 1);
+
+                        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+                            request.onsuccess = () => resolve(request.result);
+                            request.onerror = () => reject(request.error);
+                            request.onupgradeneeded = () => {
+                                // If DB doesn't exist yet, we won't find data anyway
+                                const db = request.result;
+                                if (!db.objectStoreNames.contains('data')) {
+                                    db.createObjectStore('data');
+                                }
+                            };
+                        });
+
+                        // Try to get quotations from IndexedDB
+                        const transaction = db.transaction(['data'], 'readonly');
+                        const store = transaction.objectStore('data');
+
+                        // Try different possible keys
+                        const keysToTry = ['bt_quotations', 'dept3_bt_quotations'];
+
+                        for (const key of keysToTry) {
+                            const getRequest = store.get(key);
+                            const quotes = await new Promise<Quotation[] | null>((resolve) => {
+                                getRequest.onsuccess = () => {
+                                    const result = getRequest.result;
+                                    resolve(result ? JSON.parse(result) : null);
+                                };
+                                getRequest.onerror = () => resolve(null);
+                            });
+
+                            if (quotes && Array.isArray(quotes)) {
+                                target = quotes.find(q => q.id === id);
+                                if (target) {
+                                    console.log('[Contract Signing] Found in IndexedDB:', key);
+                                    break;
+                                }
+                            }
+                        }
+
+                        db.close();
+                    } catch (dbError) {
+                        console.error('[Contract Signing] IndexedDB error:', dbError);
+                    }
+                }
+
                 if (target) {
+                    console.log('[Contract Signing] Quotation loaded successfully');
                     setQuotation(target);
                     // Check if already signed
                     if ((target as any).status === 'signed') {
                         setSignSuccess(true);
                     }
                 } else {
-                    setError('找不到此報價單，可能連結已失效。');
+                    console.error('[Contract Signing] Quotation not found:', id);
+                    setError('找不到此報價單。\n\n可能原因：\n1. 連結已失效\n2. 報價單尚未同步到雲端\n3. 請確認連結是否正確');
                 }
             } catch (e) {
-                setError('系統錯誤，無法載入報價單。');
+                console.error('[Contract Signing] Error loading quotation:', e);
+                setError('系統錯誤，無法載入報價單。\n\n請稍後再試或聯繫管理員。');
             } finally {
                 setLoading(false);
             }
