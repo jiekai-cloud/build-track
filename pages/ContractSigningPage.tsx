@@ -33,52 +33,75 @@ const ContractSigningPage: React.FC = () => {
                 // Strategy 2: If not found in localStorage, try IndexedDB (cloud sync)
                 if (!target) {
                     console.log('[Contract Signing] Not found in localStorage, trying IndexedDB...');
-                    try {
-                        // Open IndexedDB
-                        const dbName = 'BuildTrackDB';
-                        const request = indexedDB.open(dbName, 1);
 
-                        const db = await new Promise<IDBDatabase>((resolve, reject) => {
-                            request.onsuccess = () => resolve(request.result);
-                            request.onerror = () => reject(request.error);
-                            request.onupgradeneeded = () => {
-                                // If DB doesn't exist yet, we won't find data anyway
-                                const db = request.result;
-                                if (!db.objectStoreNames.contains('data')) {
-                                    db.createObjectStore('data');
-                                }
-                            };
-                        });
+                    // Try both possible database configurations
+                    const dbConfigs = [
+                        { dbName: 'BuildTrackDB', storeName: 'data' },
+                        { dbName: 'LifeQualitySystem', storeName: 'app_data' }
+                    ];
 
-                        // Try to get quotations from IndexedDB
-                        const transaction = db.transaction(['data'], 'readonly');
-                        const store = transaction.objectStore('data');
+                    for (const { dbName, storeName } of dbConfigs) {
+                        try {
+                            console.log(`[Contract Signing] Trying ${dbName}/${storeName}...`);
+                            const request = indexedDB.open(dbName);
 
-                        // Try different possible keys
-                        const keysToTry = ['bt_quotations', 'dept3_bt_quotations'];
-
-                        for (const key of keysToTry) {
-                            const getRequest = store.get(key);
-                            const quotes = await new Promise<Quotation[] | null>((resolve) => {
-                                getRequest.onsuccess = () => {
-                                    const result = getRequest.result;
-                                    resolve(result ? JSON.parse(result) : null);
-                                };
-                                getRequest.onerror = () => resolve(null);
+                            const db = await new Promise<IDBDatabase>((resolve, reject) => {
+                                request.onsuccess = () => resolve(request.result);
+                                request.onerror = () => reject(request.error);
                             });
 
-                            if (quotes && Array.isArray(quotes)) {
-                                target = quotes.find(q => q.id === id);
-                                if (target) {
-                                    console.log('[Contract Signing] Found in IndexedDB:', key);
-                                    break;
-                                }
+                            // Check if the object store exists
+                            if (!db.objectStoreNames.contains(storeName)) {
+                                console.log(`[Contract Signing] Store ${storeName} not found in ${dbName}`);
+                                db.close();
+                                continue;
                             }
-                        }
 
-                        db.close();
-                    } catch (dbError) {
-                        console.error('[Contract Signing] IndexedDB error:', dbError);
+                            try {
+                                const transaction = db.transaction([storeName], 'readonly');
+                                const store = transaction.objectStore(storeName);
+
+                                // Try different possible keys
+                                const keysToTry = ['bt_quotations', 'dept3_bt_quotations'];
+
+                                for (const key of keysToTry) {
+                                    const getRequest = store.get(key);
+                                    const quotes = await new Promise<Quotation[] | null>((resolve) => {
+                                        getRequest.onsuccess = () => {
+                                            const result = getRequest.result;
+                                            if (result) {
+                                                try {
+                                                    // Handle both string (JSON) and object formats
+                                                    const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+                                                    resolve(Array.isArray(parsed) ? parsed : null);
+                                                } catch (e) {
+                                                    console.error('[Contract Signing] Parse error:', e);
+                                                    resolve(null);
+                                                }
+                                            } else {
+                                                resolve(null);
+                                            }
+                                        };
+                                        getRequest.onerror = () => resolve(null);
+                                    });
+
+                                    if (quotes && Array.isArray(quotes)) {
+                                        target = quotes.find(q => q.id === id);
+                                        if (target) {
+                                            console.log(`[Contract Signing] Found in ${dbName}/${storeName}/${key}`);
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (storeError) {
+                                console.error(`[Contract Signing] Error accessing ${storeName}:`, storeError);
+                            }
+
+                            db.close();
+                            if (target) break;
+                        } catch (dbError) {
+                            console.error(`[Contract Signing] Error with ${dbName}:`, dbError);
+                        }
                     }
                 }
 
