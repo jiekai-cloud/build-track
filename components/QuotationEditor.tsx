@@ -662,8 +662,20 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                     <div className="bg-stone-50 rounded-xl p-6 border border-stone-200">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-stone-800">報價明細</h3>
-                            <div className="text-sm text-stone-500">
-                                目前方案：{currentOption.name}
+                            <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2 cursor-pointer text-sm text-stone-600 hover:text-stone-800 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.showOptionName ?? true}
+                                        onChange={(e) => setFormData({ ...formData, showOptionName: e.target.checked })}
+                                        className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
+                                    />
+                                    <span>PDF 顯示方案名稱</span>
+                                </label>
+                                <div className="w-px h-4 bg-stone-300"></div>
+                                <div className="text-sm text-stone-500">
+                                    目前方案：{currentOption.name}
+                                </div>
                             </div>
                         </div>
 

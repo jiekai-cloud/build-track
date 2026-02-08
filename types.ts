@@ -666,6 +666,7 @@ export interface Quotation {
 
   // 其他
   departmentId?: string;       // 所屬部門
+  showOptionName?: boolean;    // 是否顯示方案名稱
   deletedAt?: string;          // 軟刪除標記
 }
 

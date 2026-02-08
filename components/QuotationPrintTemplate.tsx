@@ -21,8 +21,10 @@ const formatDate = (dateString: string) => {
 };
 
 // 使用 forwardRef 讓我們可以從父組件取得這個 DOM 元素
-const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplateProps>(({ quotation, showOptionName = true }, ref) => {
+const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplateProps>(({ quotation, showOptionName }, ref) => {
     const selectedOption = quotation.options[quotation.selectedOptionIndex];
+    // 優先使用 prop，若無則使用 quotation 內的設定，預設為 true
+    const shouldShowOptionName = showOptionName !== undefined ? showOptionName : (quotation.showOptionName ?? true);
 
     return (
         // 外層容器：A4 尺寸 (210mm x 297mm)
@@ -107,7 +109,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
 
                 {/* 3. 方案名稱 (可開關) */}
-                {showOptionName && selectedOption.name && (
+                {shouldShowOptionName && selectedOption.name && (
                     <div className="mb-6">
                         <h3 className="font-bold text-lg text-stone-900 flex items-center gap-3">
                             <span className="w-2 h-8 bg-orange-600 rounded-full block"></span>
