@@ -349,7 +349,11 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                                                 {/* Copy Signing Link */}
                                                 <button
                                                     onClick={() => {
-                                                        const link = `${window.location.protocol}//${window.location.host}/#/contract/sign/${quotation.id}`;
+                                                        // Get the base path from the current location
+                                                        // In production (GitHub Pages): /build-track/
+                                                        // In development: /
+                                                        const basePath = import.meta.env.BASE_URL || '/';
+                                                        const link = `${window.location.protocol}//${window.location.host}${basePath}#/contract/sign/${quotation.id}`;
                                                         navigator.clipboard.writeText(link).then(() => {
                                                             alert(`已複製簽約連結：\n${link}\n\n請將此連結傳送給業主。`);
                                                         }).catch(() => {
