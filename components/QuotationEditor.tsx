@@ -557,28 +557,55 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
         // If specific items are selected for this template, filter them
         const isFiltering = expandedTemplateId === preset.id && selectedTemplateItems.size > 0;
 
-        let categoriesToUse = preset.categories;
+        // Items to add (grouped by category)
+        let categoriesToAdd = preset.categories;
         if (isFiltering) {
-            categoriesToUse = preset.categories.map(cat => ({
+            categoriesToAdd = preset.categories.map(cat => ({
                 ...cat,
                 items: cat.items.filter((_, idx) => selectedTemplateItems.has(`${preset.id}-${cat.code}-${idx}`))
             })).filter(cat => cat.items.length > 0);
         }
 
-        const newOption = createQuotationFromPreset({
-            ...preset,
-            categories: categoriesToUse
+        // Clone current options to avoid direct mutation
+        const newOptions = JSON.parse(JSON.stringify(formData.options));
+        const currentOption = newOptions[activeOptionIndex];
+
+        // Merge Logic
+        categoriesToAdd.forEach((sourceCat: any) => {
+            // Find target category by Name
+            let targetCat = currentOption.categories.find((c: any) => c.name === sourceCat.name);
+
+            if (!targetCat) {
+                // Create new category if not exists
+                targetCat = {
+                    id: crypto.randomUUID(),
+                    code: sourceCat.code,
+                    name: sourceCat.name,
+                    items: []
+                };
+                currentOption.categories.push(targetCat);
+            }
+
+            // Append items
+            const startItemNumber = targetCat.items.length + 1;
+            const newItems = sourceCat.items.map((item: any, idx: number) => ({
+                id: crypto.randomUUID(),
+                itemNumber: startItemNumber + idx,
+                name: item.name,
+                unit: item.unit,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                amount: item.quantity * item.unitPrice,
+                notes: item.notes
+            }));
+
+            targetCat.items.push(...newItems);
         });
 
-        // Replace current option or add new one? Let's add new option for safety and switch to it
-        setFormData(prev => {
-            if (!prev) return null;
-            const newOptions = [...prev.options, newOption];
-            return { ...prev, options: newOptions };
-        });
+        // Update state
+        setFormData({ ...formData, options: newOptions });
 
-        // Switch to the newly added option
-        setActiveOptionIndex(formData.options.length);
+        // Reset UI state
         setShowTemplateSelector(false);
         setSelectedTemplateItems(new Set());
         setExpandedTemplateId(null);
@@ -1538,13 +1565,13 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                                 <button
                                                     onClick={() => handleApplyTemplate(preset)}
                                                     className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap shadow-sm ${expandedTemplateId === preset.id && selectedTemplateItems.size > 0
-                                                            ? 'bg-orange-600 text-white hover:bg-orange-700'
-                                                            : 'bg-stone-800 text-white hover:bg-stone-700'
+                                                        ? 'bg-orange-600 text-white hover:bg-orange-700'
+                                                        : 'bg-stone-800 text-white hover:bg-stone-700'
                                                         }`}
                                                 >
                                                     {expandedTemplateId === preset.id && selectedTemplateItems.size > 0
-                                                        ? `套用選取的 ${selectedTemplateItems.size} 項`
-                                                        : '套用整份範本'}
+                                                        ? `將選取的 ${selectedTemplateItems.size} 項加入目前報價`
+                                                        : '將整份範本加入目前報價'}
                                                 </button>
                                             </div>
 

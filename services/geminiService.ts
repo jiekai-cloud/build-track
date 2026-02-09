@@ -2,16 +2,17 @@ import { Project } from "../types";
 
 // 根據最新 API Key 權限更新的模型列表
 const FALLBACK_MODELS = [
-  'gemini-1.5-flash',       // 目前最穩定的版本
-  'gemini-2.0-flash-exp',   // 新一代實驗版
-  'gemini-1.5-pro'          // 高智商版本
+  'gemini-2.5-flash',       // 最新旗艦：高效能版本
+  'gemini-2.5-pro',         // 最新旗艦：高智商版本
+  'gemini-1.5-flash',       // 備援：穩定版本
+  'gemini-1.5-pro'          // 備援：高智商版本
 ];
 
 let cachedValidModel: string | null = null;
 
 const getApiKey = () => {
   const savedKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
-  const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || 'AIzaSyBIDgB1qTfRPH3YCUcdOwrygi7tiKvgHmk' || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
 
   let key = '';
   if (envKey && envKey !== 'undefined' && envKey !== 'PLACEHOLDER_API_KEY') key = envKey as string;
