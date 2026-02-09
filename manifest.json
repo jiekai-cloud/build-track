@@ -1,6 +1,6 @@
 {
-  "short_name": "工程管家",
-  "name": "生活品質智慧工程管理系統",
+  "short_name": "SEMS",
+  "name": "Quality of Life Smart Engineering Management System",
   "icons": [
     {
       "src": "./pwa-icon.png",

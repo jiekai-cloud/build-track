@@ -79,7 +79,8 @@ export const useQuotationPresets = () => {
             if (!row[1] || row[1] === '備註' || row[1].includes('項目名稱')) continue;
 
             // Safe access
-            const name = row[1];
+            const name = row[1]?.trim();
+            if (!name) continue;
 
             // Filter garbage rows (e.g. "500,1", "000,,,,")
             if (/^\d+,/.test(name) || name.includes(',,,,')) continue;
@@ -109,29 +110,45 @@ export const useQuotationPresets = () => {
         setError(null);
         try {
             const promises = SHEETS.map(async (sheet) => {
-                const url = BASE_URL + encodeURIComponent(sheet.name);
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Failed to fetch ${sheet.name}`);
-                const csvText = await response.text();
-                const items = parseCSV(csvText);
+                try {
+                    const url = BASE_URL + encodeURIComponent(sheet.name);
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Failed to fetch ${sheet.name}`);
+                    const csvText = await response.text();
+                    const items = parseCSV(csvText);
 
-                return {
-                    id: sheet.id,
-                    name: sheet.name,
-                    description: sheet.description,
-                    categories: [
-                        {
-                            code: '壹',
-                            name: sheet.name.includes('廁所') ? '衛浴工程' : '工程項目',
-                            items: items
-                        }
-                    ]
-                } as QuotationPreset;
+                    // Validate items have names
+                    const validItems = items.filter(item => item && item.name);
+
+                    return {
+                        id: sheet.id,
+                        name: sheet.name,
+                        description: sheet.description,
+                        categories: [
+                            {
+                                code: '壹',
+                                name: sheet.name.includes('廁所') ? '衛浴工程' : '工程項目',
+                                items: validItems
+                            }
+                        ]
+                    } as QuotationPreset;
+                } catch (e) {
+                    console.error(`Failed to load preset ${sheet.name}`, e);
+                    // Return a safe fallback instead of failing the whole promise chain
+                    return {
+                        id: sheet.id,
+                        name: sheet.name,
+                        description: sheet.description,
+                        categories: []
+                    } as QuotationPreset;
+                }
             });
 
             const results = await Promise.all(promises);
-            setPresets(results);
-            console.log('Updated presets from Google Sheets:', results.length);
+            // Filter out any potential undefined/null results (though our try-catch handles it)
+            const validResults = results.filter(r => r && r.name);
+            setPresets(validResults);
+            console.log('Updated presets from Google Sheets:', validResults.length);
         } catch (err: any) {
             console.error('Error fetching presets:', err);
             setError(err.message);

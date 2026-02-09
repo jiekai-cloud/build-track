@@ -314,6 +314,26 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
         setFormData({ ...formData, options: newOptions });
     };
 
+    const moveItem = (catIndex: number, itemIndex: number, direction: 'up' | 'down') => {
+        if (!formData) return;
+        const newOptions = [...formData.options];
+        const category = newOptions[activeOptionIndex].categories[catIndex];
+        const items = category.items;
+
+        if (direction === 'up' && itemIndex > 0) {
+            [items[itemIndex], items[itemIndex - 1]] = [items[itemIndex - 1], items[itemIndex]];
+        } else if (direction === 'down' && itemIndex < items.length - 1) {
+            [items[itemIndex], items[itemIndex + 1]] = [items[itemIndex + 1], items[itemIndex]];
+        }
+
+        // Renumber items
+        items.forEach((item, idx) => {
+            item.itemNumber = idx + 1;
+        });
+
+        setFormData({ ...formData, options: newOptions });
+    };
+
     const handleImportItems = () => {
         if (!formData || selectedStandardItems.length === 0) return;
 
@@ -756,10 +776,29 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                                         <td className="p-2 text-right font-medium text-stone-700">
                                                             ${item.amount.toLocaleString()}
                                                         </td>
-                                                        <td className="p-2 text-center">
+                                                        <td className="p-2 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <div className="flex flex-col gap-0.5 mr-2">
+                                                                <button
+                                                                    onClick={() => moveItem(catIndex, itemIndex, 'up')}
+                                                                    disabled={itemIndex === 0}
+                                                                    className="text-stone-400 hover:text-orange-500 disabled:opacity-10 disabled:cursor-not-allowed"
+                                                                    title="上移"
+                                                                >
+                                                                    <ChevronUp size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => moveItem(catIndex, itemIndex, 'down')}
+                                                                    disabled={itemIndex === category.items.length - 1}
+                                                                    className="text-stone-400 hover:text-orange-500 disabled:opacity-10 disabled:cursor-not-allowed"
+                                                                    title="下移"
+                                                                >
+                                                                    <ChevronDown size={14} />
+                                                                </button>
+                                                            </div>
                                                             <button
                                                                 onClick={() => deleteItem(catIndex, itemIndex)}
-                                                                className="text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                className="text-stone-300 hover:text-red-500"
+                                                                title="刪除項目"
                                                             >
                                                                 <Trash2 size={16} />
                                                             </button>

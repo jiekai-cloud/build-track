@@ -2,9 +2,9 @@ import { Project } from "../types";
 
 // 根據最新 API Key 權限更新的模型列表
 const FALLBACK_MODELS = [
-  'gemini-2.5-flash',       // 這是你先前診斷清單中顯示可用的穩定模型
-  'gemini-3-flash-preview', // 這是你清單中唯一的 Gemini 3 預覽版
-  'gemini-1.5-flash'
+  'gemini-1.5-flash',       // 目前最穩定的版本
+  'gemini-2.0-flash-exp',   // 新一代實驗版
+  'gemini-1.5-pro'          // 高智商版本
 ];
 
 let cachedValidModel: string | null = null;

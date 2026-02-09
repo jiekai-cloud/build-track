@@ -1,5 +1,5 @@
 
-import { Project } from '../types';
+import { Project, Quotation } from '../types';
 
 export const exportProjectsToCSV = (projects: Project[]) => {
   // 定義 CSV 標頭
@@ -36,6 +36,52 @@ export const exportProjectsToCSV = (projects: Project[]) => {
 
   link.setAttribute('href', url);
   link.setAttribute('download', `BuildTrack_Projects_${timestamp}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+export const exportQuotationToCSV = (quotation: Quotation) => {
+  // Check if quotation has options
+  if (!quotation.options || quotation.options.length === 0) return;
+
+  // Get the selected option or default
+  const option = quotation.options[quotation.selectedOptionIndex || 0];
+
+  // CSV Header
+  const headers = ['項次', '分類代碼', '分類名稱', '項目名稱', '單位', '數量', '單價', '金額', '備註'];
+
+  const rows: string[][] = [];
+
+  option.categories.forEach(category => {
+    category.items.forEach(item => {
+      rows.push([
+        item.itemNumber.toString(),
+        category.code,
+        `"${category.name}"`,
+        `"${item.name}"`,
+        item.unit,
+        item.quantity.toString(),
+        item.unitPrice.toString(),
+        item.amount.toString(),
+        `"${item.notes || ''}"`
+      ]);
+    });
+  });
+
+  const csvContent = [
+    '\uFEFF' + headers.join(','),
+    ...rows.map(e => e.join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const timestamp = new Date().toISOString().split('T')[0];
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Quotation_${quotation.quotationNumber}_${timestamp}.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
