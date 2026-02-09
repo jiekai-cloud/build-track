@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, FileText, Save, Download, Calculator, ChevronDown, ChevronUp, ChevronRight, Copy, Database, Check, Sparkles, Loader2, Bot, Mic, MicOff } from 'lucide-react';
+import { X, Plus, Trash2, FileText, Save, Download, Calculator, ChevronDown, ChevronUp, ChevronRight, Copy, Database, Check, Sparkles, Loader2, Bot, Mic, MicOff, GripVertical, CheckSquare, Square, Trash } from 'lucide-react';
 import { Quotation, QuotationItem, ItemCategory, QuotationOption, Customer, Project, QuotationSummary } from '../types';
 import { generateQuotationPDF } from '../services/quotationPdfService';
 import { STANDARD_QUOTATION_ITEMS, StandardItem } from '../data/standardItems';
@@ -74,6 +74,8 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     const [showNoteSelector, setShowNoteSelector] = useState(false); // Note Selector State
     const [selectedStandardItems, setSelectedStandardItems] = useState<StandardItem[]>([]);
     const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [draggedItem, setDraggedItem] = useState<{ catIndex: number, itemIndex: number } | null>(null);
 
     // AI Assistant State
     const [showAISelector, setShowAISelector] = useState(false);
@@ -300,6 +302,109 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
         const newOptions = [...formData.options];
         const item = newOptions[activeOptionIndex].categories[catIndex].items[itemIndex];
         (item as any)[field] = value;
+        setFormData({ ...formData, options: newOptions });
+    };
+
+    const toggleItemSelection = (itemId: string) => {
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(itemId)) {
+                newSet.delete(itemId);
+            } else {
+                newSet.add(itemId);
+            }
+            return newSet;
+        });
+    };
+
+    const deleteSelectedItems = () => {
+        if (!formData || selectedItems.size === 0) return;
+        if (!confirm(`確定要刪除選取的 ${selectedItems.size} 個項目嗎？`)) return;
+
+        const newOptions = [...formData.options];
+        const currentOption = newOptions[activeOptionIndex];
+
+        currentOption.categories.forEach(cat => {
+            cat.items = cat.items.filter(item => !selectedItems.has(item.id));
+            // Renumber
+            cat.items.forEach((item, idx) => {
+                item.itemNumber = idx + 1;
+            });
+        });
+
+        setFormData({ ...formData, options: newOptions });
+        setSelectedItems(new Set());
+    };
+
+    const keepSelectedItemsOnly = () => {
+        if (!formData || selectedItems.size === 0) return;
+        if (!confirm(`確定只保留選取的 ${selectedItems.size} 個項目，並刪除其他所有項目嗎？`)) return;
+
+        const newOptions = [...formData.options];
+        const currentOption = newOptions[activeOptionIndex];
+
+        currentOption.categories.forEach(cat => {
+            cat.items = cat.items.filter(item => selectedItems.has(item.id));
+            // Renumber
+            cat.items.forEach((item, idx) => {
+                item.itemNumber = idx + 1;
+            });
+        });
+
+        setFormData({ ...formData, options: newOptions });
+        // Don't clear selection, so user can see what they kept
+    };
+
+    const handleDragStart = (e: React.DragEvent, catIndex: number, itemIndex: number) => {
+        setDraggedItem({ catIndex, itemIndex });
+        e.dataTransfer.effectAllowed = 'move';
+        // Add a ghost image or styling
+        if (e.currentTarget instanceof HTMLElement) {
+            e.currentTarget.style.opacity = '0.5';
+        }
+    };
+
+    const handleDragEnd = (e: React.DragEvent) => {
+        setDraggedItem(null);
+        if (e.currentTarget instanceof HTMLElement) {
+            e.currentTarget.style.opacity = '1';
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent, catIndex: number, itemIndex: number) => {
+        e.preventDefault();
+        if (!draggedItem) return;
+        // Only allow reordering within the same category for simplicity for now
+        // Or cross-category? Let's stick to simple reordering first as per request "move up/down" replacement
+        // But user might want to move across categories. Let's allow cross-category if needed, 
+        // but robust reordering is tricky.
+        // Let's implement robust swap.
+    };
+
+    const handleDrop = (e: React.DragEvent, targetCatIndex: number, targetItemIndex: number) => {
+        e.preventDefault();
+        if (!formData || !draggedItem) return;
+
+        const { catIndex: sourceCatIndex, itemIndex: sourceItemIndex } = draggedItem;
+
+        // If same position, do nothing
+        if (sourceCatIndex === targetCatIndex && sourceItemIndex === targetItemIndex) return;
+
+        const newOptions = [...formData.options];
+        const currentOption = newOptions[activeOptionIndex];
+
+        // Remove from source
+        const [movedItem] = currentOption.categories[sourceCatIndex].items.splice(sourceItemIndex, 1);
+
+        // Insert into target
+        currentOption.categories[targetCatIndex].items.splice(targetItemIndex, 0, movedItem);
+
+        // Renumber both categories
+        currentOption.categories[sourceCatIndex].items.forEach((item, idx) => item.itemNumber = idx + 1);
+        if (sourceCatIndex !== targetCatIndex) {
+            currentOption.categories[targetCatIndex].items.forEach((item, idx) => item.itemNumber = idx + 1);
+        }
+
         setFormData({ ...formData, options: newOptions });
     };
 
@@ -680,8 +785,35 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
 
                     {/* 方案選擇與內容 */}
                     <div className="bg-stone-50 rounded-xl p-6 border border-stone-200">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-stone-800">報價明細</h3>
+                        <div className="flex items-center justify-between mb-4 sticky top-0 bg-stone-50 z-20 py-2 border-b border-stone-200">
+                            <h3 className="text-lg font-bold text-stone-800 flex items-center gap-4">
+                                <span>報價明細</span>
+                                {selectedItems.size > 0 && (
+                                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4">
+                                        <span className="text-sm font-normal text-stone-500 bg-white px-2 py-1 rounded-md border border-stone-200">
+                                            已選取 {selectedItems.size} 項
+                                        </span>
+                                        <button
+                                            onClick={keepSelectedItemsOnly}
+                                            className="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-200 font-bold flex items-center gap-1 transition-colors"
+                                        >
+                                            <CheckSquare size={14} /> 僅保留選取
+                                        </button>
+                                        <button
+                                            onClick={deleteSelectedItems}
+                                            className="text-xs bg-red-100 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-200 font-bold flex items-center gap-1 transition-colors"
+                                        >
+                                            <Trash size={14} /> 刪除選取
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedItems(new Set())}
+                                            className="text-xs text-stone-400 hover:text-stone-600 px-2"
+                                        >
+                                            取消
+                                        </button>
+                                    </div>
+                                )}
+                            </h3>
                             <div className="flex items-center gap-3">
                                 <label className="flex items-center gap-2 cursor-pointer text-sm text-stone-600 hover:text-stone-800 transition-colors">
                                     <input
@@ -721,6 +853,7 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                         <table className="w-full text-sm">
                                             <thead className="bg-stone-50 text-stone-500">
                                                 <tr>
+                                                    <th className="p-3 w-8"></th>
                                                     <th className="p-3 text-center w-12">#</th>
                                                     <th className="p-3 text-left">項目名稱</th>
                                                     <th className="p-3 text-center w-20">單位</th>
@@ -732,8 +865,31 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                             </thead>
                                             <tbody className="divide-y divide-stone-100">
                                                 {category.items.map((item, itemIndex) => (
-                                                    <tr key={item.id} className="group hover:bg-stone-50">
-                                                        <td className="p-2 text-center text-stone-400">{itemIndex + 1}</td>
+                                                    <tr
+                                                        key={item.id}
+                                                        className={`group hover:bg-stone-50 transition-colors ${selectedItems.has(item.id) ? 'bg-orange-50 hover:bg-orange-100' : ''}`}
+                                                        draggable="true"
+                                                        onDragStart={(e) => handleDragStart(e, catIndex, itemIndex)}
+                                                        onDragEnd={handleDragEnd}
+                                                        onDragOver={(e) => handleDragOver(e, catIndex, itemIndex)}
+                                                        onDrop={(e) => handleDrop(e, catIndex, itemIndex)}
+                                                    >
+                                                        <td className="p-2 text-center relative">
+                                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-stone-300 cursor-grab active:cursor-grabbing flex items-center justify-center" title="拖曳以排序">
+                                                                <GripVertical size={12} className="text-stone-400 opacity-0 group-hover:opacity-100" />
+                                                            </div>
+                                                            <div className="flex items-center justify-center">
+                                                                <button
+                                                                    onClick={() => toggleItemSelection(item.id)}
+                                                                    className={`p-1 rounded transition-colors ${selectedItems.has(item.id) ? 'text-orange-600' : 'text-stone-300 hover:text-stone-500'}`}
+                                                                >
+                                                                    {selectedItems.has(item.id) ? <CheckSquare size={18} /> : <Square size={18} />}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-2 text-center text-stone-400 cursor-grab active:cursor-grabbing">
+                                                            {item.itemNumber}
+                                                        </td>
                                                         <td className="p-2">
                                                             <div className="space-y-1">
                                                                 <input
