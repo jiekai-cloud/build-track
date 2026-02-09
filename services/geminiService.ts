@@ -12,7 +12,7 @@ let cachedValidModel: string | null = null;
 
 const getApiKey = () => {
   const savedKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
-  const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || 'AIzaSyBIDgB1qTfRPH3YCUcdOwrygi7tiKvgHmk' || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
 
   let key = '';
   if (envKey && envKey !== 'undefined' && envKey !== 'PLACEHOLDER_API_KEY') key = envKey as string;
