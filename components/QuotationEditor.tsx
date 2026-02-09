@@ -71,6 +71,8 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     // Standard Item Selector State
     const [showItemSelector, setShowItemSelector] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false); // Template Selector State
+    const [selectedTemplateItems, setSelectedTemplateItems] = useState<Set<string>>(new Set());
+    const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null);
     const [showNoteSelector, setShowNoteSelector] = useState(false); // Note Selector State
     const [selectedStandardItems, setSelectedStandardItems] = useState<StandardItem[]>([]);
     const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
@@ -552,7 +554,21 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     const handleApplyTemplate = (preset: QuotationPreset) => {
         if (!formData) return;
 
-        const newOption = createQuotationFromPreset(preset);
+        // If specific items are selected for this template, filter them
+        const isFiltering = expandedTemplateId === preset.id && selectedTemplateItems.size > 0;
+
+        let categoriesToUse = preset.categories;
+        if (isFiltering) {
+            categoriesToUse = preset.categories.map(cat => ({
+                ...cat,
+                items: cat.items.filter((_, idx) => selectedTemplateItems.has(`${preset.id}-${cat.code}-${idx}`))
+            })).filter(cat => cat.items.length > 0);
+        }
+
+        const newOption = createQuotationFromPreset({
+            ...preset,
+            categories: categoriesToUse
+        });
 
         // Replace current option or add new one? Let's add new option for safety and switch to it
         setFormData(prev => {
@@ -564,6 +580,41 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
         // Switch to the newly added option
         setActiveOptionIndex(formData.options.length);
         setShowTemplateSelector(false);
+        setSelectedTemplateItems(new Set());
+        setExpandedTemplateId(null);
+    };
+
+    const toggleTemplateItemSelection = (templateId: string, itemUniqueId: string) => {
+        if (expandedTemplateId !== templateId) {
+            setExpandedTemplateId(templateId);
+            setSelectedTemplateItems(new Set([itemUniqueId]));
+        } else {
+            setSelectedTemplateItems(prev => {
+                const newSet = new Set(prev);
+                if (newSet.has(itemUniqueId)) {
+                    newSet.delete(itemUniqueId);
+                } else {
+                    newSet.add(itemUniqueId);
+                }
+                return newSet;
+            });
+        }
+    };
+
+    const toggleAllTemplateItems = (templateId: string, items: string[]) => {
+        if (expandedTemplateId !== templateId) {
+            setExpandedTemplateId(templateId);
+            setSelectedTemplateItems(new Set(items));
+        } else {
+            const allSelected = items.every(id => selectedTemplateItems.has(id));
+            if (allSelected) {
+                // Deselect all
+                setSelectedTemplateItems(new Set());
+            } else {
+                // Select all
+                setSelectedTemplateItems(new Set(items));
+            }
+        }
     };
 
     if (!isOpen || !formData) return null;
@@ -1458,38 +1509,100 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                             </div>
 
                             <div className="p-6 overflow-y-auto bg-stone-50 grid gap-4">
-                                {presets.map(preset => {
-                                    if (!preset) return null;
-                                    return (
-                                        <button
-                                            key={preset.id}
-                                            onClick={() => handleApplyTemplate(preset)}
-                                            className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm hover:shadow-md hover:border-orange-300 hover:ring-2 hover:ring-orange-100 transition-all text-left group"
-                                        >
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h4 className="text-lg font-bold text-stone-800 group-hover:text-orange-700 transition-colors">
-                                                    {preset.name}
-                                                </h4>
-                                                <div className="bg-stone-100 text-stone-500 text-xs px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600">
-                                                    {preset.categories?.length || 0} 個分類
+                                {presets.map((preset) => (
+                                    <div
+                                        key={preset.id}
+                                        className={`bg-white rounded-xl border transition-all ${expandedTemplateId === preset.id ? 'border-orange-500 shadow-md' : 'border-stone-200 hover:border-orange-300'}`}
+                                    >
+                                        <div className="p-4 flex flex-col gap-3">
+                                            <div className="flex justify-between items-start">
+                                                <div
+                                                    className="cursor-pointer flex-1"
+                                                    onClick={() => setExpandedTemplateId(expandedTemplateId === preset.id ? null : preset.id)}
+                                                >
+                                                    <h4 className="font-bold text-lg text-stone-800 flex items-center gap-2">
+                                                        {preset.name}
+                                                        {expandedTemplateId === preset.id ? <ChevronUp size={16} className="text-stone-400" /> : <ChevronDown size={16} className="text-stone-400" />}
+                                                    </h4>
+                                                    <p className="text-sm text-stone-500 mt-1">{preset.description}</p>
+                                                    <div className="flex gap-2 mt-2">
+                                                        <span className="text-xs bg-stone-100 text-stone-600 px-2 py-1 rounded">
+                                                            {preset.categories.length} 個分類
+                                                        </span>
+                                                        <span className="text-xs bg-stone-100 text-stone-600 px-2 py-1 rounded">
+                                                            {preset.categories.reduce((acc, cat) => acc + cat.items.length, 0)} 個項目
+                                                        </span>
+                                                    </div>
                                                 </div>
+
+                                                <button
+                                                    onClick={() => handleApplyTemplate(preset)}
+                                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap shadow-sm ${expandedTemplateId === preset.id && selectedTemplateItems.size > 0
+                                                            ? 'bg-orange-600 text-white hover:bg-orange-700'
+                                                            : 'bg-stone-800 text-white hover:bg-stone-700'
+                                                        }`}
+                                                >
+                                                    {expandedTemplateId === preset.id && selectedTemplateItems.size > 0
+                                                        ? `套用選取的 ${selectedTemplateItems.size} 項`
+                                                        : '套用整份範本'}
+                                                </button>
                                             </div>
-                                            <p className="text-stone-500 text-sm mb-4">
-                                                {preset.description}
-                                            </p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {preset.categories?.slice(0, 3).map((cat, idx) => (
-                                                    <span key={idx} className="text-xs bg-stone-50 text-stone-400 border border-stone-100 px-2 py-0.5 rounded">
-                                                        分類 {cat.code}
-                                                    </span>
-                                                ))}
-                                                {(preset.categories?.length || 0) > 3 && (
-                                                    <span className="text-xs text-stone-400 px-1">...</span>
-                                                )}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
+
+                                            {/* Item List for Selection */}
+                                            {expandedTemplateId === preset.id && (
+                                                <div className="mt-2 border-t border-stone-100 pt-3 animate-in slide-in-from-top-2">
+                                                    <div className="flex justify-between items-center mb-2 px-1">
+                                                        <span className="text-xs font-bold text-stone-500">勾選欲匯入的項目：</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                const allIds: string[] = [];
+                                                                preset.categories.forEach(cat =>
+                                                                    cat.items.forEach((_, idx) => allIds.push(`${preset.id}-${cat.code}-${idx}`))
+                                                                );
+                                                                toggleAllTemplateItems(preset.id, allIds);
+                                                            }}
+                                                            className="text-xs text-orange-600 hover:text-orange-700 font-bold"
+                                                        >
+                                                            {selectedTemplateItems.size === preset.categories.reduce((acc, cat) => acc + cat.items.length, 0) ? '取消全選' : '全選'}
+                                                        </button>
+                                                    </div>
+                                                    <div className="max-h-[300px] overflow-y-auto space-y-4 pr-1">
+                                                        {preset.categories.map((cat) => (
+                                                            <div key={cat.code} className="space-y-1">
+                                                                <div className="text-xs font-bold text-stone-400 bg-stone-50 px-2 py-1 rounded">
+                                                                    {cat.code} {cat.name}
+                                                                </div>
+                                                                {cat.items.map((item, idx) => {
+                                                                    const uniqueId = `${preset.id}-${cat.code}-${idx}`;
+                                                                    const isSelected = selectedTemplateItems.has(uniqueId);
+                                                                    return (
+                                                                        <div
+                                                                            key={uniqueId}
+                                                                            onClick={() => toggleTemplateItemSelection(preset.id, uniqueId)}
+                                                                            className={`flex items-start gap-3 p-2 rounded-lg cursor-pointer transition-colors border ${isSelected ? 'bg-orange-50 border-orange-200' : 'bg-white border-transparent hover:bg-stone-50'}`}
+                                                                        >
+                                                                            <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-orange-600 border-orange-600' : 'border-stone-300 bg-white'}`}>
+                                                                                {isSelected && <Check size={12} className="text-white" />}
+                                                                            </div>
+                                                                            <div className="flex-1">
+                                                                                <div className={`text-sm font-bold ${isSelected ? 'text-stone-800' : 'text-stone-600'}`}>{item.name}</div>
+                                                                                <div className="text-xs text-stone-400 mt-0.5 flex gap-2">
+                                                                                    <span>{item.unit}</span>
+                                                                                    {item.unitPrice > 0 && <span>${item.unitPrice}</span>}
+                                                                                    {item.notes && <span className="truncate max-w-[200px]">{item.notes}</span>}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
 
                             <div className="p-4 border-t border-stone-200 bg-stone-50 text-center text-sm text-stone-500">
