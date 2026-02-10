@@ -352,8 +352,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <button
                     type="button"
                     onClick={() => {
-                      setEmployeeId('test');
-                      setPassword('test');
+                      // 直接登入為 SyncOnly 角色，觸發 App.tsx 的自動還原流程
+                      onLoginSuccess({
+                        id: 'SYNC-ONLY',
+                        name: "系統初始化員",
+                        email: "sync@lifequality.ai",
+                        picture: `https://ui-avatars.com/api/?name=Sync&background=0ea5e9&color=fff`,
+                        role: 'SyncOnly',
+                        department: selectedDept
+                      }, selectedDept);
                     }}
                     className="w-full py-6 bg-gradient-to-r from-stone-800 to-stone-900 hover:from-stone-700 hover:to-stone-800 border border-white/5 rounded-[2rem] flex flex-col items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] group"
                   >

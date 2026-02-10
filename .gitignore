@@ -28,3 +28,6 @@ assets
 *.njsproj
 *.sln
 *.sw?
+*.zip
+*.bak
+temp_key.txt

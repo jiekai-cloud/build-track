@@ -18,6 +18,7 @@ interface AIAssistantProps {
   selectedProjectId?: string | null;
   onAddProject?: (data: any) => void;
   onProjectClick?: (id: string) => void;
+  onOpenSettings?: () => void;
 }
 
 const AIAssistant: React.FC<AIAssistantProps> = ({
@@ -25,7 +26,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
   activeTab,
   selectedProjectId,
   onAddProject,
-  onProjectClick
+  onProjectClick,
+  onOpenSettings
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -217,8 +219,15 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
         content: result.text || "無法獲取建議。",
         chunks: result.chunks
       }]);
-    } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "發生意外錯誤或無法連線 AI 服務。" }]);
+    } catch (e: any) {
+      console.error(e);
+      const isAuthError = e.message?.includes('金鑰') || e.message?.includes('API key') || e.message?.includes('400') || e.status === 400;
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: isAuthError
+          ? "🔑 AI 金鑰無效或已過期。請點擊下方按鈕更新您的 API Key。"
+          : "發生意外錯誤或無法連線 AI 服務。"
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -254,8 +263,14 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
         role: 'assistant',
         content: result.text || "分析完成，但我無法產生文字。",
       }]);
-    } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "分析發生錯誤，請稍後再試。" }]);
+    } catch (e: any) {
+      const isAuthError = e.message?.includes('金鑰') || e.message?.includes('API key') || e.message?.includes('400') || e.status === 400;
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: isAuthError
+          ? "🔑 AI 金鑰無效或已過期。請點擊下方按鈕更新您的 API Key。"
+          : "分析發生錯誤，請稍後再試。"
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -319,6 +334,16 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
                   : 'bg-white text-stone-800 border border-stone-100 rounded-tl-none'
                   }`}>
                   <div className="whitespace-pre-wrap">{msg.content}</div>
+
+                  {msg.role === 'assistant' && (msg.content.includes('API Key') || msg.content.includes('金鑰')) && onOpenSettings && (
+                    <button
+                      onClick={onOpenSettings}
+                      className="mt-3 bg-stone-900 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-stone-800 transition-all flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      前往設定 API Key
+                    </button>
+                  )}
 
                   {/* Render grounding links if they exist */}
                   {msg.chunks && msg.chunks.length > 0 && (

@@ -139,6 +139,7 @@ const App: React.FC = () => {
   // 系統狀態
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [lastCloudSync, setLastCloudSync] = useState<string | null>(null);
   const [lastLocalSave, setLastLocalSave] = useState<string>(new Date().toLocaleTimeString());
@@ -956,9 +957,14 @@ const App: React.FC = () => {
       setIsCloudConnected(true);
 
       const cloudData = await googleDriveService.loadFromCloud();
-      if (cloudData && cloudData.projects && confirm('雲端發現現有數據，是否要切換為雲端版本？')) {
+
+      // Auto-restore for SyncOnly user OR explicit confirmation for others
+      const shouldRestore = (user?.role === 'SyncOnly') || (cloudData && cloudData.projects && confirm('雲端發現現有數據，是否要切換為雲端版本？'));
+
+      if (shouldRestore && cloudData) {
         const teamData = cloudData.teamMembers || [];
-        setProjects(cloudData.projects);
+        // Force Replace Local State
+        setProjects(normalizeProjects(cloudData.projects || []));
         setCustomers(cloudData.customers || []);
         setTeamMembers(teamData);
         setActivityLogs(cloudData.activityLogs || []);
@@ -968,12 +974,15 @@ const App: React.FC = () => {
         setPurchaseOrders(cloudData.purchaseOrders || []);
         setAttendanceRecords(cloudData.attendance || []);
         setPayrollRecords(cloudData.payroll || []);
+        setApprovalRequests(cloudData.approvalRequests || []);
+        setApprovalTemplates(cloudData.approvalTemplates || []);
+        setQuotations(cloudData.quotations || []);
         setLastCloudSync(new Date().toLocaleTimeString());
 
         // 重要：在自動登出前，強制將下載的資料存入 IndexedDB
         // 否則 useEffect 可能來不及在登出前存檔，導致登入時找不到帳號
         await Promise.all([
-          storageService.setItem('bt_projects', cloudData.projects),
+          storageService.setItem('bt_projects', cloudData.projects || []),
           storageService.setItem('bt_team', teamData),
           storageService.setItem('bt_customers', cloudData.customers || []),
           storageService.setItem('bt_vendors', cloudData.vendors || []),
@@ -985,7 +994,8 @@ const App: React.FC = () => {
           storageService.setItem('bt_payroll', cloudData.payroll || []),
           storageService.setItem('bt_approval_requests', cloudData.approvalRequests || []),
           storageService.setItem('bt_approval_templates', cloudData.approvalTemplates || []),
-          storageService.setItem('bt_logs', cloudData.activityLogs || [])
+          storageService.setItem('bt_logs', cloudData.activityLogs || []),
+          storageService.setItem('bt_quotations', cloudData.quotations || [])
         ]);
 
         // 如果是初始化帳號，切換完數據後自動登出
@@ -994,8 +1004,12 @@ const App: React.FC = () => {
             alert('✅ 數據同步完成！請使用您的「員工編號」正式登入。');
             handleLogout(true); // Force logout without confirmation
           }, 800);
+        } else {
+          // For normal users, give feedback
+          alert('✅ 已成功切換為雲端版本數據。');
         }
       } else {
+        // User cancelled or no data
       }
     } catch (err: any) {
       setCloudError('驗證失敗');
@@ -1091,6 +1105,24 @@ const App: React.FC = () => {
 
     return () => clearInterval(heartbeat);
   }, [isCloudConnected, user?.role, initialSyncDone, updateStateWithMerge, isMasterTab]);
+
+  // Auto-Trigger Restore for First Time Users
+  useEffect(() => {
+    if (!isInitializing && initialSyncDone && isFirstTimeUser && !isCloudConnected && user?.role !== 'Guest') {
+      // 延遲一點點，確保介面載入完成
+      const timer = setTimeout(() => {
+        if (confirm('偵測到您是初次使用此設備，是否要立即從雲端還原所有資料？\n\n(建議選擇「是」以同步最新進度)')) {
+          handleConnectCloud().then(() => {
+            // handleConnectCloud inside already handles "loadFromCloud" and asking to sync.
+            // But for FORCE RESTORE experience, we might want to guide them more.
+            // The current handleConnectCloud implementation already asks "雲端發現現有數據，是否要切換為雲端版本？", which is good enough.
+          });
+        }
+        setIsFirstTimeUser(false); // Reset flag so it doesn't ask again this session
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isInitializing, initialSyncDone, isFirstTimeUser, isCloudConnected, user, handleConnectCloud]);
 
   // Startup Effect
   const hasStartedRef = React.useRef(false);
@@ -1424,6 +1456,12 @@ const App: React.FC = () => {
   }
 
   if (!user) return <Login onLoginSuccess={(u, d) => {
+    // 檢查是否為初次使用者 (根據是否有舊的 user 紀錄)
+    const storedUser = localStorage.getItem('bt_user');
+    if (!storedUser) {
+      setIsFirstTimeUser(true);
+    }
+
     setIsInitializing(true); // Show loading screen immediately
     const fullUser: User = { ...u, department: d };
     setUser(fullUser);
@@ -1449,6 +1487,13 @@ const App: React.FC = () => {
             <h1 className="text-3xl font-black text-stone-900 tracking-tight">系統同步中心</h1>
             <p className="text-stone-500 text-sm font-bold uppercase tracking-widest">Initial Cloud Synchronization</p>
           </div>
+
+          {/* Auto-Trigger Connect for SyncOnly User */}
+          {React.useEffect(() => {
+            if (!isCloudConnected && !isSyncing) {
+              handleConnectCloud();
+            }
+          }, [])}
 
           <div className="space-y-6">
             <div className={`p-6 rounded-3xl border transition-all ${isCloudConnected ? 'bg-emerald-50 border-emerald-100' : 'bg-stone-50 border-stone-200'}`}>
@@ -2037,6 +2082,7 @@ const App: React.FC = () => {
               setSelectedProjectId(projectId);
               setActiveTab('projects');
             }}
+            onOpenSettings={() => setIsAISettingsOpen(true)}
           />
         </div>
         {/* AI API Key Settings Modal */}

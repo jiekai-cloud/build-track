@@ -622,37 +622,52 @@ const Settings: FC<SettingsProps> = ({
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 lg:p-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {pendingData.projects.map((project: any) => (
-                    <label
-                      key={project.id}
-                      className={`flex items-center gap-4 p-5 rounded-3xl border-2 transition-all cursor-pointer ${selectedProjectIds.has(project.id)
-                        ? 'border-orange-500 bg-orange-50/50 shadow-md'
-                        : 'border-stone-100 hover:border-stone-200 bg-white'
-                        }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="w-5 h-5 rounded-lg border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                        checked={selectedProjectIds.has(project.id)}
-                        onChange={() => {
-                          const next = new Set(selectedProjectIds);
-                          if (next.has(project.id)) next.delete(project.id);
-                          else next.add(project.id);
-                          setSelectedProjectIds(next);
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-black bg-stone-900 text-white px-2 py-0.5 rounded-md uppercase tracking-wider">{project.id}</span>
-                          <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{project.source}</span>
-                          {project.deletedAt && <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">(已刪除)</span>}
+                <div className="flex flex-col gap-2">
+                  {pendingData.projects
+                    .sort((a: any, b: any) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+                    .map((project: any) => (
+                      <label
+                        key={project.id}
+                        className={`flex items-center gap-4 px-5 py-3 rounded-xl border transition-all cursor-pointer group ${selectedProjectIds.has(project.id)
+                          ? 'border-orange-500 bg-orange-50 shadow-sm'
+                          : 'border-stone-100 hover:border-stone-300 hover:bg-stone-50 bg-white'
+                          }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0"
+                          checked={selectedProjectIds.has(project.id)}
+                          onChange={() => {
+                            const next = new Set(selectedProjectIds);
+                            if (next.has(project.id)) next.delete(project.id);
+                            else next.add(project.id);
+                            setSelectedProjectIds(next);
+                          }}
+                        />
+                        <div className="flex-1 flex flex-col md:flex-row md:items-center gap-2 md:gap-4 overflow-hidden">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <span className="text-[10px] font-black bg-stone-100 text-stone-600 px-2 py-1 rounded uppercase tracking-wider shrink-0 w-[90px] text-center font-mono">
+                              {project.id}
+                            </span>
+                            <h4 className={`font-bold text-sm truncate ${selectedProjectIds.has(project.id) ? 'text-orange-900' : 'text-stone-700'}`}>
+                              {project.name}
+                            </h4>
+                            {project.deletedAt && (
+                              <span className="text-[10px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded shrink-0">
+                                已刪除
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between md:justify-end gap-6 text-xs font-medium text-stone-400 shrink-0 md:border-l md:border-stone-200 md:pl-4 min-w-[200px]">
+                            <span className="hidden md:inline text-[10px] uppercase tracking-widest bg-stone-50 px-2 py-0.5 rounded text-stone-400">{project.source || 'SYSTEM'}</span>
+                            <span className={`font-mono text-xs ${selectedProjectIds.has(project.id) ? 'text-orange-700 font-bold' : 'text-stone-500'}`}>
+                              {project.updatedAt ? new Date(project.updatedAt).toLocaleString('zh-TW', { hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '無日期'}
+                            </span>
+                          </div>
                         </div>
-                        <h4 className="font-black text-stone-900 truncate">{project.name}</h4>
-                        <p className="text-[10px] text-stone-500 font-bold mt-1">最後更新：{project.updatedAt ? new Date(project.updatedAt).toLocaleString() : '未知'}</p>
-                      </div>
-                    </label>
-                  ))}
+                      </label>
+                    ))}
                 </div>
               </div>
 
