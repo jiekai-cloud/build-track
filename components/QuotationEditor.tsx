@@ -236,7 +236,8 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                 setFormData(newQuotation);
             }
         }
-    }, [isOpen, initialData, user, defaultProjectId, projects, quotations]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, initialData]);
 
     // 自動計算金額
     useEffect(() => {
