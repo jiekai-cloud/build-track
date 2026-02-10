@@ -1096,6 +1096,31 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                                                 </button>
                                                             </div>
                                                             <button
+                                                                onClick={() => {
+                                                                    if (!formData) return;
+                                                                    const newOptions = [...formData.options];
+                                                                    const category = newOptions[activeOptionIndex].categories[catIndex];
+                                                                    const itemToCopy = category.items[itemIndex];
+
+                                                                    const newItem = {
+                                                                        ...itemToCopy,
+                                                                        id: crypto.randomUUID(),
+                                                                    };
+
+                                                                    // Insert after the current item
+                                                                    category.items.splice(itemIndex + 1, 0, newItem);
+
+                                                                    // Recalculate item numbers
+                                                                    category.items.forEach((item, idx) => item.itemNumber = idx + 1);
+
+                                                                    setFormData({ ...formData, options: newOptions });
+                                                                }}
+                                                                className="text-stone-300 hover:text-blue-500 mr-1"
+                                                                title="複製項目"
+                                                            >
+                                                                <Copy size={16} />
+                                                            </button>
+                                                            <button
                                                                 onClick={() => deleteItem(catIndex, itemIndex)}
                                                                 className="text-stone-300 hover:text-red-500"
                                                                 title="刪除項目"
