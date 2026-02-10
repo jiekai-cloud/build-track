@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  // Use root path by default for custom domain deployment
-  const basePath = process.env.VITE_BASE_PATH || '/';
+  // Use GitHub Pages path by default, or relative path for other hosts
+  const basePath = process.env.VITE_BASE_PATH || '/build-track/';
   return {
     base: basePath,
     server: {
