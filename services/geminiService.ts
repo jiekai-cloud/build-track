@@ -14,17 +14,15 @@ const getApiKey = () => {
   const savedKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
   const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
 
-  if (savedKey) return savedKey;
-  if (envKey) return envKey;
+  let key = '';
+  if (envKey && envKey !== 'undefined' && envKey !== 'PLACEHOLDER_API_KEY') key = envKey as string;
+  if (savedKey && savedKey !== 'undefined') key = savedKey;
 
-  // Obfuscated Fallback Key (For internal team use)
-  // Part 1: AIzaSy
-  // Part 2: DzjxKWoBktOkAhgMf25
-  // Part 3: MrwL6J07tBciQk
-  const p1 = 'AIzaSy';
-  const p2 = 'DzjxKWoBktOkAhgMf25';
-  const p3 = 'MrwL6J07tBciQk';
-  return `${p1}${p2}${p3}`;
+  if (!key) {
+    console.error("Gemini API Key is missing.");
+    throw new Error("Gemini API 金鑰未設定。請點擊右上角設定 (齒輪圖示) ->「AI 設定」並輸入您的金鑰。");
+  }
+  return key;
 };
 
 async function callGeminiViaFetch(model: string, payload: any, apiKey: string) {
