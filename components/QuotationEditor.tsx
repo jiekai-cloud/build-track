@@ -912,9 +912,57 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                         {/* 分類與項目列表 */}
                         <div className="space-y-6">
                             {currentOption.categories.map((category, catIndex) => (
-                                <div key={category.id || catIndex} className="bg-white rounded-lg border border-stone-200 shadow-sm overflow-hidden">
-                                    <div className="bg-stone-100 p-3 flex items-center gap-2 border-b border-stone-200">
-                                        <span className="font-bold text-stone-700 w-8">{category.code}</span>
+                                <div
+                                    key={category.id || catIndex}
+                                    className="bg-white rounded-lg border border-stone-200 shadow-sm overflow-hidden"
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        // Allow dropping on the category container to append to the end
+                                    }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation(); // Prevent bubbling if dropped on an item
+                                        if (!formData || !draggedItem) return;
+
+                                        const { catIndex: sourceCatIndex, itemIndex: sourceItemIndex } = draggedItem;
+
+                                        // If dropping on the Category container itself (not on a specific item),
+                                        // we treat it as "move to this category" (append to end)
+                                        // unless it's the same category, then do nothing (or we could handle reorder to end)
+
+                                        if (sourceCatIndex === catIndex) return; // Same category, handle via item sorting instead
+
+                                        const newOptions = [...formData.options];
+                                        const currentOption = newOptions[activeOptionIndex];
+
+                                        // Remove from source
+                                        const [movedItem] = currentOption.categories[sourceCatIndex].items.splice(sourceItemIndex, 1);
+
+                                        // Append to target category
+                                        currentOption.categories[catIndex].items.push(movedItem);
+
+                                        // Renumber source
+                                        currentOption.categories[sourceCatIndex].items.forEach((item, idx) => item.itemNumber = idx + 1);
+                                        // Renumber target
+                                        currentOption.categories[catIndex].items.forEach((item, idx) => item.itemNumber = idx + 1);
+
+                                        setFormData({ ...formData, options: newOptions });
+                                        setDraggedItem(null);
+                                    }}
+                                >
+                                    <div className="bg-stone-100 p-3 flex items-center gap-2 border-b border-stone-200 group">
+                                        <div className="flex items-center gap-1">
+                                            <input
+                                                value={category.code}
+                                                onChange={(e) => {
+                                                    const newOptions = [...formData.options];
+                                                    newOptions[activeOptionIndex].categories[catIndex].code = e.target.value;
+                                                    setFormData({ ...formData, options: newOptions });
+                                                }}
+                                                className="bg-transparent font-bold text-stone-700 w-10 text-center focus:outline-none border border-transparent focus:border-stone-300 rounded hover:bg-stone-200/50 transition-colors"
+                                                title="編輯大項編號"
+                                            />
+                                        </div>
                                         <input
                                             value={category.name}
                                             onChange={(e) => {
@@ -925,6 +973,20 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                             className="bg-transparent font-bold text-stone-800 focus:outline-none flex-1"
                                             placeholder="分類名稱"
                                         />
+
+                                        <button
+                                            onClick={() => {
+                                                if (!formData) return;
+                                                if (!confirm(`確定要刪除「${category.name || '此分類'}」及其所有項目嗎？`)) return;
+                                                const newOptions = [...formData.options];
+                                                newOptions[activeOptionIndex].categories.splice(catIndex, 1);
+                                                setFormData({ ...formData, options: newOptions });
+                                            }}
+                                            className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                            title="刪除整個大項"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
 
                                     <div className="p-0">
@@ -950,10 +1012,13 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                                         onDragStart={(e) => handleDragStart(e, catIndex, itemIndex)}
                                                         onDragEnd={handleDragEnd}
                                                         onDragOver={(e) => handleDragOver(e, catIndex, itemIndex)}
-                                                        onDrop={(e) => handleDrop(e, catIndex, itemIndex)}
+                                                        onDrop={(e) => {
+                                                            e.stopPropagation(); // Handle drop here, don't bubble to category
+                                                            handleDrop(e, catIndex, itemIndex);
+                                                        }}
                                                     >
                                                         <td className="p-2 text-center relative">
-                                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-stone-300 cursor-grab active:cursor-grabbing flex items-center justify-center" title="拖曳以排序">
+                                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-stone-300 cursor-grab active:cursor-grabbing flex items-center justify-center" title="拖曳以排序或移動">
                                                                 <GripVertical size={12} className="text-stone-400 opacity-0 group-hover:opacity-100" />
                                                             </div>
                                                             <div className="flex items-center justify-center">
@@ -1054,7 +1119,7 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                             <button
                                 onClick={() => {
                                     const newOptions = [...formData.options];
-                                    const codes = ['壹', '貳', '參', '肆', '伍'];
+                                    const codes = ['壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖', '拾'];
                                     newOptions[activeOptionIndex].categories.push({
                                         ...EmptyCategory,
                                         id: crypto.randomUUID(),
