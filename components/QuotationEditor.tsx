@@ -1254,7 +1254,22 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                                     <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                                                         {index + 1}
                                                     </span>
-                                                    <p className="flex-1 text-sm text-stone-700">{note}</p>
+                                                    <textarea
+                                                        value={note}
+                                                        onChange={(e) => {
+                                                            const newNotes = [...(formData.terms?.otherNotes || [])];
+                                                            newNotes[index] = e.target.value;
+                                                            setFormData({
+                                                                ...formData,
+                                                                terms: {
+                                                                    ...formData.terms,
+                                                                    otherNotes: newNotes
+                                                                }
+                                                            });
+                                                        }}
+                                                        className="flex-1 text-sm text-stone-700 border border-transparent hover:border-stone-300 rounded p-1 resize-y min-h-[1.5rem] focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                                                        rows={note.length > 30 ? 2 : 1}
+                                                    />
 
                                                     {/* Reorder buttons */}
                                                     <div className="flex flex-col gap-0.5">
