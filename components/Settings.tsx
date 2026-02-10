@@ -2,7 +2,7 @@
 import React, { useState, useMemo, FC } from 'react';
 import {
   User, ChevronRight, Download, ShieldCheck,
-  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard
+  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Sparkles
 } from 'lucide-react';
 import { Project, Customer, TeamMember, User as UserType } from '../types';
 import { BACKUP_FILENAME } from '../services/googleDriveService';
@@ -38,6 +38,25 @@ const Settings: FC<SettingsProps> = ({
   const [selectedItemsMap, setSelectedItemsMap] = useState<Record<string, Set<string>>>({});
   const [selectionCategory, setSelectionCategory] = useState<string | null>(null);
 
+  const [apiKey, setApiKey] = useState('');
+
+  React.useEffect(() => {
+    const key = localStorage.getItem('GEMINI_API_KEY');
+    if (key) setApiKey(key);
+  }, []);
+
+  const handleSaveApiKey = () => {
+    if (!apiKey.trim()) {
+      localStorage.removeItem('GEMINI_API_KEY');
+      alert('API Key 已清除');
+      window.location.reload();
+      return;
+    }
+    localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
+    alert('✅ API Key 已安全儲存於瀏覽器本機！');
+    window.location.reload();
+  };
+
   const [importMode, setImportMode] = useState<'overwrite' | 'merge'>('merge');
   const isReadOnly = user.role === 'Guest';
   const currentUrl = window.location.origin + window.location.pathname;
@@ -72,6 +91,7 @@ const Settings: FC<SettingsProps> = ({
 
   const sections = [
     { id: 'profile', label: '個人帳戶', icon: User },
+    { id: 'ai', label: 'AI 設定', icon: Sparkles },
     { id: 'cloud', label: '雲端同步', icon: Cloud },
     { id: 'deploy', label: '部署助手', icon: Github },
     { id: 'data', label: '資料安全', icon: ShieldCheck },
@@ -111,6 +131,58 @@ const Settings: FC<SettingsProps> = ({
 
         <div className="flex-1 bg-white rounded-[2.5rem] border border-stone-200 shadow-sm overflow-hidden min-h-[550px]">
           <div className="p-6 lg:p-12">
+
+            {activeSection === 'ai' && (
+              <div className="space-y-8 animate-in slide-in-from-right-4">
+                <div className="flex items-center gap-5">
+                  <div className="p-5 rounded-[2rem] bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg">
+                    <Sparkles size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-stone-900 uppercase tracking-tight">AI 智慧助手設定</h3>
+                    <p className="text-sm text-stone-500 font-medium">管理 Gemini AI 模型連線與金鑰。</p>
+                  </div>
+                </div>
+
+                <div className="bg-violet-50 border border-violet-100 p-8 rounded-[2rem] space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-violet-900 uppercase tracking-widest">
+                      Google Gemini API Key
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="請在此輸入您的 API Key (AIzaSy...)"
+                        className="w-full bg-white border border-violet-200 text-stone-900 text-sm font-bold rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all placeholder:font-normal"
+                      />
+                    </div>
+                    <p className="text-[11px] text-violet-700 leading-relaxed font-bold mt-2">
+                      為了保護您的資產安全，此金鑰僅會儲存在您的瀏覽器中 (localStorage)，絕對不會上傳至任何伺服器。
+                      <br />請確保您的 API Key 已啟用 Generative Language API 權限。
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleSaveApiKey}
+                    className="w-full bg-violet-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-violet-200 hover:bg-violet-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Check size={16} />
+                    {apiKey ? '更新並儲存金鑰' : '儲存金鑰'}
+                  </button>
+                </div>
+
+                <div className="bg-stone-50 p-6 rounded-[2rem] border border-stone-200">
+                  <h4 className="text-sm font-black text-stone-900 mb-2">如何取得 API Key？</h4>
+                  <ol className="list-decimal list-inside text-xs text-stone-500 space-y-1 font-bold">
+                    <li>前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 underline">Google AI Studio</a></li>
+                    <li>點擊 "Create API key"</li>
+                    <li>將產生的字串複製並貼上至上方欄位</li>
+                  </ol>
+                </div>
+              </div>
+            )}
 
             {activeSection === 'deploy' && (
               <div className="space-y-8 animate-in slide-in-from-right-4">
