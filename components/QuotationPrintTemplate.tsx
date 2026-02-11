@@ -232,12 +232,12 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                                 </div>
                             </div>
 
-                            {/* 報價專用章 (Stamp) - Below Bank Account Info */}
-                            <div className="absolute -bottom-24 right-0 pointer-events-none">
+                            {/* 報價專用章 (Stamp) - Below Bank Account Info, centered in whitespace roughly */}
+                            <div className="absolute top-full mt-4 right-8 pointer-events-none">
                                 <img
                                     src={STAMP_BASE64 || '/stamp.png'}
                                     alt="Stamp"
-                                    className="w-32 h-32 opacity-90 mix-blend-multiply"
+                                    className="w-28 h-28 opacity-90 mix-blend-multiply"
                                     style={{ display: STAMP_BASE64 ? 'block' : 'none' }}
                                 />
                             </div>

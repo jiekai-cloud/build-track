@@ -514,9 +514,9 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
             currentY = headerHeight + 5;
         }
 
-        // Align to the right side (where Bank Account info is)
-        const stampX = pageWidth - 15 - stampSize - 5;
-        const stampY = currentY + 2; // Add a small gap after previous content
+        // Align to the right side (where Bank Account info is) but shifted left
+        const stampX = pageWidth - 15 - stampSize - 20;
+        const stampY = currentY + 10; // More gap to be below bank info
 
         doc.addImage(stampData, 'PNG', stampX, stampY, stampSize, stampSize);
 
