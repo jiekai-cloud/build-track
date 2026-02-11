@@ -172,22 +172,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 {/* 5. 金額總計區 (靠右) */}
                 <div className="flex justify-end mb-8 break-inside-avoid">
                     <div className="w-[45%] bg-stone-50 p-6 rounded-xl border border-stone-100 leading-relaxed relative">
-                        {/* 報價專用章 (Stamp) */}
-                        {/* 報價專用章 (Stamp) */}
-                        <img
-                            src={STAMP_BASE64 || '/stamp.png'}
-                            alt="Stamp"
-                            className="absolute bottom-4 left-4 w-24 h-24 opacity-90 mix-blend-multiply pointer-events-none"
-                            style={{ display: STAMP_BASE64 ? 'block' : 'none' }}
-                            onError={(e) => {
-                                // If base64 fails (unlikely) try loading file as fallback, or hide
-                                if (e.currentTarget.src !== '/stamp.png') {
-                                    e.currentTarget.src = '/stamp.png';
-                                } else {
-                                    e.currentTarget.style.display = 'none';
-                                }
-                            }}
-                        />
+
                         <div className="flex justify-between text-stone-600 mb-2">
                             <span>小計 Subtotal</span>
                             <span className="font-mono">{formatCurrency(selectedOption.summary.subtotal)}</span>
@@ -263,6 +248,16 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                             </div>
                         </div>
                     )}
+
+                    {/* 報價專用章 (Stamp) - Moved to bottom right of notes area */}
+                    <div className="absolute right-0 bottom-4 pointer-events-none">
+                        <img
+                            src={STAMP_BASE64 || '/stamp.png'}
+                            alt="Stamp"
+                            className="w-32 h-32 opacity-90 mix-blend-multiply"
+                            style={{ display: STAMP_BASE64 ? 'block' : 'none' }}
+                        />
+                    </div>
                 </div>
 
                 {/* 客戶簽名區 (如果有) */}

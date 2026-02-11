@@ -447,15 +447,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     doc.text('TOTAL AMOUNT 總 計 金 額:', labelX, currentY, { align: 'right' });
     doc.text(formatCurrency(selectedOption.summary.totalAmount), valueX, currentY, { align: 'right' });
 
-    // 繪製印章 (如果有的話) - 放在總計金額左側稍微重疊
-    if (stampData) {
-        // Position: X = centered around label start, Y = centered vertically on Total Amount line
-        // Size: 24x24mm
-        const stampSize = 24;
-        const stampX = summaryX - 25; // Adjust this to position horizontally
-        const stampY = currentY - 15; // Adjust this to position vertically
-        doc.addImage(stampData, 'PNG', stampX, stampY, stampSize, stampSize);
-    }
+
 
     currentY += 10;
 
@@ -507,6 +499,24 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
             currentY += 5;
             doc.text(`Account No. 帳號: ${quotation.terms.bankAccount.accountNumber}`, leftX + 10, currentY);
             currentY += 5;
+        }
+
+        // 報價專用章 (Stamp) - Moved to bottom right of notes area
+        // Check if there is space on this page, otherwise add page
+        // Stamp size 32x32mm approx
+        const stampSize = 32;
+        if (currentY + stampSize > maxContentY) {
+            doc.addPage();
+            currentY = headerHeight;
+        }
+
+        if (stampData) {
+            // Align right, roughly where signature/total area ends
+            const stampX = pageWidth - 15 - stampSize - 10;
+            // Draw stamp over the notes area bottom right
+            // We want it slightly overlapping the bottom of the notes or just below
+            const stampY = currentY - 20;
+            doc.addImage(stampData, 'PNG', stampX, stampY, stampSize, stampSize);
         }
     }
 
