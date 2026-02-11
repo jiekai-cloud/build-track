@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Quotation, QuotationOption, ItemCategory } from '../types';
-import { STAMP_BASE64 } from './stampImage';
+import { STAMP_BASE64, PAGING_SEAL_BASE64 } from './stampImage';
 
 // Load font helper
 // Load font helper
@@ -196,6 +196,16 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
         }
     } catch (e) {
         console.warn('Stamp loading utterly failed:', e);
+    }
+
+    // 1.6 Load Paging Seal
+    let pagingSealData: string | null = null;
+    try {
+        if (PAGING_SEAL_BASE64 && PAGING_SEAL_BASE64.length > 50) {
+            pagingSealData = PAGING_SEAL_BASE64;
+        }
+    } catch (e) {
+        console.warn('Paging Seal loading failed:', e);
     }
 
 
@@ -505,7 +515,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
     // 報價專用章 (Stamp) - Positioned below Bank Account Info on the right
     if (stampData) {
-        const stampSize = 32;
+        const stampSize = 40;
         const paddingFoo = 5;
 
         // Check if we need a new page
@@ -573,6 +583,19 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
             pageHeight - 6,
             { align: 'center' }
         );
+
+        // 騎縫章 (Paging Seal)
+        if (pagingSealData) {
+            const pSealSize = 24; // Size in mm
+            // Position on the right edge, centered vertically
+            // Overlapping the edge slightly to simulate "seam" seal 
+            // (Setting x to pageWidth - pSealSize/2 would put it half off-page, which might be cut off by printers or viewers)
+            // Let's place it just touching the edge or slightly inside (margin ~5mm) to be safe and visible.
+            const pSealX = pageWidth - pSealSize - 2;
+            const pSealY = (pageHeight - pSealSize) / 2;
+
+            doc.addImage(pagingSealData, 'PNG', pSealX, pSealY, pSealSize, pSealSize);
+        }
     }
 
     // ===== 儲存PDF =====
