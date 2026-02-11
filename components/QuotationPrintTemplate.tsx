@@ -44,23 +44,25 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
             {/* 主要內容區域 */}
             <div className="w-full">
-                {/* 1. Header: 公司抬頭 */}
-                <div className="text-center mb-4 break-inside-avoid">
-                    <div className="flex justify-center mb-2">
+                {/* 1. Header: 公司抬頭 (Left Aligned) */}
+                <div className="flex justify-between items-end mb-6 break-inside-avoid border-b-2 border-stone-100 pb-4">
+                    <div className="flex items-center gap-3">
                         <img
                             src={`${import.meta.env.BASE_URL}pwa-icon.png`}
                             alt="Company Logo"
-                            className="h-16 w-auto object-contain"
+                            className="h-12 w-auto object-contain"
                             onError={(e) => e.currentTarget.style.display = 'none'}
                         />
+                        <div>
+                            <h1 className="text-xl font-black text-stone-900 tracking-wide">台灣生活品質發展股份有限公司</h1>
+                            <h2 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                                Taiwan Quality of Life Development Co., Ltd.
+                            </h2>
+                        </div>
                     </div>
-                    <h1 className="text-3xl font-black text-stone-900 tracking-wide mb-1">台灣生活品質發展股份有限公司</h1>
-                    <h2 className="text-xs font-bold text-stone-400 uppercase tracking-[0.35em] mb-3 border-b border-stone-100 pb-3 mx-auto w-fit">
-                        Taiwan Quality of Life Development Co., Ltd.
-                    </h2>
-                    {/* 移除邊框 */}
-                    <h2 className="text-2xl font-black uppercase text-stone-800 tracking-widest inline-block px-6 py-1">
-                        QUOTATION 報 價 單
+
+                    <h2 className="text-2xl font-black uppercase text-stone-800 tracking-widest text-right">
+                        QUOTATION <span className="block text-sm text-stone-400 font-bold tracking-[0.5em] mt-0.5">報 價 單</span>
                     </h2>
                 </div>
 
