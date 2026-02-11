@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { Quotation, QuotationItem, ItemCategory, QuotationOption, QuotationSummary } from '../types';
+import { STAMP_BASE64 } from '../services/stampImage';
 
 interface QuotationPrintTemplateProps {
     quotation: Quotation;
@@ -172,11 +173,20 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 <div className="flex justify-end mb-8 break-inside-avoid">
                     <div className="w-[45%] bg-stone-50 p-6 rounded-xl border border-stone-100 leading-relaxed relative">
                         {/* 報價專用章 (Stamp) */}
+                        {/* 報價專用章 (Stamp) */}
                         <img
-                            src="/stamp.png"
+                            src={STAMP_BASE64 || '/stamp.png'}
                             alt="Stamp"
                             className="absolute bottom-4 left-4 w-24 h-24 opacity-90 mix-blend-multiply pointer-events-none"
-                            onError={(e) => e.currentTarget.style.display = 'none'}
+                            style={{ display: STAMP_BASE64 ? 'block' : 'none' }}
+                            onError={(e) => {
+                                // If base64 fails (unlikely) try loading file as fallback, or hide
+                                if (e.currentTarget.src !== '/stamp.png') {
+                                    e.currentTarget.src = '/stamp.png';
+                                } else {
+                                    e.currentTarget.style.display = 'none';
+                                }
+                            }}
                         />
                         <div className="flex justify-between text-stone-600 mb-2">
                             <span>小計 Subtotal</span>

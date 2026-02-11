@@ -1,7 +1,9 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Quotation, QuotationOption, ItemCategory } from '../types';
+import { STAMP_BASE64 } from './stampImage';
 
+// Load font helper
 // Load font helper
 const loadFont = async (url: string): Promise<string> => {
     const response = await fetch(url);
@@ -183,19 +185,20 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
         console.warn('Logo loading failed:', e);
     }
 
-    // 1.5 Load Stamp
+    // 1.5 Load Stamp (using base64 directly to avoid path issues)
     let stampData: string | null = null;
     try {
-        const stampUrl = getAssetUrl('stamp.png');
-        console.log('[PDF] Loading Stamp from:', stampUrl);
-        // Try versioned URL to bust cache
-        stampData = await loadImage(`${stampUrl}?t=${Date.now()}`).catch(err => {
-            console.warn('Stamp load with cache-bust failed, trying simple path:', err);
-            return loadImage(stampUrl).catch(() => loadImage('/stamp.png')); // Fallbacks
-        });
+        // Only load if base64 string is valid
+        if (STAMP_BASE64 && STAMP_BASE64.length > 50) {
+            stampData = STAMP_BASE64;
+        } else {
+            console.warn('Stamp base64 constant is empty or invalid');
+        }
     } catch (e) {
         console.warn('Stamp loading utterly failed:', e);
     }
+
+
 
     // 2. 公司標題 area: Y=10 to Y=30
     const companyNameCN = '台灣生活品質發展股份有限公司';
