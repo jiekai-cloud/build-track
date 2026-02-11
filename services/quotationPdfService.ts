@@ -143,6 +143,16 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     const maxContentY = pageHeight - bottomMargin - 8; // Reserve space for footer (page number)
     let currentY = topMargin;
 
+    // Helper to resolve asset paths
+    const getAssetUrl = (path: string) => {
+        const baseUrl = import.meta.env.BASE_URL || '/';
+        // Ensure path doesn't start with slash if base ends with it
+        const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+        // Ensure base ends with slash
+        const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+        return `${cleanBase}${cleanPath}`;
+    };
+
     // 選擇的方案
     const selectedOption = quotation.options?.[quotation.selectedOptionIndex];
 
@@ -158,21 +168,33 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
     // 1. 載入 Logo
     try {
-        const logoData = await loadImage('/pwa-icon.png').catch(() => null);
+        const logoUrl = getAssetUrl('pwa-icon.png');
+        console.log('[PDF] Loading Logo from:', logoUrl);
+        const logoData = await loadImage(logoUrl).catch(err => {
+            console.warn('Logo load failed, trying absolute path:', err);
+            return loadImage('/pwa-icon.png');
+        });
+
         if (logoData) {
             // Logo 放在左上角，垂直置中於標題區域
             doc.addImage(logoData, 'PNG', 15, 10, 20, 20);
         }
     } catch (e) {
-        console.warn('Logo loading failed', e);
+        console.warn('Logo loading failed:', e);
     }
 
     // 1.5 Load Stamp
     let stampData: string | null = null;
     try {
-        stampData = await loadImage('/stamp.png').catch(() => null);
+        const stampUrl = getAssetUrl('stamp.png');
+        console.log('[PDF] Loading Stamp from:', stampUrl);
+        // Try versioned URL to bust cache
+        stampData = await loadImage(`${stampUrl}?t=${Date.now()}`).catch(err => {
+            console.warn('Stamp load with cache-bust failed, trying simple path:', err);
+            return loadImage(stampUrl).catch(() => loadImage('/stamp.png')); // Fallbacks
+        });
     } catch (e) {
-        console.warn('Stamp loading failed', e);
+        console.warn('Stamp loading utterly failed:', e);
     }
 
     // 2. 公司標題 area: Y=10 to Y=30
