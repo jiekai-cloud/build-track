@@ -170,7 +170,14 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
                 {/* 5. 金額總計區 (靠右) */}
                 <div className="flex justify-end mb-8 break-inside-avoid">
-                    <div className="w-[45%] bg-stone-50 p-6 rounded-xl border border-stone-100 leading-relaxed">
+                    <div className="w-[45%] bg-stone-50 p-6 rounded-xl border border-stone-100 leading-relaxed relative">
+                        {/* 報價專用章 (Stamp) */}
+                        <img
+                            src="/stamp.png"
+                            alt="Stamp"
+                            className="absolute bottom-4 left-4 w-24 h-24 opacity-90 mix-blend-multiply pointer-events-none"
+                            onError={(e) => e.currentTarget.style.display = 'none'}
+                        />
                         <div className="flex justify-between text-stone-600 mb-2">
                             <span>小計 Subtotal</span>
                             <span className="font-mono">{formatCurrency(selectedOption.summary.subtotal)}</span>

@@ -167,6 +167,14 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
         console.warn('Logo loading failed', e);
     }
 
+    // 1.5 Load Stamp
+    let stampData: string | null = null;
+    try {
+        stampData = await loadImage('/stamp.png').catch(() => null);
+    } catch (e) {
+        console.warn('Stamp loading failed', e);
+    }
+
     // 2. 公司標題 area: Y=10 to Y=30
     const companyNameCN = '台灣生活品質發展股份有限公司';
     const companyNameEN = 'Taiwan Quality of Life Development Co., Ltd.';
@@ -413,6 +421,16 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
     doc.setFont('NotoSansTC', 'bold');
     doc.text('TOTAL AMOUNT 總 計 金 額:', labelX, currentY, { align: 'right' });
     doc.text(formatCurrency(selectedOption.summary.totalAmount), valueX, currentY, { align: 'right' });
+
+    // 繪製印章 (如果有的話) - 放在總計金額左側稍微重疊
+    if (stampData) {
+        // Position: X = centered around label start, Y = centered vertically on Total Amount line
+        // Size: 24x24mm
+        const stampSize = 24;
+        const stampX = summaryX - 25; // Adjust this to position horizontally
+        const stampY = currentY - 15; // Adjust this to position vertically
+        doc.addImage(stampData, 'PNG', stampX, stampY, stampSize, stampSize);
+    }
 
     currentY += 10;
 
