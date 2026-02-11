@@ -221,15 +221,25 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                             )}
                         </div>
 
-                        <div className="bg-stone-50 p-3 rounded border border-stone-200">
+                        <div className="bg-stone-50 p-3 rounded border border-stone-200 relative">
                             <div className="font-bold text-stone-800 mb-1 border-b border-stone-200 pb-1">匯款帳號資料 Bank Account Info</div>
-                            <div className="space-y-1">
+                            <div className="space-y-1 relative z-10">
                                 <div className="flex justify-between"><span>銀行 Code</span><span className="font-medium text-stone-900">{quotation.terms?.bankAccount?.bankName || '玉山銀行(808) 士林分行'}</span></div>
                                 <div className="flex justify-between"><span>戶名 Name</span><span className="font-medium text-stone-900 text-right">{quotation.terms?.bankAccount?.accountName || '台灣生活品質發展股份有限公司'}</span></div>
                                 <div className="flex justify-between bg-white p-1 rounded border border-stone-100 mt-1">
                                     <span className="font-bold">帳號 No.</span>
                                     <span className="font-mono font-bold text-stone-900">{quotation.terms?.bankAccount?.accountNumber || '0657-940-151307'}</span>
                                 </div>
+                            </div>
+
+                            {/* 報價專用章 (Stamp) - Below Bank Account Info */}
+                            <div className="absolute -bottom-24 right-0 pointer-events-none">
+                                <img
+                                    src={STAMP_BASE64 || '/stamp.png'}
+                                    alt="Stamp"
+                                    className="w-32 h-32 opacity-90 mix-blend-multiply"
+                                    style={{ display: STAMP_BASE64 ? 'block' : 'none' }}
+                                />
                             </div>
                         </div>
                     </div>
@@ -249,15 +259,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                         </div>
                     )}
 
-                    {/* 報價專用章 (Stamp) - Moved to bottom right of notes area */}
-                    <div className="absolute right-0 bottom-4 pointer-events-none">
-                        <img
-                            src={STAMP_BASE64 || '/stamp.png'}
-                            alt="Stamp"
-                            className="w-32 h-32 opacity-90 mix-blend-multiply"
-                            style={{ display: STAMP_BASE64 ? 'block' : 'none' }}
-                        />
-                    </div>
+
                 </div>
 
                 {/* 客戶簽名區 (如果有) */}

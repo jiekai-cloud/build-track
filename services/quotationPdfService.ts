@@ -501,24 +501,31 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
             currentY += 5;
         }
 
-        // 報價專用章 (Stamp) - Moved to bottom right of notes area
-        // Check if there is space on this page, otherwise add page
-        // Stamp size 32x32mm approx
+    }
+
+    // 報價專用章 (Stamp) - Positioned below Bank Account Info on the right
+    if (stampData) {
         const stampSize = 32;
-        if (currentY + stampSize > maxContentY) {
+        const paddingFoo = 5;
+
+        // Check if we need a new page
+        if (currentY + stampSize + paddingFoo > maxContentY) {
             doc.addPage();
-            currentY = headerHeight;
+            currentY = headerHeight + 5;
         }
 
-        if (stampData) {
-            // Align right, roughly where signature/total area ends
-            const stampX = pageWidth - 15 - stampSize - 10;
-            // Draw stamp over the notes area bottom right
-            // We want it slightly overlapping the bottom of the notes or just below
-            const stampY = currentY - 20;
-            doc.addImage(stampData, 'PNG', stampX, stampY, stampSize, stampSize);
-        }
+        // Align to the right side (where Bank Account info is)
+        const stampX = pageWidth - 15 - stampSize - 5;
+        const stampY = currentY + 2; // Add a small gap after previous content
+
+        doc.addImage(stampData, 'PNG', stampX, stampY, stampSize, stampSize);
+
+        // Update currentY to include stamp height so subsequent sections don't overlap
+        // Only update if we actually drew it.
+        // We adding some extra padding below stamp
+        currentY = stampY + stampSize + 5;
     }
+
 
     // ===== 負責人資訊 =====
     if (quotation.responsibles) {
