@@ -183,6 +183,7 @@ export interface Project {
   category: ProjectCategory;
   source: ProjectSource;
   client: string;
+  contactPerson?: string;
   referrer: string;
   quotationManager: string; // 報價負責人
   engineeringManager: string; // 工程負責人

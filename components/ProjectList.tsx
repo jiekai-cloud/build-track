@@ -93,7 +93,11 @@ const CardView = ({ projects, isReadOnly, onDetailClick, onEditClick, onDeleteCl
                 <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100"><span className="text-[9px] uppercase font-black text-emerald-600/60 block mb-0.5">預估毛利 Profit</span><span className={`text-lg font-black tracking-tight ${project.computedFinancials.profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>${project.computedFinancials.profit.toLocaleString()}</span></div>
                 <div className="bg-stone-50 p-3 rounded-2xl border border-stone-100"><span className="text-[9px] uppercase font-black text-stone-400 block mb-0.5">毛利率 Margin</span><span className={`text-lg font-black tracking-tight ${project.computedFinancials.profitMargin >= 20 ? 'text-emerald-600' : 'text-stone-600'}`}>{project.computedFinancials.profitMargin.toFixed(1)}%</span></div>
               </div>
-              <div className="pt-2 border-t border-stone-100 flex items-center justify-between"><span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">{project.client}</span><div className="flex items-center gap-1 text-xs font-bold text-stone-400 group-hover:text-stone-900 transition-colors">查看財務明細 <ArrowUpRight size={14} /></div></div>
+              <div className="pt-2 border-t border-stone-100 flex flex-col justify-start">
+                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider truncate w-full">{project.client}</span>
+                {project.contactPerson && <span className="text-[9px] font-bold text-stone-300 truncate w-full flex items-center gap-1"><Users size={10} /> {project.contactPerson}</span>}
+                <div className="flex items-center gap-1 text-xs font-bold text-stone-400 group-hover:text-stone-900 transition-colors mt-1 self-end">查看財務明細 <ArrowUpRight size={14} /></div>
+              </div>
             </div>
           </div>
         ))}
@@ -185,6 +189,18 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick }: any)
             {(params.value || 'U')[0]}
           </div>
           <span className="text-xs font-bold text-stone-600">{params.value || '未指定'}</span>
+        </div>
+      )
+    },
+    {
+      headerName: "業主 / 聯絡人",
+      field: "client",
+      minWidth: 150,
+      flex: 1.5,
+      cellRenderer: (params: any) => (
+        <div className="flex flex-col justify-center h-full leading-tight">
+          <span className="font-bold text-stone-700 text-xs mb-0.5">{params.data.client || '-'}</span>
+          {params.data.contactPerson && <span className="text-[10px] text-stone-400 flex items-center gap-1"><Users size={10} /> {params.data.contactPerson}</span>}
         </div>
       )
     },
@@ -377,7 +393,13 @@ const KanbanView = ({ projectsByStatus, onDetailClick, onEditClick, onDeleteClic
                       )}
                     </div>
                   )}
-                  <div><h4 className="font-bold text-stone-800 text-sm leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors">{p.name}</h4><div className="text-[10px] text-stone-500 mt-1">{p.client}</div></div>
+                  <div>
+                    <h4 className="font-bold text-stone-800 text-sm leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors">{p.name}</h4>
+                    <div className="text-[10px] text-stone-500 mt-1 flex flex-col">
+                      <span className="font-bold">{p.client}</span>
+                      {p.contactPerson && <span className="text-stone-400 flex items-center gap-1"><Users size={10} /> {p.contactPerson}</span>}
+                    </div>
+                  </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-[8px] font-bold text-stone-400 uppercase"><span>預算進度</span><span>{p.budget ? Math.round((p.computedFinancials.totalCost / p.budget) * 100) : 0}%</span></div>
                     <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${p.computedFinancials.healthStatus === 'Critical' ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${p.budget ? Math.min((p.computedFinancials.totalCost / p.budget) * 100, 100) : 0}%` }} /></div>

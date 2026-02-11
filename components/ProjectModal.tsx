@@ -36,6 +36,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
     endDate: '',
     address: '',
     year: '', // 新增：年度類別 (2024, 2025, 2026)
+    contactPerson: '', // 新增：案件聯絡人
     id: '', // 新增：可編輯的案件編號
   });
 
@@ -61,6 +62,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         endDate: initialData.endDate,
         address: initialData.location?.address || '',
         year: initialData.year || '', // 載入年度類別
+        contactPerson: initialData.contactPerson || '', // 載入聯絡人
         id: initialData.id || '', // 載入現有編號
       });
     }
@@ -168,6 +170,13 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
               <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none font-bold placeholder:text-slate-300" placeholder="" value={formData.client} onChange={e => setFormData({ ...formData, client: e.target.value })} />
             </div>
             <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件聯絡人 Contact</label>
+              <div className="relative">
+                <LucideUser size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 outline-none font-bold placeholder:text-slate-300" placeholder="例如：林總幹事" value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
+              </div>
+            </div>
+            <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">案件來源 Source</label>
               <div className="relative">
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -220,8 +229,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
                         type="button"
                         onClick={() => setFormData({ ...formData, introducerFeeType: 'percentage' })}
                         className={`py-2.5 rounded-xl text-xs font-bold transition-all border ${formData.introducerFeeType === 'percentage'
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                           }`}
                       >
                         📊 百分比計算
@@ -230,8 +239,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
                         type="button"
                         onClick={() => setFormData({ ...formData, introducerFeeType: 'fixed' })}
                         className={`py-2.5 rounded-xl text-xs font-bold transition-all border ${formData.introducerFeeType === 'fixed'
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                           }`}
                       >
                         💵 固定金額
