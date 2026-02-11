@@ -180,6 +180,11 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                             quotationData.header.to = linkedProject.client;
                         }
 
+                        // Auto-fill attn if missing
+                        if (!quotationData.header.attn) {
+                            quotationData.header.attn = linkedProject.contactPerson;
+                        }
+
                         // Auto-fill projectAddress if missing
                         if (!quotationData.header.projectAddress && linkedProject.location) {
                             const addr = typeof linkedProject.location === 'object' && linkedProject.location.address
@@ -223,6 +228,7 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                     if (proj) {
                         newQuotation.header.projectName = proj.name; // Also pre-fill project name
                         newQuotation.header.to = proj.client; // And client name
+                        newQuotation.header.attn = proj.contactPerson; // And contact person
                         // Auto-fill address
                         if (proj.location) {
                             const addr = typeof proj.location === 'object' && proj.location.address
@@ -772,6 +778,16 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                             />
                         </div>
                         <div className="space-y-2">
+                            <label className="text-sm font-bold text-stone-600">聯絡人</label>
+                            <input
+                                type="text"
+                                value={formData.header.attn || ''}
+                                onChange={(e) => updateHeader('attn', e.target.value)}
+                                className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                placeholder="輸入聯絡人姓名"
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <label className="text-sm font-bold text-stone-600">工程名稱</label>
                             {projects && projects.length > 0 ? (
                                 <div className="space-y-2">
@@ -803,6 +819,7 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                                             ...prev.header,
                                                             projectName: selectedProject.name,
                                                             to: selectedProject.client,
+                                                            attn: selectedProject.contactPerson,
                                                             projectAddress: typeof selectedProject.location === 'object' && selectedProject.location.address
                                                                 ? selectedProject.location.address
                                                                 : (typeof selectedProject.location === 'string' ? selectedProject.location : prev.header.projectAddress)
