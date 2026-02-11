@@ -130,13 +130,13 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 <div className="mb-8 overflow-hidden rounded-lg border border-stone-200">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="bg-stone-900 text-white text-sm">
+                            <tr className="bg-stone-50 text-stone-600 text-sm border-b-2 border-stone-200">
                                 <th className="py-2 px-3 w-12 text-center font-bold">No.</th>
-                                <th className="py-2 px-3 text-left font-bold border-l border-stone-700">Description 項目說明</th>
-                                <th className="py-2 px-3 w-16 text-center font-bold border-l border-stone-700">Unit</th>
-                                <th className="py-2 px-3 w-16 text-right font-bold border-l border-stone-700">Qty</th>
-                                <th className="py-2 px-3 w-28 text-right font-bold border-l border-stone-700">Price</th>
-                                <th className="py-2 px-3 w-28 text-right font-bold border-l border-stone-700 bg-orange-600">Amount</th>
+                                <th className="py-2 px-3 text-left font-bold border-l border-stone-200">Description 項目說明</th>
+                                <th className="py-2 px-3 w-16 text-center font-bold border-l border-stone-200">Unit</th>
+                                <th className="py-2 px-3 w-16 text-right font-bold border-l border-stone-200">Qty</th>
+                                <th className="py-2 px-3 w-28 text-right font-bold border-l border-stone-200">Price</th>
+                                <th className="py-2 px-3 w-28 text-right font-bold border-l border-stone-200 text-stone-800">Amount</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm">
