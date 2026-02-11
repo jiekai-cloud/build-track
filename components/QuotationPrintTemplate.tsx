@@ -62,7 +62,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                     </div>
 
                     <h2 className="text-2xl font-black uppercase text-stone-800 tracking-widest text-right">
-                        QUOTATION <span className="block text-sm text-stone-400 font-bold tracking-[0.5em] mt-0.5">報 價 單</span>
+                        QUOTATION <span className="block text-xl text-stone-400 font-bold tracking-[0.3em] mt-1">報 價 單</span>
                     </h2>
                 </div>
 
@@ -101,7 +101,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                     <div className="w-[38%] flex flex-col justify-center space-y-2">
                         <div className="flex justify-between items-center border-b border-stone-200 pb-1">
                             <span className="font-bold text-stone-500 text-xs uppercase">Quote No.</span>
-                            <span className="font-black text-xl text-stone-900 font-mono">{quotation.quotationNumber}</span>
+                            <span className="font-black text-lg text-stone-900 font-mono">{quotation.quotationNumber}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-stone-200 pb-1">
                             <span className="font-bold text-stone-500 text-xs uppercase">Date</span>
