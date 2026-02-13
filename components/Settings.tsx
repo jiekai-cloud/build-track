@@ -403,10 +403,32 @@ const Settings: FC<SettingsProps> = ({
                       ) : (
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                           <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                            <h5 className="flex items-center gap-2 text-xs font-black text-emerald-800 mb-3">
-                              <Database size={14} />
-                              偵測到完整備份資料
-                            </h5>
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="flex items-center gap-2 text-xs font-black text-emerald-800">
+                                <Database size={14} />
+                                偵測到完整備份資料
+                              </h5>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    const newOpts: any = {};
+                                    Object.keys(restoreData).forEach(k => {
+                                      if (Array.isArray(restoreData[k]) && restoreData[k].length > 0) newOpts[k] = true;
+                                    });
+                                    setRestoreOptions(newOpts);
+                                  }}
+                                  className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 bg-white px-2 py-1 rounded-lg border border-emerald-100 hover:border-emerald-300 transition-all shadow-sm"
+                                >
+                                  全選
+                                </button>
+                                <button
+                                  onClick={() => setRestoreOptions({})}
+                                  className="text-[10px] font-bold text-stone-400 hover:text-stone-600 bg-white px-2 py-1 rounded-lg border border-stone-100 hover:border-stone-300 transition-all shadow-sm"
+                                >
+                                  全取消
+                                </button>
+                              </div>
+                            </div>
                             <div className="grid grid-cols-2 gap-2">
                               {restoreData.projects && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
