@@ -586,11 +586,9 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
         // 騎縫章 (Paging Seal)
         if (pagingSealData) {
-            const pSealSize = 24; // Size in mm
+            const pSealSize = 18; // Size in mm (Reduced from 24mm)
             // Position on the right edge, centered vertically
-            // Overlapping the edge slightly to simulate "seam" seal 
-            // (Setting x to pageWidth - pSealSize/2 would put it half off-page, which might be cut off by printers or viewers)
-            // Let's place it just touching the edge or slightly inside (margin ~5mm) to be safe and visible.
+            // Let's place it just touching the edge or slightly inside (margin ~2mm) to be safe and visible.
             const pSealX = pageWidth - pSealSize - 2;
             const pSealY = (pageHeight - pSealSize) / 2;
 
