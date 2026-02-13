@@ -1833,6 +1833,9 @@ const App: React.FC = () => {
               {activeTab === 'settings' && (
                 <Settings
                   user={user} projects={projects} customers={customers} teamMembers={teamMembers}
+                  vendors={vendors} inventory={inventoryItems} locations={inventoryLocations}
+                  purchaseOrders={purchaseOrders} attendance={attendanceRecords} payroll={payrollRecords}
+                  quotations={quotations} leads={leads} approvalRequests={approvalRequests} approvalTemplates={approvalTemplates}
                   onResetData={() => { if (confirm('注意：這將清除所有數據，確定嗎？')) { localStorage.clear(); window.location.reload(); } }}
                   onImportData={(data, mode = 'overwrite') => {
                     try {

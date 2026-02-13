@@ -4,7 +4,11 @@ import {
   User, ChevronRight, Download, ShieldCheck,
   Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Sparkles
 } from 'lucide-react';
-import { Project, Customer, TeamMember, User as UserType } from '../types';
+import {
+  Project, Customer, TeamMember, User as UserType,
+  Vendor, InventoryItem, AttendanceRecord, PayrollRecord,
+  Quotation, Lead, PurchaseOrder, ApprovalRequest, ApprovalTemplate, InventoryLocation
+} from '../types';
 import { BACKUP_FILENAME } from '../services/googleDriveService';
 
 interface SettingsProps {
@@ -12,6 +16,16 @@ interface SettingsProps {
   projects: Project[];
   customers: Customer[];
   teamMembers: TeamMember[];
+  vendors: Vendor[];
+  inventory: InventoryItem[];
+  locations: InventoryLocation[];
+  purchaseOrders: PurchaseOrder[];
+  attendance: AttendanceRecord[];
+  payroll: PayrollRecord[];
+  quotations: Quotation[];
+  leads: Lead[];
+  approvalRequests: ApprovalRequest[];
+  approvalTemplates: ApprovalTemplate[];
   onResetData: () => void;
   onImportData: (data: any, mode?: 'overwrite' | 'merge') => void;
   isCloudConnected: boolean;
@@ -23,7 +37,10 @@ interface SettingsProps {
 }
 
 const Settings: FC<SettingsProps> = ({
-  user, projects, customers, teamMembers, onResetData, onImportData,
+  user, projects, customers, teamMembers,
+  vendors, inventory, locations, purchaseOrders, attendance, payroll,
+  quotations, leads, approvalRequests, approvalTemplates,
+  onResetData, onImportData,
   isCloudConnected, onConnectCloud, onDisconnectCloud, lastSyncTime,
   onDownloadBackup, onRestoreLocalBackup
 }) => {
@@ -75,7 +92,17 @@ const Settings: FC<SettingsProps> = ({
         exportDate: new Date().toISOString(),
         projects,
         customers,
-        teamMembers
+        teamMembers,
+        vendors,
+        inventory,
+        locations,
+        purchaseOrders,
+        attendance,
+        payroll,
+        quotations,
+        leads,
+        approvalRequests,
+        approvalTemplates
       };
       const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
