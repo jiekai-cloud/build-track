@@ -416,8 +416,13 @@ const Settings: FC<SettingsProps> = ({
                                     onClick={(e) => {
                                       e.preventDefault();
                                       setPendingData(restoreData);
-                                      setSelectedProjectIds(new Set(restoreData.projects.map((p: any) => p.id)));
-                                      setImportMode('merge'); // Force merge mode for safety when selecting specific items
+                                      setSelectionCategory('projects');
+                                      if (!selectedItemsMap['projects']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['projects'] = new Set(restoreData.projects.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
                                     }}
                                     className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
                                   >
@@ -429,53 +434,198 @@ const Settings: FC<SettingsProps> = ({
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.customers} onChange={(e) => setRestoreOptions({ ...restoreOptions, customers: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">客戶 ({restoreData.customers.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('customers');
+                                      if (!selectedItemsMap['customers']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['customers'] = new Set(restoreData.customers.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.teamMembers && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.teamMembers} onChange={(e) => setRestoreOptions({ ...restoreOptions, teamMembers: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">團隊 ({restoreData.teamMembers.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('teamMembers');
+                                      if (!selectedItemsMap['teamMembers']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['teamMembers'] = new Set(restoreData.teamMembers.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.vendors && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.vendors} onChange={(e) => setRestoreOptions({ ...restoreOptions, vendors: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">廠商 ({restoreData.vendors.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('vendors');
+                                      if (!selectedItemsMap['vendors']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['vendors'] = new Set(restoreData.vendors.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.inventory && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.inventory} onChange={(e) => setRestoreOptions({ ...restoreOptions, inventory: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">庫存 ({restoreData.inventory.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('inventory');
+                                      if (!selectedItemsMap['inventory']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['inventory'] = new Set(restoreData.inventory.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.attendance && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.attendance} onChange={(e) => setRestoreOptions({ ...restoreOptions, attendance: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">考勤 ({restoreData.attendance.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('attendance');
+                                      if (!selectedItemsMap['attendance']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['attendance'] = new Set(restoreData.attendance.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.payroll && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.payroll} onChange={(e) => setRestoreOptions({ ...restoreOptions, payroll: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">薪資 ({restoreData.payroll.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('payroll');
+                                      if (!selectedItemsMap['payroll']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['payroll'] = new Set(restoreData.payroll.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.approvalRequests && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.approvalRequests} onChange={(e) => setRestoreOptions({ ...restoreOptions, approvalRequests: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">簽核申請 ({restoreData.approvalRequests.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('approvalRequests');
+                                      if (!selectedItemsMap['approvalRequests']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['approvalRequests'] = new Set(restoreData.approvalRequests.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.approvalTemplates && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.approvalTemplates} onChange={(e) => setRestoreOptions({ ...restoreOptions, approvalTemplates: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
+                                  <span className="text-[10px] font-bold">簽核流程 ({restoreData.approvalTemplates.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('approvalTemplates');
+                                      if (!selectedItemsMap['approvalTemplates']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['approvalTemplates'] = new Set(restoreData.approvalTemplates.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                               {restoreData.quotations && (
                                 <label className="flex items-center gap-2 cursor-pointer p-2 bg-white/50 rounded-lg">
                                   <input type="checkbox" checked={restoreOptions.quotations} onChange={(e) => setRestoreOptions({ ...restoreOptions, quotations: e.target.checked })} className="w-4 h-4 text-emerald-600 rounded" />
                                   <span className="text-[10px] font-bold">報價單 ({restoreData.quotations.length})</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPendingData(restoreData);
+                                      setSelectionCategory('quotations');
+                                      if (!selectedItemsMap['quotations']) {
+                                        const newMap = { ...selectedItemsMap };
+                                        newMap['quotations'] = new Set(restoreData.quotations.map((p: any) => p.id));
+                                        setSelectedItemsMap(newMap);
+                                      }
+                                      setImportMode('merge');
+                                    }}
+                                    className="ml-auto px-2 py-0.5 bg-orange-100 text-orange-600 rounded hover:bg-orange-200 text-[10px] font-black"
+                                  >
+                                    挑選
+                                  </button>
                                 </label>
                               )}
                             </div>
@@ -497,21 +647,88 @@ const Settings: FC<SettingsProps> = ({
                                   const dataToRestore: any = {};
                                   const restoredItems: string[] = [];
 
-                                  if (restoreOptions.projects && restoreData.projects) { dataToRestore.projects = restoreData.projects; restoredItems.push(`專案`); }
-                                  if (restoreOptions.customers && restoreData.customers) { dataToRestore.customers = restoreData.customers; restoredItems.push(`客戶`); }
-                                  if (restoreOptions.vendors && restoreData.vendors) { dataToRestore.vendors = restoreData.vendors; restoredItems.push(`廠商`); }
-                                  if (restoreOptions.teamMembers && restoreData.teamMembers) { dataToRestore.teamMembers = restoreData.teamMembers; restoredItems.push(`團隊`); }
+                                  if (restoreOptions.projects && restoreData.projects) {
+                                    if (selectedItemsMap['projects']) {
+                                      dataToRestore.projects = restoreData.projects.filter((item: any) => selectedItemsMap['projects'].has(item.id));
+                                    } else {
+                                      dataToRestore.projects = restoreData.projects;
+                                    }
+                                    restoredItems.push(`專案`);
+                                  }
+                                  if (restoreOptions.customers && restoreData.customers) {
+                                    if (selectedItemsMap['customers']) {
+                                      dataToRestore.customers = restoreData.customers.filter((item: any) => selectedItemsMap['customers'].has(item.id));
+                                    } else {
+                                      dataToRestore.customers = restoreData.customers;
+                                    }
+                                    restoredItems.push(`客戶`);
+                                  }
+                                  if (restoreOptions.vendors && restoreData.vendors) {
+                                    if (selectedItemsMap['vendors']) {
+                                      dataToRestore.vendors = restoreData.vendors.filter((item: any) => selectedItemsMap['vendors'].has(item.id));
+                                    } else {
+                                      dataToRestore.vendors = restoreData.vendors;
+                                    }
+                                    restoredItems.push(`廠商`);
+                                  }
+                                  if (restoreOptions.teamMembers && restoreData.teamMembers) {
+                                    if (selectedItemsMap['teamMembers']) {
+                                      dataToRestore.teamMembers = restoreData.teamMembers.filter((item: any) => selectedItemsMap['teamMembers'].has(item.id));
+                                    } else {
+                                      dataToRestore.teamMembers = restoreData.teamMembers;
+                                    }
+                                    restoredItems.push(`團隊`);
+                                  }
                                   if (restoreOptions.inventory && restoreData.inventory) {
-                                    dataToRestore.inventory = restoreData.inventory;
+                                    if (selectedItemsMap['inventory']) {
+                                      dataToRestore.inventory = restoreData.inventory.filter((item: any) => selectedItemsMap['inventory'].has(item.id));
+                                    } else {
+                                      dataToRestore.inventory = restoreData.inventory;
+                                    }
                                     if (restoreData.locations) dataToRestore.locations = restoreData.locations;
                                     if (restoreData.purchaseOrders) dataToRestore.purchaseOrders = restoreData.purchaseOrders;
                                     restoredItems.push(`庫存`);
                                   }
-                                  if (restoreOptions.attendance && restoreData.attendance) { dataToRestore.attendance = restoreData.attendance; restoredItems.push(`考勤`); }
-                                  if (restoreOptions.payroll && restoreData.payroll) { dataToRestore.payroll = restoreData.payroll; restoredItems.push(`薪資`); }
-                                  if (restoreOptions.approvalRequests && restoreData.approvalRequests) { dataToRestore.approvalRequests = restoreData.approvalRequests; restoredItems.push(`簽核申請`); }
-                                  if (restoreOptions.approvalTemplates && restoreData.approvalTemplates) { dataToRestore.approvalTemplates = restoreData.approvalTemplates; restoredItems.push(`簽核流程`); }
-                                  if (restoreOptions.quotations && restoreData.quotations) { dataToRestore.quotations = restoreData.quotations; restoredItems.push(`報價單`); }
+                                  if (restoreOptions.attendance && restoreData.attendance) {
+                                    if (selectedItemsMap['attendance']) {
+                                      dataToRestore.attendance = restoreData.attendance.filter((item: any) => selectedItemsMap['attendance'].has(item.id));
+                                    } else {
+                                      dataToRestore.attendance = restoreData.attendance;
+                                    }
+                                    restoredItems.push(`考勤`);
+                                  }
+                                  if (restoreOptions.payroll && restoreData.payroll) {
+                                    if (selectedItemsMap['payroll']) {
+                                      dataToRestore.payroll = restoreData.payroll.filter((item: any) => selectedItemsMap['payroll'].has(item.id));
+                                    } else {
+                                      dataToRestore.payroll = restoreData.payroll;
+                                    }
+                                    restoredItems.push(`薪資`);
+                                  }
+                                  if (restoreOptions.approvalRequests && restoreData.approvalRequests) {
+                                    if (selectedItemsMap['approvalRequests']) {
+                                      dataToRestore.approvalRequests = restoreData.approvalRequests.filter((item: any) => selectedItemsMap['approvalRequests'].has(item.id));
+                                    } else {
+                                      dataToRestore.approvalRequests = restoreData.approvalRequests;
+                                    }
+                                    restoredItems.push(`簽核申請`);
+                                  }
+                                  if (restoreOptions.approvalTemplates && restoreData.approvalTemplates) {
+                                    if (selectedItemsMap['approvalTemplates']) {
+                                      dataToRestore.approvalTemplates = restoreData.approvalTemplates.filter((item: any) => selectedItemsMap['approvalTemplates'].has(item.id));
+                                    } else {
+                                      dataToRestore.approvalTemplates = restoreData.approvalTemplates;
+                                    }
+                                    restoredItems.push(`簽核流程`);
+                                  }
+                                  if (restoreOptions.quotations && restoreData.quotations) {
+                                    if (selectedItemsMap['quotations']) {
+                                      dataToRestore.quotations = restoreData.quotations.filter((item: any) => selectedItemsMap['quotations'].has(item.id));
+                                    } else {
+                                      dataToRestore.quotations = restoreData.quotations;
+                                    }
+                                    restoredItems.push(`報價單`);
+                                  }
 
                                   if (Object.keys(dataToRestore).length === 0) return alert('請至少選擇一項');
 
@@ -607,20 +824,32 @@ const Settings: FC<SettingsProps> = ({
         </div>
       </div>
 
-      {/* Selective Import Modal */}
+      {/* Selective Import Modal (Generalized) */}
       {
-        pendingData && (
+        pendingData && selectionCategory && (
           <div className="fixed inset-0 z-[100] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in">
             <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
               <div className="p-8 lg:p-10 border-b border-stone-100 flex items-center justify-between bg-stone-50">
                 <div>
                   <h2 className="text-2xl font-black text-stone-900 uppercase tracking-tight flex items-center gap-3">
-                    <Database className="text-orange-500" /> 選擇要復原的專案
+                    <Database className="text-orange-500" /> 選擇要復原的{
+                      selectionCategory === 'projects' ? '專案' :
+                        selectionCategory === 'quotations' ? '報價單' :
+                          selectionCategory === 'customers' ? '客戶' :
+                            selectionCategory === 'vendors' ? '廠商' :
+                              selectionCategory === 'teamMembers' ? '團隊成員' :
+                                selectionCategory === 'inventory' ? '庫存項目' :
+                                  selectionCategory === 'attendance' ? '考勤記錄' :
+                                    selectionCategory === 'payroll' ? '薪資記錄' :
+                                      selectionCategory === 'approvalRequests' ? '簽核申請' :
+                                        selectionCategory === 'approvalTemplates' ? '簽核流程' :
+                                          '項目'
+                    }
                   </h2>
-                  <p className="text-sm text-stone-500 font-bold mt-1">從備份檔中偵測到 {pendingData.projects.length} 個專案，請選取您要還原的項目。</p>
+                  <p className="text-sm text-stone-500 font-bold mt-1">從備份檔中偵測到 {pendingData[selectionCategory].length} 個項目，請選取您要還原的項目。</p>
                 </div>
                 <button
-                  onClick={() => setPendingData(null)}
+                  onClick={() => { setPendingData(null); setSelectionCategory(null); }}
                   className="p-3 hover:bg-white rounded-2xl text-stone-400 hover:text-stone-900 transition-all active:scale-90"
                 >
                   取消
@@ -629,131 +858,113 @@ const Settings: FC<SettingsProps> = ({
 
               <div className="flex-1 overflow-y-auto p-6 lg:p-10">
                 <div className="flex flex-col gap-2">
-                  {pendingData.projects
+                  {pendingData[selectionCategory]
                     .sort((a: any, b: any) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-                    .map((project: any) => (
-                      <label
-                        key={project.id}
-                        className={`flex items-center gap-4 px-5 py-3 rounded-xl border transition-all cursor-pointer group ${selectedProjectIds.has(project.id)
-                          ? 'border-orange-500 bg-orange-50 shadow-sm'
-                          : 'border-stone-100 hover:border-stone-300 hover:bg-stone-50 bg-white'
-                          }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0"
-                          checked={selectedProjectIds.has(project.id)}
-                          onChange={() => {
-                            const next = new Set(selectedProjectIds);
-                            if (next.has(project.id)) next.delete(project.id);
-                            else next.add(project.id);
-                            setSelectedProjectIds(next);
-                          }}
-                        />
-                        <div className="flex-1 flex flex-col md:flex-row md:items-center gap-2 md:gap-4 overflow-hidden">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <span className="text-[10px] font-black bg-stone-100 text-stone-600 px-2 py-1 rounded uppercase tracking-wider shrink-0 w-[90px] text-center font-mono">
-                              {project.id}
-                            </span>
-                            <h4 className={`font-bold text-sm truncate ${selectedProjectIds.has(project.id) ? 'text-orange-900' : 'text-stone-700'}`}>
-                              {project.name}
-                            </h4>
-                            {project.deletedAt && (
-                              <span className="text-[10px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded shrink-0">
-                                已刪除
-                              </span>
-                            )}
-                          </div>
+                    .map((item: any) => {
+                      const isSelected = selectedItemsMap[selectionCategory]?.has(item.id);
+                      let displayText = item.name || item.title || item.header?.projectName || item.quotationNumber || item.id;
+                      let subText = item.id;
+                      let badge = '';
 
-                          <div className="flex items-center justify-between md:justify-end gap-6 text-xs font-medium text-stone-400 shrink-0 md:border-l md:border-stone-200 md:pl-4 min-w-[200px]">
-                            <span className="hidden md:inline text-[10px] uppercase tracking-widest bg-stone-50 px-2 py-0.5 rounded text-stone-400">{project.source || 'SYSTEM'}</span>
-                            <span className={`font-mono text-xs ${selectedProjectIds.has(project.id) ? 'text-orange-700 font-bold' : 'text-stone-500'}`}>
-                              {project.updatedAt ? new Date(project.updatedAt).toLocaleString('zh-TW', { hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '無日期'}
-                            </span>
+                      if (selectionCategory === 'quotations') {
+                        displayText = `${item.header?.projectName || '未命名專案'} (${item.quotationNumber})`;
+                        subText = item.header?.to || '未知客戶';
+                      } else if (selectionCategory === 'projects') {
+                        badge = item.source || 'SYSTEM';
+                      }
+
+                      return (
+                        <label
+                          key={item.id}
+                          className={`flex items-center gap-4 px-5 py-3 rounded-xl border transition-all cursor-pointer group ${isSelected
+                            ? 'border-orange-500 bg-orange-50 shadow-sm'
+                            : 'border-stone-100 hover:border-stone-300 hover:bg-stone-50 bg-white'
+                            }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0"
+                            checked={isSelected}
+                            onChange={() => {
+                              const newMap = { ...selectedItemsMap };
+                              const set = new Set(newMap[selectionCategory] || []);
+                              if (set.has(item.id)) set.delete(item.id);
+                              else set.add(item.id);
+                              newMap[selectionCategory] = set;
+                              setSelectedItemsMap(newMap);
+                            }}
+                          />
+                          <div className="flex-1 flex flex-col md:flex-row md:items-center gap-2 md:gap-4 overflow-hidden">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <span className="text-[10px] font-black bg-stone-100 text-stone-600 px-2 py-1 rounded uppercase tracking-wider shrink-0 w-[120px] text-center font-mono truncate">
+                                {item.id}
+                              </span>
+                              <h4 className={`font-bold text-sm truncate ${isSelected ? 'text-orange-900' : 'text-stone-700'}`}>
+                                {displayText}
+                              </h4>
+                              {item.deletedAt && (
+                                <span className="text-[10px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded shrink-0">
+                                  已刪除
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between md:justify-end gap-6 text-xs font-medium text-stone-400 shrink-0 md:border-l md:border-stone-200 md:pl-4 min-w-[200px]">
+                              {badge && <span className="hidden md:inline text-[10px] uppercase tracking-widest bg-stone-50 px-2 py-0.5 rounded text-stone-400">{badge}</span>}
+                              {subText !== item.id && <span className="hidden md:inline text-[10px] text-stone-400 truncate max-w-[100px]">{subText}</span>}
+
+                              <span className={`font-mono text-xs ${isSelected ? 'text-orange-700 font-bold' : 'text-stone-500'}`}>
+                                {item.updatedAt ? new Date(item.updatedAt).toLocaleString('zh-TW', { hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '無日期'}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </label>
-                    ))}
+                        </label>
+                      );
+                    })}
                 </div>
               </div>
 
               <div className="p-8 lg:p-10 bg-stone-50 border-t border-stone-100 flex items-center justify-between gap-6">
                 <div className="flex gap-4">
                   <button
-                    onClick={() => setSelectedProjectIds(new Set(pendingData.projects.map((p: any) => p.id)))}
+                    onClick={() => {
+                      const newMap = { ...selectedItemsMap };
+                      newMap[selectionCategory] = new Set(pendingData[selectionCategory].map((p: any) => p.id));
+                      setSelectedItemsMap(newMap);
+                    }}
                     className="text-xs font-black text-stone-500 hover:text-stone-900 transition-colors"
                   >
                     全部勾選
                   </button>
                   <button
-                    onClick={() => setSelectedProjectIds(new Set())}
+                    onClick={() => {
+                      const newMap = { ...selectedItemsMap };
+                      newMap[selectionCategory] = new Set();
+                      setSelectedItemsMap(newMap);
+                    }}
                     className="text-xs font-black text-stone-500 hover:text-stone-900 transition-colors"
                   >
                     全部取消
+                  </button>
+                  <span className="text-xs text-stone-300">|</span>
+                  <button
+                    onClick={() => {
+                      // Save current selection and close modal, returning to main restore dialog
+                      setPendingData(null);
+                      setSelectionCategory(null);
+                    }}
+                    className="text-xs font-black text-stone-500 hover:text-stone-900 transition-colors"
+                  >
+                    確認選擇
                   </button>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <div className="text-right mr-4">
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">目前選取</p>
-                    <p className="text-lg font-black text-stone-900">{selectedProjectIds.size} 個項目</p>
+                    <p className="text-lg font-black text-stone-900">{selectedItemsMap[selectionCategory]?.size || 0} 個項目</p>
                   </div>
-                  <button
-                    disabled={selectedProjectIds.size === 0}
-                    onClick={() => {
-                      // Force Merge Strategy:
-                      // Construct a new project list where selected backup items FORCEFULLY replace existing ones,
-                      // regardless of timestamps. This is critical for restoration.
-                      const backupProjects = pendingData.projects.filter((p: any) => selectedProjectIds.has(p.id));
 
-                      // 1. Create a map of current projects
-                      const finalProjectMap = new Map();
-                      projects.forEach(p => finalProjectMap.set(p.id, p));
-
-                      // 2. Insert backup projects (Handle Conflict: Create Copy if ID exists)
-                      backupProjects.forEach((bpItem: any) => {
-                        const bp = { ...bpItem }; // Clone to avoid mutating original
-
-                        // Clear deleted flag to ensure visibility
-                        if (bp.deletedAt) {
-                          delete bp.deletedAt;
-                          bp.updatedAt = new Date().toISOString();
-                        }
-
-                        if (finalProjectMap.has(bp.id)) {
-                          // CONFLICT DETECTED: Don't overwrite. Create a copy.
-                          const timestampSuffix = Date.now().toString().slice(-4);
-                          const newId = `${bp.id}_copy_${timestampSuffix}`;
-
-                          bp.id = newId;
-                          bp.name = `${bp.name} (還原備份)`;
-
-                          // Add as NEW project
-                          finalProjectMap.set(newId, bp);
-                        } else {
-                          // No conflict, restore normally (overwriting if map somehow had it but logic says otherwise - actually map has current projects, so this branch means it's a NEW or DELETED-not-in-map project)
-                          // Wait, strict speaking: "finalProjectMap" has ALL current projects.
-                          // If it's NOT in map, it means it's a strictly new/deleted project.
-                          // If it IS in map, we just handled it in the 'if' block.
-                          finalProjectMap.set(bp.id, bp);
-                        }
-                      });
-
-                      // 3. Convert back to array
-                      const mergedProjects = Array.from(finalProjectMap.values());
-
-                      // 4. Send as 'overwrite' to ensure state is updated exactly as we prepared
-                      const overwriteData = { projects: mergedProjects };
-
-                      onImportData(overwriteData, 'overwrite');
-                      setPendingData(null);
-                      alert(`✅ 已成功復原 ${selectedProjectIds.size} 個專案 (重複項目已建立為副本)`);
-                    }}
-                    className="bg-orange-600 text-white px-10 py-4 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-orange-100 hover:bg-orange-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center gap-3"
-                  >
-                    <RefreshCw size={18} className={selectedProjectIds.size > 0 ? "animate-spin-slow" : ""} />
-                    執行復原匯入
-                  </button>
                 </div>
               </div>
             </div>
