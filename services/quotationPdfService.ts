@@ -570,6 +570,8 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
     // ===== 頁尾 =====
     const totalPages = doc.getNumberOfPages();
+    console.log(`[PDF] Total pages: ${totalPages}`);
+
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(9);
@@ -585,19 +587,25 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
         );
 
         // 騎縫章 (Paging Seal)
-        const sealData = pagingSealData || STAMP_BASE64; // Fallback to STAMP_BASE64 directly
+        // Prefer PAGING_SEAL_BASE64, fallback to STAMP_BASE64
+        const sealData = pagingSealData || STAMP_BASE64;
+
         if (sealData && sealData.length > 50) {
             const pSealSize = 18; // Size in mm
-            // Increase margin to 5mm to ensure it's definitely visible and not clipped by printer margins
-            const pSealMargin = 5;
+            // Increase margin to 10mm to ensure it's definitely visible and not clipped by printer margins
+            const pSealMargin = 10;
             const pSealX = pageWidth - pSealSize - pSealMargin;
             const pSealY = (pageHeight - pSealSize) / 2;
 
             try {
+                // Debug log
+                console.log(`[PDF] Adding paging seal to page ${i} at (${pSealX}, ${pSealY})`);
                 doc.addImage(sealData, 'PNG', pSealX, pSealY, pSealSize, pSealSize);
             } catch (err) {
-                console.error('Failed to add paging seal:', err);
+                console.error(`[PDF] Failed to add paging seal on page ${i}:`, err);
             }
+        } else {
+            console.warn('[PDF] No seal data available for paging seal');
         }
     }
 
