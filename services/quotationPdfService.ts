@@ -515,7 +515,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
 
     // 報價專用章 (Stamp) - Positioned below Bank Account Info on the right
     if (stampData) {
-        const stampSize = 40;
+        const stampSize = 42; // Adjusted to 42mm to ensure ~40mm visible diameter (accounting for potential padding)
         const paddingFoo = 5;
 
         // Check if we need a new page
