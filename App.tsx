@@ -809,11 +809,7 @@ const App: React.FC = () => {
     dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations };
   }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations]);
 
-  React.useEffect(() => {
-    if (isInitializing) return;
-    const prefix = currentDept === 'ThirdDept' ? 'dept3_' : '';
-    storageService.setItem(`${prefix}bt_quotations`, quotations);
-  }, [quotations, isInitializing, currentDept]);
+
 
   const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
     if (!user) return;
@@ -1061,6 +1057,7 @@ const App: React.FC = () => {
             storageService.setItem(`${prefix}bt_payroll`, payrollRecords),
             storageService.setItem(`${prefix}bt_approval_requests`, approvalRequests),
             storageService.setItem(`${prefix}bt_approval_templates`, approvalTemplates),
+            storageService.setItem(`${prefix}bt_quotations`, quotations),
             storageService.setItem(`${prefix}bt_logs`, activityLogs.slice(0, 50))
           ]);
           setLastLocalSave(new Date().toLocaleTimeString());
@@ -1078,7 +1075,7 @@ const App: React.FC = () => {
         handleCloudSync();
       }, 10000);
     }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, currentDept, approvalRequests, approvalTemplates, isMasterTab]);
+  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, currentDept, approvalRequests, approvalTemplates, isMasterTab, quotations]);
 
   // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
   useEffect(() => {

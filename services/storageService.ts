@@ -18,10 +18,21 @@ export const storageService = {
     setItem: async (key: string, data: any): Promise<boolean> => {
         try {
             await localforage.setItem(key, data);
+
+            // 雙寫策略：即使 IndexedDB 成功，也嘗試寫入 LocalStorage 作為熱備份 (Best Effort)
+            // 這樣當 IndexedDB 被瀏覽器清除或讀取失敗時，LocalStorage 的資料不會是"幾天前"的舊版
+            try {
+                // 注意：LocalStorage 容量有限，大資料可能會失敗，這是預期的
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (lsE) {
+                // 忽略 QuotaExceededError，這只是備份
+                // console.warn(`[StorageService] LocalStorage backup skipped for ${key} (Quota/Error)`);
+            }
+
             return true;
         } catch (e) {
             console.error(`[StorageService] IndexedDB set error for ${key}:`, e);
-            // 備援：嘗試存入 LocalStorage (如果資料沒超過 5MB)
+            // 備援：如果 IndexedDB 失敗，強制依賴 LocalStorage
             try {
                 localStorage.setItem(key, JSON.stringify(data));
                 return true;
