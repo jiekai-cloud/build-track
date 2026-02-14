@@ -7,6 +7,7 @@ import QuotationPrintTemplate from './QuotationPrintTemplate';
 import { generateQuotationNumber } from '../utils/quotationIdGenerator';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { STAMP_BASE64 } from '../services/stampImage';
 
 interface QuotationSystemProps {
     quotations: Quotation[];
@@ -452,20 +453,32 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                     <style>
                         {`
                             @media print {
-                                body { visibility: hidden; }
-                                #print-overlay-container { 
-                                    visibility: visible;
-                                    position: absolute; 
-                                    left: 0; 
-                                    top: 0; 
-                                    width: 100%; 
-                                    margin: 0;
-                                    padding: 0;
-                                    /* position: fixed in children works best when container is not transformed */
+                                /* Hide everything except the print container */
+                                body > *:not(#print-overlay-container) { display: none !important; }
+                                
+                                /* Reset body/html */
+                                html, body { 
+                                    visibility: visible !important;
+                                    height: auto !important;
+                                    overflow: visible !important;
+                                    background: white !important;
                                 }
-                                /* Reset page margins to allow full bleed for the fixed seal */
+
+                                #print-overlay-container { 
+                                    display: block !important; 
+                                    position: absolute; /* Moves it out of normal flow */
+                                    top: 0; 
+                                    left: 0; 
+                                    width: 100%;
+                                    height: auto;
+                                    z-index: 9999;
+                                    visibility: visible !important;
+                                }
+                                
+                                /* Ensure fixed elements print on every page */
                                 @page { size: A4; margin: 15mm 0mm; }
                             }
+                            
                             @media screen {
                                 #print-overlay-container { display: none; }
                             }
@@ -477,6 +490,41 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                             quotation={printingQuotation}
                             showOptionName={printingQuotation.showOptionName ?? showOptionNameInPdf}
                         />
+
+                        {/* GLOBAL PAGING SEAL - Injected at Root Level */}
+                        <div
+                            style={{
+                                position: 'fixed',
+                                top: '50%',
+                                right: '0mm',
+                                marginTop: '-9mm',
+                                width: '18mm',
+                                height: '18mm',
+                                zIndex: 100000,
+                                pointerEvents: 'none'
+                                // mix-blend-mode: multiply; // Removed for safety
+                            }}
+                            className="print:block"
+                        >
+                            {/* Debug Border */}
+                            <div style={{
+                                position: 'absolute', inset: '-5mm', border: '4px solid red',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'red', fontWeight: 'bold'
+                            }}>
+                                ROOT TEST
+                            </div>
+
+                            {/* Actual Seal */}
+                            <img
+                                src={STAMP_BASE64 || '/stamp.png'}
+                                alt="Paging Seal"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
+                        </div>
                     </div>
                 </>,
                 document.body
