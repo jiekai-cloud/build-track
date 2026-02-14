@@ -7,7 +7,7 @@ import QuotationPrintTemplate from './QuotationPrintTemplate';
 import { generateQuotationNumber } from '../utils/quotationIdGenerator';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { STAMP_BASE64 } from '../services/stampImage';
+import { STAMP_BASE64, SEAL_LEFT_BASE64, SEAL_RIGHT_BASE64 } from '../services/stampImage';
 
 interface QuotationSystemProps {
     quotations: Quotation[];
@@ -492,25 +492,58 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                         />
 
                         {/* GLOBAL PAGING SEAL - Injected at Root Level */}
+                        {/* Paging Seal - LEFT (固定在頁面左側) */}
+                        <div
+                            style={{
+                                position: 'fixed',
+                                top: '50%',
+                                left: '0mm',
+                                marginTop: '-15mm',
+                                width: '30mm',
+                                height: '30mm',
+                                zIndex: 100000,
+                                pointerEvents: 'none',
+                                mixBlendMode: 'multiply',
+                                opacity: 0.9,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'flex-start'
+                            }}
+                            className="print:block"
+                        >
+                            <img
+                                src={SEAL_LEFT_BASE64 || '/seal-left.png'}
+                                alt="Left Seal"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'left center' }}
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
+                        </div>
+
+                        {/* Paging Seal - RIGHT (固定在頁面右側) */}
                         <div
                             style={{
                                 position: 'fixed',
                                 top: '50%',
                                 right: '0mm',
-                                marginTop: '-9mm',
-                                width: '18mm',
-                                height: '18mm',
+                                marginTop: '-15mm',
+                                width: '30mm',
+                                height: '30mm',
                                 zIndex: 100000,
                                 pointerEvents: 'none',
                                 mixBlendMode: 'multiply',
-                                opacity: 0.8
+                                opacity: 0.9,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'flex-end'
                             }}
                             className="print:block"
                         >
                             <img
-                                src={STAMP_BASE64 || '/stamp.png'}
-                                alt="Paging Seal"
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                src={SEAL_RIGHT_BASE64 || '/seal-right.png'}
+                                alt="Right Seal"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center' }}
                                 onError={(e) => {
                                     e.currentTarget.style.display = 'none';
                                 }}
