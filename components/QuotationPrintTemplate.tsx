@@ -319,8 +319,11 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
             </div>
 
-            {/* Dynamic Paging Seals Overlay */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-[99999] print:block hidden">
+            {/* Dynamic Paging Seals Overlay - Removed 'hidden' for visibility, added debug info if needed */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-[99999] print:block">
+                {/* Debug Info (visible in print preview if something is wrong) */}
+                {/* <div className="absolute top-0 left-0 bg-red-500 text-white p-2 z-[999999]">Pages: {pageCount}</div> */}
+
                 {Array.from({ length: pageCount }).map((_, i) => {
                     const pageTopMM = i * 297;
                     const baseY = 50;
@@ -328,7 +331,7 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
 
                     return (
                         <React.Fragment key={i}>
-                            {/* Right Seal (End of previous pair) - Show on Page > 1 */}
+                            {/* Right Seal (End of previous pair) - Show on Page 2+ (Index > 0) */}
                             {i > 0 && (
                                 <div style={{
                                     position: 'absolute',
@@ -344,12 +347,12 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                                 </div>
                             )}
 
-                            {/* Left Seal (Start of next pair) - Show on Page < Last */}
+                            {/* Left Seal (Start of next pair) - Show on all pages EXCEPT the last one */}
                             {i < pageCount - 1 && (
                                 <div style={{
                                     position: 'absolute',
                                     top: `${pageTopMM + baseY + (i * stepY)}mm`,
-                                    right: 0, // USER SAID LEFT SEAL ON RIGHT EDGE
+                                    right: 0,
                                     width: '30mm',
                                     height: '30mm',
                                     mixBlendMode: 'multiply',
