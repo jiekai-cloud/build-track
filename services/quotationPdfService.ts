@@ -600,7 +600,21 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
             try {
                 // Debug log
                 console.log(`[PDF] Adding paging seal to page ${i} at (${pSealX}, ${pSealY})`);
+
+                // --- DEBUG: Red Box & Text ---
+                doc.setDrawColor(255, 0, 0);
+                doc.setLineWidth(0.5);
+                doc.rect(pSealX, pSealY, pSealSize, pSealSize);
+
+                doc.setTextColor(255, 0, 0);
+                doc.setFontSize(8);
+                doc.text('SEAL TEST', pSealX, pSealY - 2);
+                doc.setDrawColor(0); // Reset immediately just in case
+                // -----------------------------
+
                 doc.addImage(sealData, 'PNG', pSealX, pSealY, pSealSize, pSealSize);
+
+                doc.setTextColor(100, 100, 100);
             } catch (err) {
                 console.error(`[PDF] Failed to add paging seal on page ${i}:`, err);
             }
