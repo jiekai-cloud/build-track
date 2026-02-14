@@ -295,22 +295,46 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
             </div>
 
-            {/* 騎縫章 (Paging Seal) - Repeating on every page via position: fixed */}
+            {/* DEBUG: Red Box for Visibility Test */}
             <div
-                className="fixed top-1/2 z-50 pointer-events-none opacity-80 mix-blend-multiply"
+                className="fixed top-1/2 right-0 z-[100] pointer-events-none print:block"
                 style={{
-                    right: '0mm', // Align to right edge of the page sheet
-                    marginTop: '-9mm', // Center vertically (half of height)
+                    right: '25mm', // Next to the seal
+                    marginTop: '-9mm',
                     width: '18mm',
                     height: '18mm',
-                    // Note: 'position: fixed' repeats on every page in most browsers' print mode
+                    border: '2px solid red',
+                    background: 'rgba(255, 0, 0, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'red',
+                    fontWeight: 'bold',
+                    fontSize: '10px'
+                }}
+            >
+                SEAL TEST
+            </div>
+
+            {/* 騎縫章 (Paging Seal) - Repeating on every page via position: fixed */}
+            <div
+                className="fixed top-1/2 z-50 pointer-events-none print:block"
+                style={{
+                    right: '0mm', // Align to right edge
+                    marginTop: '-9mm', // Center vertically
+                    width: '18mm',
+                    height: '18mm',
+                    opacity: 1, // Full opacity for testing
+                    // mix-blend-mode: removed for reliability
                 }}
             >
                 <img
                     src={STAMP_BASE64 || '/stamp.png'}
                     alt="Paging Seal"
                     className="w-full h-full object-contain"
-                    style={{ display: STAMP_BASE64 ? 'block' : 'none' }}
+                    style={{
+                        display: STAMP_BASE64 ? 'block' : 'none',
+                    }}
                 />
             </div>
 
