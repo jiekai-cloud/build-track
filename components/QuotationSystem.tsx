@@ -501,21 +501,12 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                                 width: '18mm',
                                 height: '18mm',
                                 zIndex: 100000,
-                                pointerEvents: 'none'
-                                // mix-blend-mode: multiply; // Removed for safety
+                                pointerEvents: 'none',
+                                mixBlendMode: 'multiply',
+                                opacity: 0.8
                             }}
                             className="print:block"
                         >
-                            {/* Debug Border */}
-                            <div style={{
-                                position: 'absolute', inset: '-5mm', border: '4px solid red',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: 'red', fontWeight: 'bold'
-                            }}>
-                                ROOT TEST
-                            </div>
-
-                            {/* Actual Seal */}
                             <img
                                 src={STAMP_BASE64 || '/stamp.png'}
                                 alt="Paging Seal"
