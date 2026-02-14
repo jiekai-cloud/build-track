@@ -1,6 +1,6 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useEffect, useRef } from 'react';
 import { Quotation, QuotationItem, ItemCategory, QuotationOption, QuotationSummary } from '../types';
-import { STAMP_BASE64 } from '../services/stampImage';
+import { STAMP_BASE64, SEAL_LEFT_BASE64, SEAL_RIGHT_BASE64 } from '../services/stampImage';
 
 interface QuotationPrintTemplateProps {
     quotation: Quotation;
@@ -27,12 +27,36 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
     // 優先使用 prop，若無則使用 quotation 內的設定，預設為 true
     const shouldShowOptionName = showOptionName !== undefined ? showOptionName : (quotation.showOptionName ?? true);
 
+    const [pageCount, setPageCount] = useState(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Merge refs
+    useEffect(() => {
+        if (typeof ref === 'function') {
+            ref(containerRef.current);
+        } else if (ref) {
+            ref.current = containerRef.current;
+        }
+    }, [ref]);
+
+    useEffect(() => {
+        if (containerRef.current) {
+            const timer = setTimeout(() => {
+                const height = containerRef.current?.scrollHeight || 0;
+                // A4 Height approx 1123px. Using 1100 to be safe.
+                const pages = Math.ceil(height / 1100) || 1;
+                setPageCount(pages);
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [quotation]);
+
     return (
         // 外層容器：A4 尺寸 (210mm x 297mm)
         // 改用 Block Layout 以支援更好的原生分頁
         // padding 設定為標準文件邊界 (約 20mm) - 根據用戶反饋調整
         <div
-            ref={ref}
+            ref={containerRef}
             className="bg-white text-stone-900 font-sans relative"
             style={{
                 width: '210mm',
@@ -295,7 +319,50 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
             </div>
 
+            {/* Dynamic Paging Seals Overlay */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-[99999] print:block hidden">
+                {Array.from({ length: pageCount }).map((_, i) => {
+                    const pageTopMM = i * 297;
+                    const baseY = 50;
+                    const stepY = 40;
 
+                    return (
+                        <React.Fragment key={i}>
+                            {/* Right Seal (End of previous pair) - Show on Page > 1 */}
+                            {i > 0 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: `${pageTopMM + baseY + ((i - 1) * stepY)}mm`,
+                                    right: 0,
+                                    width: '30mm',
+                                    height: '30mm',
+                                    mixBlendMode: 'multiply',
+                                    opacity: 0.9,
+                                    display: 'flex', justifyContent: 'flex-end', alignItems: 'center'
+                                }}>
+                                    <img src={SEAL_RIGHT_BASE64} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right' }} />
+                                </div>
+                            )}
+
+                            {/* Left Seal (Start of next pair) - Show on Page < Last */}
+                            {i < pageCount - 1 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: `${pageTopMM + baseY + (i * stepY)}mm`,
+                                    right: 0, // USER SAID LEFT SEAL ON RIGHT EDGE
+                                    width: '30mm',
+                                    height: '30mm',
+                                    mixBlendMode: 'multiply',
+                                    opacity: 0.9,
+                                    display: 'flex', justifyContent: 'flex-end', alignItems: 'center'
+                                }}>
+                                    <img src={SEAL_LEFT_BASE64} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'left' }} />
+                                </div>
+                            )}
+                        </React.Fragment>
+                    );
+                })}
+            </div>
 
         </div>
     );

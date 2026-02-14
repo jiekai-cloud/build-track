@@ -491,64 +491,6 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                             showOptionName={printingQuotation.showOptionName ?? showOptionNameInPdf}
                         />
 
-                        {/* GLOBAL PAGING SEAL - Injected at Root Level */}
-                        {/* Paging Seal - LEFT (固定在頁面左側) */}
-                        <div
-                            style={{
-                                position: 'fixed',
-                                top: '50%',
-                                left: '0mm',
-                                marginTop: '-15mm',
-                                width: '30mm',
-                                height: '30mm',
-                                zIndex: 100000,
-                                pointerEvents: 'none',
-                                mixBlendMode: 'multiply',
-                                opacity: 0.9,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'flex-start'
-                            }}
-                            className="print:block"
-                        >
-                            <img
-                                src={SEAL_LEFT_BASE64 || '/seal-left.png'}
-                                alt="Left Seal"
-                                style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'left center' }}
-                                onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                }}
-                            />
-                        </div>
-
-                        {/* Paging Seal - RIGHT (固定在頁面右側) */}
-                        <div
-                            style={{
-                                position: 'fixed',
-                                top: '50%',
-                                right: '0mm',
-                                marginTop: '-15mm',
-                                width: '30mm',
-                                height: '30mm',
-                                zIndex: 100000,
-                                pointerEvents: 'none',
-                                mixBlendMode: 'multiply',
-                                opacity: 0.9,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'flex-end'
-                            }}
-                            className="print:block"
-                        >
-                            <img
-                                src={SEAL_RIGHT_BASE64 || '/seal-right.png'}
-                                alt="Right Seal"
-                                style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center' }}
-                                onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                }}
-                            />
-                        </div>
                     </div>
                 </>,
                 document.body
