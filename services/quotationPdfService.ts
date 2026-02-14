@@ -587,12 +587,16 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
         );
 
         // 騎縫章 (Paging Seal)
-        // Prefer PAGING_SEAL_BASE64, fallback to STAMP_BASE64
         const sealData = pagingSealData || STAMP_BASE64;
 
+        console.log(`[PDF] Page ${i} Seal Debug:`);
+        console.log(`    pagingSealData: ${pagingSealData ? 'Present (' + pagingSealData.length + ')' : 'Missing'}`);
+        console.log(`    STAMP_BASE64: ${STAMP_BASE64 ? 'Present (' + STAMP_BASE64.length + ')' : 'Missing'}`);
+        console.log(`    Chosen sealData: ${sealData ? 'Present (' + sealData.length + ')' : 'Missing'}`);
+
         if (sealData && sealData.length > 50) {
-            const pSealSize = 18; // Size in mm
-            // Increase margin to 10mm to ensure it's definitely visible and not clipped by printer margins
+            const pSealSize = 20; // Increased to 20mm
+            // Increase margin to 10mm
             const pSealMargin = 10;
             const pSealX = pageWidth - pSealSize - pSealMargin;
             const pSealY = (pageHeight - pSealSize) / 2;
@@ -619,7 +623,7 @@ export const generateQuotationPDF = async (quotation: Quotation): Promise<void> 
                 console.error(`[PDF] Failed to add paging seal on page ${i}:`, err);
             }
         } else {
-            console.warn('[PDF] No seal data available for paging seal');
+            console.error('[PDF] CRITICAL: No seal data available for paging seal! Skipping.');
         }
     }
 
