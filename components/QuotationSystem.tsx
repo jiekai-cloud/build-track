@@ -452,13 +452,22 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                     <style>
                         {`
                             @media print {
-                                body > *:not(#print-overlay-container) { display: none !important; }
-                                #print-overlay-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 9999; background: white; padding: 0mm; }
-                                /* 設定頁面邊距，確保每一頁都有上下留白 */
+                                body { visibility: hidden; }
+                                #print-overlay-container { 
+                                    visibility: visible;
+                                    position: absolute; 
+                                    left: 0; 
+                                    top: 0; 
+                                    width: 100%; 
+                                    margin: 0;
+                                    padding: 0;
+                                    /* position: fixed in children works best when container is not transformed */
+                                }
+                                /* Reset page margins to allow full bleed for the fixed seal */
                                 @page { size: A4; margin: 15mm 0mm; }
                             }
                             @media screen {
-                                #print-overlay-container { opacity: 0; pointer-events: none; position: fixed; top: 0; left: 0; z-index: -1; }
+                                #print-overlay-container { display: none; }
                             }
                         `}
                     </style>
