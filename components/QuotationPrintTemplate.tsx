@@ -295,6 +295,25 @@ const QuotationPrintTemplate = forwardRef<HTMLDivElement, QuotationPrintTemplate
                 </div>
             </div>
 
+            {/* 騎縫章 (Paging Seal) - Repeating on every page via position: fixed */}
+            <div
+                className="fixed top-1/2 z-50 pointer-events-none opacity-80 mix-blend-multiply"
+                style={{
+                    right: '0mm', // Align to right edge of the page sheet
+                    marginTop: '-9mm', // Center vertically (half of height)
+                    width: '18mm',
+                    height: '18mm',
+                    // Note: 'position: fixed' repeats on every page in most browsers' print mode
+                }}
+            >
+                <img
+                    src={STAMP_BASE64 || '/stamp.png'}
+                    alt="Paging Seal"
+                    className="w-full h-full object-contain"
+                    style={{ display: STAMP_BASE64 ? 'block' : 'none' }}
+                />
+            </div>
+
         </div>
     );
 });
