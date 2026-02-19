@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag, Sparkles, Clock, Wallet, FileCheck, FileText } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag, Sparkles, Clock, Wallet, FileCheck, FileText, CalendarClock } from 'lucide-react';
 import { moduleService } from '../services/moduleService';
 import { ModuleId, DEFAULT_ENABLED_MODULES } from '../moduleConfig';
 
