@@ -23,6 +23,7 @@ import ImageLightbox from './ImageLightbox';
 import ProjectReportModal from './modals/ProjectReportModal';
 import CompletionReportModal from './modals/CompletionReportModal';
 import MandatoryUploadModal from './modals/MandatoryUploadModal';
+import { ProjectProvider } from '../contexts/ProjectContext';
 
 const PHOTO_CATEGORIES = [
   { id: 'all', label: '全部照片', icon: Layers },
@@ -142,289 +143,316 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
 
 
   return (
-    <div className="flex flex-col lg:h-full animate-in slide-in-from-right-4 duration-500 lg:overflow-hidden relative">
-      {isReadOnly && (
-        <div className="bg-amber-500 text-white px-8 py-2 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 z-[60] shadow-sm">
-          <ShieldAlert size={14} /> 您目前以訪客模式登入，僅供檢視，無法修改資料。
-        </div>
-      )}
-      {/* 固定標頭資訊 */}
-      <div className="p-4 lg:p-8 space-y-4 shrink-0 bg-white/50 border-b border-stone-100">
-        <div className="flex justify-between items-center no-print">
-          <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold text-sm">
-            <ArrowLeft size={16} /> <span className="hidden sm:inline">返回</span>
-          </button>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar desktop-scrollbar touch-scroll sm:overflow-visible pb-1 sm:pb-0">
-            {!isReadOnly && (
-              <div className="flex gap-2 whitespace-nowrap">
-                <button onClick={() => setIsReportMode(true)} className="flex items-center gap-2 bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-xl text-[10px] font-black shrink-0"><FileText size={14} /> 績效報表</button>
-                <button onClick={() => setIsCompletionReportMode(true)} className="flex items-center gap-2 bg-white border border-emerald-200 text-emerald-600 px-3 py-1.5 rounded-xl text-[10px] font-black shrink-0"><CheckCircle size={14} /> 完工報告書</button>
-                <button onClick={() => onEdit(project)} className="bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-[10px] font-black shrink-0"><Pencil size={14} /> 編輯</button>
-              </div>
-            )}
-            {isReadOnly && (
-              <div className="flex items-center gap-2 bg-stone-100 text-stone-400 px-3 py-1.5 rounded-xl text-[10px] font-black border border-stone-200 whitespace-nowrap shrink-0">
-                <ShieldAlert size={14} /> 訪客唯讀權限
-              </div>
-            )}
+    <ProjectProvider
+      project={project}
+      isReadOnly={isReadOnly}
+      user={user}
+      teamMembers={teamMembers}
+      quotations={quotations}
+      onUpdateTasks={onUpdateTasks}
+      onUpdateProgress={onUpdateProgress}
+      onUpdateStatus={onUpdateStatus}
+      onAddComment={onAddComment}
+      onDeleteComment={onDeleteComment}
+      onUpdateExpenses={onUpdateExpenses}
+      onUpdateWorkAssignments={onUpdateWorkAssignments}
+      onUpdatePreConstruction={props.onUpdatePreConstruction}
+      onUpdateFiles={onUpdateFiles}
+      onUpdatePhases={onUpdatePhases}
+      onAddDailyLog={onAddDailyLog}
+      onDeleteDailyLog={onDeleteDailyLog}
+      onUpdateChecklist={onUpdateChecklist}
+      onUpdatePayments={onUpdatePayments}
+      onUpdateContractUrl={onUpdateContractUrl}
+      onUpdateDefectRecords={onUpdateDefectRecords}
+      onNavigateToQuotation={onNavigateToQuotation}
+      onDeleteQuotation={onDeleteQuotation}
+      onLossClick={onLossClick}
+    >
+      <div className="flex flex-col lg:h-full animate-in slide-in-from-right-4 duration-500 lg:overflow-hidden relative">
+        {isReadOnly && (
+          <div className="bg-amber-500 text-white px-8 py-2 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 z-[60] shadow-sm">
+            <ShieldAlert size={14} /> 您目前以訪客模式登入，僅供檢視，無法修改資料。
           </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="bg-slate-900 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase">{project.id}</span>
-              <span className="bg-blue-50 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-100 uppercase">{project.category}</span>
-              {project.contractUrl && (
-                <span className="bg-emerald-50 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase flex items-center gap-1">
-                  <ShieldCheck size={10} /> 已簽約
-                </span>
+        )}
+        {/* 固定標頭資訊 */}
+        <div className="p-4 lg:p-8 space-y-4 shrink-0 bg-white/50 border-b border-stone-100">
+          <div className="flex justify-between items-center no-print">
+            <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold text-sm">
+              <ArrowLeft size={16} /> <span className="hidden sm:inline">返回</span>
+            </button>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar desktop-scrollbar touch-scroll sm:overflow-visible pb-1 sm:pb-0">
+              {!isReadOnly && (
+                <div className="flex gap-2 whitespace-nowrap">
+                  <button onClick={() => setIsReportMode(true)} className="flex items-center gap-2 bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-xl text-[10px] font-black shrink-0"><FileText size={14} /> 績效報表</button>
+                  <button onClick={() => setIsCompletionReportMode(true)} className="flex items-center gap-2 bg-white border border-emerald-200 text-emerald-600 px-3 py-1.5 rounded-xl text-[10px] font-black shrink-0"><CheckCircle size={14} /> 完工報告書</button>
+                  <button onClick={() => onEdit(project)} className="bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-[10px] font-black shrink-0"><Pencil size={14} /> 編輯</button>
+                </div>
+              )}
+              {isReadOnly && (
+                <div className="flex items-center gap-2 bg-stone-100 text-stone-400 px-3 py-1.5 rounded-xl text-[10px] font-black border border-stone-200 whitespace-nowrap shrink-0">
+                  <ShieldAlert size={14} /> 訪客唯讀權限
+                </div>
               )}
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">{project.name}</h1>
-            <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 font-bold uppercase">
-              <span className="flex items-center gap-1"><MapPin size={12} className="text-slate-400" /> {project.location?.address || '無地址'}</span>
-              <span className="bg-stone-100 px-2 py-0.5 rounded-full">負責人：{project.quotationManager || '未指定'}</span>
-              <div className="flex items-center gap-1">
-                <Activity size={12} />
-                <select
-                  disabled={isReadOnly}
-                  className={`bg-transparent outline-none appearance-none text-blue-600 font-black ${isReadOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  value={project.status}
-                  onChange={(e) => {
-                    const newStatus = e.target.value as ProjectStatus;
-                    if (newStatus === ProjectStatus.SIGNED_WAITING_WORK && !project.contractUrl) {
-                      setPendingStatus(newStatus);
-                      setIsMandatoryUploadOpen(true);
-                    } else {
-                      onUpdateStatus(newStatus);
-                    }
-                  }}
-                >
-                  {statusOptions.map(opt => <option key={opt} value={opt} className="text-black font-bold">{opt}</option>)}
-                </select>
-              </div>
-            </div>
           </div>
 
-          {/* Import/View Contract Button */}
-          <div className="shrink-0">
-            {project.contractUrl ? (
-              <a
-                href={project.contractUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-emerald-50 text-emerald-600 border border-emerald-200 px-4 py-2.5 rounded-xl font-black text-[11px] hover:bg-emerald-100 transition-colors shadow-sm"
-              >
-                <FileText size={16} />
-                <span>查看報價單/合約</span>
-                <ExternalLink size={12} />
-              </a>
-            ) : (
-              !isReadOnly && (
-                <>
-                  <input
-                    type="file"
-                    className="hidden"
-                    ref={headerContractInputRef}
-                    accept="application/pdf,image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-
-                      try {
-                        const result = await cloudFileService.uploadFile(file);
-                        if (result && result.url) {
-                          onUpdateContractUrl(result.url);
-                          // Also try to analyze schedule automatically if it's an image
-                          if (file.type.startsWith('image/')) {
-                            // Optional: Trigger analysis or prompt user
-                          }
-                          alert('檔案上傳成功！');
-                        }
-                      } catch (err) {
-                        console.error('上傳失敗', err);
-                        alert('上傳失敗，請重試');
-                      } finally {
-                        if (headerContractInputRef.current) headerContractInputRef.current.value = '';
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-slate-900 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase">{project.id}</span>
+                <span className="bg-blue-50 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-100 uppercase">{project.category}</span>
+                {project.contractUrl && (
+                  <span className="bg-emerald-50 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase flex items-center gap-1">
+                    <ShieldCheck size={10} /> 已簽約
+                  </span>
+                )}
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">{project.name}</h1>
+              <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 font-bold uppercase">
+                <span className="flex items-center gap-1"><MapPin size={12} className="text-slate-400" /> {project.location?.address || '無地址'}</span>
+                <span className="bg-stone-100 px-2 py-0.5 rounded-full">負責人：{project.quotationManager || '未指定'}</span>
+                <div className="flex items-center gap-1">
+                  <Activity size={12} />
+                  <select
+                    disabled={isReadOnly}
+                    className={`bg-transparent outline-none appearance-none text-blue-600 font-black ${isReadOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                    value={project.status}
+                    onChange={(e) => {
+                      const newStatus = e.target.value as ProjectStatus;
+                      if (newStatus === ProjectStatus.SIGNED_WAITING_WORK && !project.contractUrl) {
+                        setPendingStatus(newStatus);
+                        setIsMandatoryUploadOpen(true);
+                      } else {
+                        onUpdateStatus(newStatus);
                       }
                     }}
-                  />
-                  <button
-                    onClick={() => headerContractInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl font-black text-[11px] hover:bg-slate-800 transition-all active:scale-95 shadow-md hover:shadow-lg"
                   >
-                    <Upload size={16} />
-                    <span>匯入報價單或合約</span>
-                  </button>
-                </>
-              )
-            )}
+                    {statusOptions.map(opt => <option key={opt} value={opt} className="text-black font-bold">{opt}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Import/View Contract Button */}
+            <div className="shrink-0">
+              {project.contractUrl ? (
+                <a
+                  href={project.contractUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-emerald-50 text-emerald-600 border border-emerald-200 px-4 py-2.5 rounded-xl font-black text-[11px] hover:bg-emerald-100 transition-colors shadow-sm"
+                >
+                  <FileText size={16} />
+                  <span>查看報價單/合約</span>
+                  <ExternalLink size={12} />
+                </a>
+              ) : (
+                !isReadOnly && (
+                  <>
+                    <input
+                      type="file"
+                      className="hidden"
+                      ref={headerContractInputRef}
+                      accept="application/pdf,image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        try {
+                          const result = await cloudFileService.uploadFile(file);
+                          if (result && result.url) {
+                            onUpdateContractUrl(result.url);
+                            // Also try to analyze schedule automatically if it's an image
+                            if (file.type.startsWith('image/')) {
+                              // Optional: Trigger analysis or prompt user
+                            }
+                            alert('檔案上傳成功！');
+                          }
+                        } catch (err) {
+                          console.error('上傳失敗', err);
+                          alert('上傳失敗，請重試');
+                        } finally {
+                          if (headerContractInputRef.current) headerContractInputRef.current.value = '';
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => headerContractInputRef.current?.click()}
+                      className="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl font-black text-[11px] hover:bg-slate-800 transition-all active:scale-95 shadow-md hover:shadow-lg"
+                    >
+                      <Upload size={16} />
+                      <span>匯入報價單或合約</span>
+                    </button>
+                  </>
+                )
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 導覽標籤列 */}
-      <div className="px-0 sm:px-4 py-3 bg-white border-b border-stone-100 shrink-0 no-print relative">
-        <div className="flex gap-2 overflow-x-auto touch-scroll pb-1 px-4 sm:px-0 flex-nowrap w-full" style={{ scrollbarWidth: 'thin' }}>
-          {[
-            { id: 'logs', label: '討論區', icon: MessageSquare },
-            { id: 'inspection', label: 'AI 會勘', icon: Sparkles },
-            { id: 'tasks', label: '待辦任務', icon: CheckCircle2 },
-            { id: 'schedule', label: '施工排程', icon: CalendarDays },
-            { id: 'financials', label: '帳務管理', icon: DollarSign },
-            { id: 'prep', label: '施工前準備', icon: Construction },
-            { id: 'map', label: '案場定位', icon: Navigation },
-            { id: 'photos', label: '照片庫', icon: ImageIcon },
-            { id: 'defects', label: '缺失改善', icon: AlertTriangle },
-            { id: 'quotations', label: '報價單', icon: Receipt }
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id as any)}
-              className={`px-4 py-2 rounded-xl text-[11px] font-black transition-all flex items-center gap-2 whitespace-nowrap shadow-sm border ${activeView === item.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-stone-100 hover:border-stone-300'}`}
-            >
-              <item.icon size={14} /> {item.label}
-            </button>
-          ))}
+        {/* Modern Navigation Tabs */}
+        <div className="mt-0 border-b border-stone-200 bg-white sticky top-0 z-20 shadow-sm relative group">
+          <div className="flex gap-6 lg:gap-8 overflow-x-auto pb-px px-4 lg:px-8 no-scrollbar relative z-10 scroll-smooth" id="project-tabs">
+            {[
+              { id: 'logs', label: '施工日誌', icon: ClipboardList },
+              { id: 'tasks', label: '待辦任務', icon: CheckCircle2 },
+              { id: 'schedule', label: '施工排程', icon: CalendarDays },
+              { id: 'financials', label: '帳務管理', icon: DollarSign },
+              { id: 'prep', label: '施工前準備', icon: Construction },
+              { id: 'map', label: '案場定位', icon: Navigation },
+              { id: 'photos', label: '照片庫', icon: FileImage },
+              { id: 'defects', label: '缺失改善', icon: ShieldAlert },
+              { id: 'quotations', label: '報價單', icon: Receipt },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id as any)}
+                className={`flex items-center gap-2 py-3 lg:py-4 text-xs lg:text-sm font-bold transition-all whitespace-nowrap relative ${activeView === tab.id
+                  ? 'text-stone-900 border-b-2 border-stone-900'
+                  : 'text-stone-400 hover:text-stone-600 border-b-2 border-transparent hover:border-stone-200'
+                  }`}
+              >
+                <tab.icon size={16} className={activeView === tab.id ? 'text-amber-500' : 'text-stone-300'} strokeWidth={activeView === tab.id ? 2.5 : 2} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {/* Right Gradient Fade */}
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none lg:hidden z-20" />
         </div>
-      </div>
 
-      {/* 視圖內容區 */}
-      <div className="flex-1 lg:min-h-0 flex flex-col p-4 sm:p-6 lg:overflow-hidden">
-        {activeView === 'quotations' && (
-          <ProjectQuotations
-            project={project}
-            quotations={quotations}
+        {/* 視圖內容區 */}
+        <div className="flex-1 lg:min-h-0 flex flex-col p-4 sm:p-6 lg:overflow-hidden">
+          {activeView === 'quotations' && (
+            <ProjectQuotations
+              project={project}
+              quotations={quotations}
+              isReadOnly={isReadOnly}
+              onNavigateToQuotation={onNavigateToQuotation}
+              onDeleteQuotation={onDeleteQuotation}
+            />
+          )}
+          {activeView === 'inspection' && <ProjectInspection project={project} />}
+          {activeView === 'logs' && (
+            <ProjectLogs
+              project={project}
+              isReadOnly={isReadOnly}
+              onDeleteDailyLog={onDeleteDailyLog}
+              onAddDailyLog={onAddDailyLog}
+              onImageClick={(image) => setSelectedImage(image)}
+            />
+          )}
+
+
+
+          {
+            activeView === 'defects' && (
+              <div className="lg:h-full lg:overflow-hidden animate-in fade-in">
+                <DefectImprovement project={project} onUpdate={onUpdateDefectRecords} isReadOnly={isReadOnly} />
+              </div>
+            )
+          }
+
+          {
+            activeView !== 'logs' && (
+              <div className="flex-1 lg:overflow-y-auto touch-scroll space-y-4 pr-1 no-scrollbar">
+                {activeView === 'financials' && (
+                  <ProjectFinancials
+                    project={project}
+                    isReadOnly={isReadOnly}
+                    onUpdateExpenses={onUpdateExpenses}
+                    onUpdateWorkAssignments={onUpdateWorkAssignments}
+                    onUpdatePayments={onUpdatePayments}
+                  />
+                )}
+                {activeView === 'map' && <ProjectMap />}
+
+                {activeView === 'tasks' && (
+                  <ProjectTasks
+                    project={project}
+                    user={user}
+                    isReadOnly={isReadOnly}
+                    onUpdateTasks={onUpdateTasks}
+                  />
+                )}
+
+                {activeView === 'schedule' && (
+                  <ProjectSchedule
+                    project={project}
+                    isReadOnly={isReadOnly}
+                    onUpdatePhases={onUpdatePhases!}
+                  />
+                )}
+
+
+
+                {activeView === 'prep' && (
+                  <ProjectPrep
+                    project={project}
+                    isReadOnly={isReadOnly}
+                    onUpdatePreConstruction={props.onUpdatePreConstruction!}
+                    onImageClick={setSelectedImage}
+                  />
+                )}
+
+                {activeView === 'photos' && (
+                  <ProjectGallery
+                    project={project}
+                    isReadOnly={isReadOnly}
+                    onUpdateFiles={onUpdateFiles}
+                    onImageClick={setSelectedImage}
+                    photoCategories={PHOTO_CATEGORIES}
+                    currentPhotoFilter={currentPhotoFilter}
+                    onFilterChange={setCurrentPhotoFilter}
+                  />
+                )}
+              </div>
+            )
+          }
+        </div >
+
+        {/* Lightbox / Media Preview Modal */}
+        {selectedImage && (
+          <ImageLightbox
+            image={selectedImage}
+            onClose={() => setSelectedImage(null)}
+            onNext={handleNextImage}
+            onPrev={handlePrevImage}
+            hasNext={navigationList.findIndex(f => f.id === selectedImage.id || f.url === selectedImage.url) < navigationList.length - 1}
+            hasPrev={navigationList.findIndex(f => f.id === selectedImage.id || f.url === selectedImage.url) > 0}
+            currentPosition={navigationList.findIndex(f => f.id === selectedImage.id || f.url === selectedImage.url)}
+            totalImages={navigationList.length}
             isReadOnly={isReadOnly}
-            onNavigateToQuotation={onNavigateToQuotation}
-            onDeleteQuotation={onDeleteQuotation}
+            onUpdateFiles={onUpdateFiles}
+            allFiles={project.files || []}
+            photoCategories={PHOTO_CATEGORIES}
           />
         )}
-        {activeView === 'inspection' && <ProjectInspection project={project} />}
-        {activeView === 'logs' && (
-          <ProjectLogs
-            project={project}
-            isReadOnly={isReadOnly}
-            onDeleteDailyLog={onDeleteDailyLog}
-            onAddDailyLog={onAddDailyLog}
-            onImageClick={(image) => setSelectedImage(image)}
-          />
-        )}
-
-
-
-        {
-          activeView === 'defects' && (
-            <div className="lg:h-full lg:overflow-hidden animate-in fade-in">
-              <DefectImprovement project={project} onUpdate={onUpdateDefectRecords} isReadOnly={isReadOnly} />
-            </div>
-          )
-        }
-
-        {
-          activeView !== 'logs' && (
-            <div className="flex-1 lg:overflow-y-auto touch-scroll space-y-4 pr-1 no-scrollbar">
-              {activeView === 'financials' && (
-                <ProjectFinancials
-                  project={project}
-                  isReadOnly={isReadOnly}
-                  onUpdateExpenses={onUpdateExpenses}
-                  onUpdateWorkAssignments={onUpdateWorkAssignments}
-                  onUpdatePayments={onUpdatePayments}
-                />
-              )}
-              {activeView === 'map' && (
-                <ProjectMap project={project} isReadOnly={isReadOnly} />
-              )}
-
-              {activeView === 'tasks' && (
-                <ProjectTasks
-                  project={project}
-                  user={user}
-                  isReadOnly={isReadOnly}
-                  onUpdateTasks={onUpdateTasks}
-                />
-              )}
-
-              {activeView === 'schedule' && (
-                <ProjectSchedule
-                  project={project}
-                  isReadOnly={isReadOnly}
-                  onUpdatePhases={onUpdatePhases!}
-                />
-              )}
-
-
-
-              {activeView === 'prep' && (
-                <ProjectPrep
-                  project={project}
-                  isReadOnly={isReadOnly}
-                  onUpdatePreConstruction={props.onUpdatePreConstruction!}
-                  onImageClick={setSelectedImage}
-                />
-              )}
-
-              {activeView === 'photos' && (
-                <ProjectGallery
-                  project={project}
-                  isReadOnly={isReadOnly}
-                  onUpdateFiles={onUpdateFiles}
-                  onImageClick={setSelectedImage}
-                  photoCategories={PHOTO_CATEGORIES}
-                  currentPhotoFilter={currentPhotoFilter}
-                  onFilterChange={setCurrentPhotoFilter}
-                />
-              )}
-            </div>
-          )
-        }
-      </div >
-
-      {/* Lightbox / Media Preview Modal */}
-      {selectedImage && (
-        <ImageLightbox
-          image={selectedImage}
-          onClose={() => setSelectedImage(null)}
-          onNext={handleNextImage}
-          onPrev={handlePrevImage}
-          hasNext={navigationList.findIndex(f => f.id === selectedImage.id || f.url === selectedImage.url) < navigationList.length - 1}
-          hasPrev={navigationList.findIndex(f => f.id === selectedImage.id || f.url === selectedImage.url) > 0}
-          currentPosition={navigationList.findIndex(f => f.id === selectedImage.id || f.url === selectedImage.url)}
-          totalImages={navigationList.length}
-          isReadOnly={isReadOnly}
-          onUpdateFiles={onUpdateFiles}
-          allFiles={project.files || []}
-          photoCategories={PHOTO_CATEGORIES}
+        {/* Mandatory Contract Upload Modal */}
+        <MandatoryUploadModal
+          isOpen={isMandatoryUploadOpen}
+          onClose={() => setIsMandatoryUploadOpen(false)}
+          pendingStatus={pendingStatus}
         />
-      )}
-      {/* Mandatory Contract Upload Modal */}
-      <MandatoryUploadModal
-        isOpen={isMandatoryUploadOpen}
-        onClose={() => setIsMandatoryUploadOpen(false)}
-        project={project}
-        pendingStatus={pendingStatus}
-        onUpdateContractUrl={onUpdateContractUrl}
-        onUpdateStatus={onUpdateStatus}
-      />
-      <ProjectReportModal
-        isOpen={isReportMode}
-        onClose={() => setIsReportMode(false)}
-        project={project}
-        currentSpent={currentSpent}
-        margin={margin}
-        totalLaborCost={totalLaborCost}
-        totalExpenseCost={totalExpenseCost}
-      />
-      <CompletionReportModal
-        isOpen={isCompletionReportMode}
-        onClose={() => setIsCompletionReportMode(false)}
-        project={project}
-      />
+        <ProjectReportModal
+          isOpen={isReportMode}
+          onClose={() => setIsReportMode(false)}
+          project={project}
+          currentSpent={currentSpent}
+          margin={margin}
+          totalLaborCost={totalLaborCost}
+          totalExpenseCost={totalExpenseCost}
+        />
+        <CompletionReportModal
+          isOpen={isCompletionReportMode}
+          onClose={() => setIsCompletionReportMode(false)}
+          project={project}
+        />
 
 
-    </div >
+      </div >
+    </ProjectProvider>
   );
 };
 

@@ -1,25 +1,21 @@
 import React, { useRef, useState } from 'react';
 import { Upload, FileText, Check, Loader2 } from 'lucide-react';
-import { Project, ProjectStatus } from '../../types';
+import { ProjectStatus } from '../../types';
 import { cloudFileService } from '../../services/cloudFileService';
+import { useProject } from '../../contexts/ProjectContext';
 
 interface MandatoryUploadModalProps {
     isOpen: boolean;
     onClose: () => void;
-    project: Project;
     pendingStatus: ProjectStatus | null;
-    onUpdateContractUrl: (url: string) => void;
-    onUpdateStatus: (status: ProjectStatus) => void;
 }
 
 const MandatoryUploadModal: React.FC<MandatoryUploadModalProps> = ({
     isOpen,
     onClose,
-    project,
-    pendingStatus,
-    onUpdateContractUrl,
-    onUpdateStatus
+    pendingStatus
 }) => {
+    const { project, onUpdateContractUrl, onUpdateStatus } = useProject();
     const [isUploading, setIsUploading] = useState(false);
     const contractFileInputRef = useRef<HTMLInputElement>(null);
 

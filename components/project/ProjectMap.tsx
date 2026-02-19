@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import { MapPin, Loader2, ExternalLink } from 'lucide-react';
-import { Project } from '../../types';
 import MapLocation from '../MapLocation';
 import { searchNearbyResources } from '../../services/geminiService';
+import { useProject } from '../../contexts/ProjectContext';
 
-interface ProjectMapProps {
-    project: Project;
-    isReadOnly: boolean;
-}
-
-const ProjectMap: React.FC<ProjectMapProps> = ({ project, isReadOnly }) => {
+const ProjectMap: React.FC = () => {
+    const { project, isReadOnly } = useProject();
     const [isSearchingNearby, setIsSearchingNearby] = useState(false);
     const [nearbyResults, setNearbyResults] = useState<{ text: string, links: { title: string, uri: string }[] } | null>(null);
 
