@@ -1,7 +1,8 @@
+# 生活品質工程管理系統 (Quality of Life Engineering Management System)
 
-# 生活品質智慧工程管理系統 - 部署手冊
-
-這是一個專為營造與裝修團隊設計的生產環境系統。
+> 專為工程團隊打造的全方位管理解決方案
+> 
+> **最新版本**: 4.3.0 (2026-02-20) - 新增 Ollama 本地 AI、Google Sheet 同步與行事曆系統。與裝修團隊設計的生產環境系統。
 
 ## 🚀 快速部署至 GitHub Pages (免費)
 
