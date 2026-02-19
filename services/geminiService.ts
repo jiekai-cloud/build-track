@@ -61,10 +61,92 @@ async function callGeminiViaFetch(model: string, payload: any, apiKey: string) {
   };
 }
 
+// Ollama Configuration
+const OLLAMA_CONFIG = {
+  baseUrl: 'http://localhost:11434',
+  model: 'llama3', // Default model, can be overridden by localStorage
+};
+
+/**
+ * 呼叫本地 Ollama API
+ */
+async function callOllama(payload: any, context: string) {
+  const savedModel = localStorage.getItem('OLLAMA_MODEL');
+  const model = savedModel || OLLAMA_CONFIG.model;
+
+  // Convert Gemini payload structure to Ollama chat format
+  const messages = payload.contents?.[0]?.parts?.map((p: any) => ({
+    role: 'user',
+    content: p.text || ''
+  })) || [];
+
+  // Handle image inputs (basic support)
+  const inlineData = payload.contents?.[0]?.inlineData;
+  if (inlineData) {
+    // Ollama typically expects images in a separate field or specific format depending on the multimodal model
+    // For now, we'll append a note about the image if it's not supported directly in this simple adapter
+    messages[0].content += `\n[System Note: Image input provided but skipped in basic adapter]`;
+    // If using a multimodal model like llava, you would need to adjust the payload structure here
+    if (model.includes('llava') || model.includes('vision')) {
+      messages[0].images = [inlineData.data];
+    }
+  }
+
+  const url = `${OLLAMA_CONFIG.baseUrl}/api/chat`; // Chat API endpoint
+
+  console.log(`[AI] 嘗試調用 Ollama (${model}): ${context}`);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model,
+        messages: messages,
+        stream: false, // Turn off streaming for simpler handling
+        options: {
+          temperature: payload.generationConfig?.temperature || 0.7
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Ollama API Error (${response.status}): ${errorData}`);
+    }
+
+    const data = await response.json();
+
+    // Transform Ollama response to Gemini-like structure for compatibility
+    return {
+      text: data.message?.content || "",
+      candidates: [{ content: { parts: [{ text: data.message?.content }] } }]
+    };
+
+  } catch (error: any) {
+    console.error(`[AI] Ollama 調用失敗:`, error);
+    // Explicitly throw to allow fallback to Gemini
+    throw error;
+  }
+}
+
 /**
  * 具備自動備援機制的調用函式
+ * 優先順序: Ollama (若啟用) -> Gemini (主要) -> Gemini (備援)
  */
 async function callAIWithFallback(payload: any, context: string) {
+  // 1. Check if Ollama is enabled
+  const useOllama = localStorage.getItem('USE_OLLAMA') === 'true';
+
+  if (useOllama) {
+    try {
+      return await callOllama(payload, context);
+    } catch (ollamaError) {
+      console.warn(`[AI] Ollama 失敗，切換回 Gemini 備援...`);
+      // Continue to Gemini logic below
+    }
+  }
+
   const apiKey = getApiKey();
 
   // --- 診斷代碼已移除 (效能優化) ---
