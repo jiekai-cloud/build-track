@@ -31,6 +31,12 @@ import ApprovalSystem from './components/ApprovalSystem';
 import QuotationSystem from './components/QuotationSystem';
 import ModuleManager from './components/ModuleManager';
 import OnboardingTour from './components/OnboardingTour';
+import { CalendarView } from './components/CalendarView';
+
+
+
+
+
 import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, ShieldCheck, Database, Zap, Sparkles, Globe, Activity, ShieldAlert, Bell, User as LucideUser, Trash2, ShoppingBag, Receipt, Pencil, X, ExternalLink, Download, Phone } from 'lucide-react';
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
@@ -631,6 +637,14 @@ const App: React.FC = () => {
                 onStartTour={() => setIsOnboardingOpen(true)}
                 currentDept={currentDept}
               />}
+              {activeTab === 'calendar' && moduleService.isModuleEnabled(ModuleId.CALENDAR) && (
+                <CalendarView
+                  projects={filteredData.projects}
+                  approvalRequests={approvalRequests}
+                  teamMembers={teamMembers}
+                  leads={leads}
+                />
+              )}
               {activeTab === 'projects' && moduleService.isModuleEnabled(ModuleId.PROJECTS) && <ProjectList
                 projects={filteredData.projects}
                 user={user}

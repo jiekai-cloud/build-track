@@ -41,23 +41,26 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
   // Map tab IDs to module IDs
   const tabToModuleMap: Record<string, ModuleId> = {
     'dashboard': ModuleId.DASHBOARD,
+    'calendar': ModuleId.CALENDAR,
     'projects': ModuleId.PROJECTS,
     'dispatch': ModuleId.DISPATCH,
+    'quotations': ModuleId.QUOTATIONS,
     'customers': ModuleId.CUSTOMERS,
     'team': ModuleId.TEAM,
     'vendors': ModuleId.VENDORS,
-    'analytics': ModuleId.ANALYTICS,
     'inventory': ModuleId.INVENTORY,
     'attendance': ModuleId.ATTENDANCE,
     'payroll': ModuleId.PAYROLL,
     'approvals': ModuleId.APPROVALS,
-    'quotations': ModuleId.QUOTATIONS
+    'analytics': ModuleId.ANALYTICS,
   };
 
   const allMenuItems = [
     { id: 'dashboard', label: '總覽面板', icon: LayoutDashboard, moduleId: ModuleId.DASHBOARD },
+    { id: 'calendar', label: '行事曆', icon: CalendarClock, moduleId: ModuleId.CALENDAR },
     { id: 'projects', label: '專案管理', icon: FolderKanban, moduleId: ModuleId.PROJECTS },
     { id: 'dispatch', label: '派工紀錄', icon: ClipboardSignature, moduleId: ModuleId.DISPATCH },
+    { id: 'quotations', label: '報價系統', icon: FileText, moduleId: ModuleId.QUOTATIONS },
     { id: 'customers', label: '客戶資料', icon: Contact2, moduleId: ModuleId.CUSTOMERS },
     { id: 'team', label: '團隊成員', icon: Users, moduleId: ModuleId.TEAM },
     { id: 'vendors', label: '廠商管理', icon: ShoppingBag, moduleId: ModuleId.VENDORS },
@@ -65,7 +68,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     { id: 'attendance', label: '考勤打卡', icon: Clock, moduleId: ModuleId.ATTENDANCE },
     { id: 'payroll', label: '薪資管理', icon: Wallet, moduleId: ModuleId.PAYROLL },
     { id: 'approvals', label: '簽核系統', icon: FileCheck, moduleId: ModuleId.APPROVALS },
-    { id: 'quotations', label: '報價系統', icon: FileText, moduleId: ModuleId.QUOTATIONS },
     { id: 'analytics', label: '數據分析', icon: BarChart3, moduleId: ModuleId.ANALYTICS },
   ];
 

@@ -33,7 +33,8 @@ export enum ModuleId {
     ATTENDANCE = 'attendance',        // 考勤系統
     PAYROLL = 'payroll',               // 薪資管理
     APPROVALS = 'approvals',          // 簽核系統
-    QUOTATIONS = 'quotations'         // 報價系統
+    QUOTATIONS = 'quotations',        // 報價系統
+    CALENDAR = 'calendar'             // 行事曆系統
 }
 
 /**
@@ -70,6 +71,16 @@ export const ALL_MODULES: ModuleConfig[] = [
         name: '儀表板',
         description: '總覽與關鍵指標顯示',
         icon: LayoutDashboard,
+        isCore: true,
+        dependencies: [],
+        enabled: true,
+        category: 'core'
+    },
+    {
+        id: ModuleId.CALENDAR,
+        name: '行事曆',
+        description: '專案日程、請假與會刊安排',
+        icon: CalendarClock,
         isCore: true,
         dependencies: [],
         enabled: true,
@@ -251,6 +262,7 @@ export const MODULE_PRESETS = {
         modules: [
             ModuleId.AUTH,
             ModuleId.DASHBOARD,
+            ModuleId.CALENDAR,
             ModuleId.SETTINGS,
             ModuleId.PROJECTS,
             ModuleId.CUSTOMERS,
@@ -267,6 +279,7 @@ export const MODULE_PRESETS = {
         modules: [
             ModuleId.AUTH,
             ModuleId.DASHBOARD,
+            ModuleId.CALENDAR,
             ModuleId.SETTINGS,
             ModuleId.PROJECTS
         ]
