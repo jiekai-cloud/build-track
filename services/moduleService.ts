@@ -27,7 +27,14 @@ class ModuleService {
             const saved = localStorage.getItem(MODULE_CONFIG_KEY);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                return new Set(parsed);
+                const loadedSet = new Set<ModuleId>(parsed);
+
+                // Force ensure all CORE modules are enabled
+                ALL_MODULES.filter(m => m.isCore).forEach(m => {
+                    loadedSet.add(m.id);
+                });
+
+                return loadedSet;
             }
         } catch (e) {
             console.warn('Failed to load module config, using defaults', e);
