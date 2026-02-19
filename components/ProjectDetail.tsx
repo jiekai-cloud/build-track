@@ -168,6 +168,10 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
       onNavigateToQuotation={onNavigateToQuotation}
       onDeleteQuotation={onDeleteQuotation}
       onLossClick={onLossClick}
+      onImageClick={setSelectedImage}
+      currentPhotoFilter={currentPhotoFilter}
+      onFilterChange={setCurrentPhotoFilter}
+      photoCategories={PHOTO_CATEGORIES}
     >
       <div className="flex flex-col lg:h-full animate-in slide-in-from-right-4 duration-500 lg:overflow-hidden relative">
         {isReadOnly && (
@@ -324,92 +328,25 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
 
         {/* 視圖內容區 */}
         <div className="flex-1 lg:min-h-0 flex flex-col p-4 sm:p-6 lg:overflow-hidden">
-          {activeView === 'quotations' && (
-            <ProjectQuotations
-              project={project}
-              quotations={quotations}
-              isReadOnly={isReadOnly}
-              onNavigateToQuotation={onNavigateToQuotation}
-              onDeleteQuotation={onDeleteQuotation}
-            />
-          )}
-          {activeView === 'inspection' && <ProjectInspection project={project} />}
-          {activeView === 'logs' && (
-            <ProjectLogs
-              project={project}
-              isReadOnly={isReadOnly}
-              onDeleteDailyLog={onDeleteDailyLog}
-              onAddDailyLog={onAddDailyLog}
-              onImageClick={(image) => setSelectedImage(image)}
-            />
+          {activeView === 'quotations' && <ProjectQuotations />}
+          {activeView === 'inspection' && <ProjectInspection />}
+          {activeView === 'logs' && <ProjectLogs />}
+          {activeView === 'defects' && (
+            <div className="lg:h-full lg:overflow-hidden animate-in fade-in">
+              <DefectImprovement />
+            </div>
           )}
 
-
-
-          {
-            activeView === 'defects' && (
-              <div className="lg:h-full lg:overflow-hidden animate-in fade-in">
-                <DefectImprovement project={project} onUpdate={onUpdateDefectRecords} isReadOnly={isReadOnly} />
-              </div>
-            )
-          }
-
-          {
-            activeView !== 'logs' && (
-              <div className="flex-1 lg:overflow-y-auto touch-scroll space-y-4 pr-1 no-scrollbar">
-                {activeView === 'financials' && (
-                  <ProjectFinancials
-                    project={project}
-                    isReadOnly={isReadOnly}
-                    onUpdateExpenses={onUpdateExpenses}
-                    onUpdateWorkAssignments={onUpdateWorkAssignments}
-                    onUpdatePayments={onUpdatePayments}
-                  />
-                )}
-                {activeView === 'map' && <ProjectMap />}
-
-                {activeView === 'tasks' && (
-                  <ProjectTasks
-                    project={project}
-                    user={user}
-                    isReadOnly={isReadOnly}
-                    onUpdateTasks={onUpdateTasks}
-                  />
-                )}
-
-                {activeView === 'schedule' && (
-                  <ProjectSchedule
-                    project={project}
-                    isReadOnly={isReadOnly}
-                    onUpdatePhases={onUpdatePhases!}
-                  />
-                )}
-
-
-
-                {activeView === 'prep' && (
-                  <ProjectPrep
-                    project={project}
-                    isReadOnly={isReadOnly}
-                    onUpdatePreConstruction={props.onUpdatePreConstruction!}
-                    onImageClick={setSelectedImage}
-                  />
-                )}
-
-                {activeView === 'photos' && (
-                  <ProjectGallery
-                    project={project}
-                    isReadOnly={isReadOnly}
-                    onUpdateFiles={onUpdateFiles}
-                    onImageClick={setSelectedImage}
-                    photoCategories={PHOTO_CATEGORIES}
-                    currentPhotoFilter={currentPhotoFilter}
-                    onFilterChange={setCurrentPhotoFilter}
-                  />
-                )}
-              </div>
-            )
-          }
+          {['financials', 'map', 'tasks', 'schedule', 'prep', 'photos'].includes(activeView) && (
+            <div className="flex-1 lg:overflow-y-auto touch-scroll space-y-4 pr-1 no-scrollbar">
+              {activeView === 'financials' && <ProjectFinancials />}
+              {activeView === 'map' && <ProjectMap />}
+              {activeView === 'tasks' && <ProjectTasks />}
+              {activeView === 'schedule' && <ProjectSchedule />}
+              {activeView === 'prep' && <ProjectPrep />}
+              {activeView === 'photos' && <ProjectGallery />}
+            </div>
+          )}
         </div >
 
         {/* Lightbox / Media Preview Modal */}

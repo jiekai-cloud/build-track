@@ -17,6 +17,7 @@ interface NotificationPanelProps {
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ logs, onClose, onProjectClick, onMarkAsRead, onMarkAllAsRead }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState<string>('all');
+    const [visibleCount, setVisibleCount] = useState(20);
 
     const filteredLogs = useMemo(() => {
         return logs.filter(log => {
@@ -129,8 +130,19 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ logs, onClose, on
                 </div>
             </div>
 
-            {/* 活動列表 */}
-            <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6 bg-stone-50/20">
+            {/* 活動列表 (Infinite Scroll) */}
+            <div
+                className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6 bg-stone-50/20"
+                onScroll={(e) => {
+                    const target = e.currentTarget;
+                    if (target.scrollHeight - target.scrollTop <= target.clientHeight + 100) {
+                        // Load more when near bottom
+                        if (visibleCount < filteredLogs.length) {
+                            setVisibleCount(prev => Math.min(prev + 20, filteredLogs.length));
+                        }
+                    }
+                }}
+            >
                 {filteredLogs.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40 py-20">
                         {searchTerm || selectedType !== 'all' ? <FilterX size={48} className="text-stone-300" /> : <Zap size={48} className="text-stone-300" />}
@@ -139,69 +151,77 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ logs, onClose, on
                         </p>
                     </div>
                 ) : (
-                    filteredLogs.map((log) => (
-                        <div
-                            key={log.id}
-                            onClick={() => {
-                                onMarkAsRead(log.id);
-                                if (log.type === 'project' && log.targetId) {
-                                    onProjectClick(log.targetId);
-                                }
-                            }}
-                            className={`group relative flex gap-4 animate-in fade-in slide-in-from-bottom-2 cursor-pointer transition-all ${!log.isRead ? 'translate-x-1' : ''}`}
-                        >
-                            <div className="flex flex-col items-center">
-                                <div className="relative">
-                                    <img
-                                        src={log.userAvatar}
-                                        alt={log.userName}
-                                        className={`w-10 h-10 rounded-2xl border-2 shadow-md z-10 transition-all ${!log.isRead ? 'border-orange-500 ring-4 ring-orange-500/10' : 'border-white'}`}
-                                    />
-                                    {!log.isRead && (
-                                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white animate-pulse z-20"></span>
-                                    )}
-                                </div>
-                                <div className="w-0.5 flex-1 bg-stone-100 group-last:hidden my-2"></div>
-                            </div>
-
-                            <div className="flex-1 pb-6 group-last:pb-0">
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className={`text-xs font-black transition-colors ${!log.isRead ? 'text-orange-600' : 'text-stone-900'}`}>{log.userName}</span>
-                                    <span className="text-[9px] font-bold text-stone-400 flex items-center gap-1">
-                                        <Clock size={10} />
-                                        {formatTime(log.timestamp)}
-                                    </span>
+                    <>
+                        {filteredLogs.slice(0, visibleCount).map((log) => (
+                            <div
+                                key={log.id}
+                                onClick={() => {
+                                    onMarkAsRead(log.id);
+                                    if (log.type === 'project' && log.targetId) {
+                                        onProjectClick(log.targetId);
+                                    }
+                                }}
+                                className={`group relative flex gap-4 animate-in fade-in slide-in-from-bottom-2 cursor-pointer transition-all ${!log.isRead ? 'translate-x-1' : ''}`}
+                            >
+                                <div className="flex flex-col items-center">
+                                    <div className="relative">
+                                        <img
+                                            src={log.userAvatar}
+                                            alt={log.userName}
+                                            className={`w-10 h-10 rounded-2xl border-2 shadow-md z-10 transition-all ${!log.isRead ? 'border-orange-500 ring-4 ring-orange-500/10' : 'border-white'}`}
+                                            loading="lazy"
+                                        />
+                                        {!log.isRead && (
+                                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white animate-pulse z-20"></span>
+                                        )}
+                                    </div>
+                                    <div className="w-0.5 flex-1 bg-stone-100 group-last:hidden my-2"></div>
                                 </div>
 
-                                <div className={`p-4 rounded-[1.5rem] transition-all border shadow-sm group-hover:shadow-md ${!log.isRead ? 'bg-white border-orange-100' : 'bg-white/60 border-stone-100 group-hover:bg-white group-hover:border-stone-200'}`}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className={`p-1.5 rounded-lg ${getBgColor(log.type)}`}>
-                                            {getIcon(log.type)}
-                                        </div>
-                                        <span className="text-[10px] font-black text-stone-500 uppercase tracking-wider">
-                                            {log.action}
+                                <div className="flex-1 pb-6 group-last:pb-0">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className={`text-xs font-black transition-colors ${!log.isRead ? 'text-orange-600' : 'text-stone-900'}`}>{log.userName}</span>
+                                        <span className="text-[9px] font-bold text-stone-400 flex items-center gap-1">
+                                            <Clock size={10} />
+                                            {formatTime(log.timestamp)}
                                         </span>
                                     </div>
 
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-bold text-stone-800 leading-tight">
-                                            {log.targetName}
-                                        </p>
-                                        <div className="flex items-center gap-1.5 pt-2 text-stone-400 group-hover:text-orange-600 transition-colors">
-                                            <span className="text-[9px] font-black uppercase tracking-widest">查看詳情</span>
-                                            <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
+                                    <div className={`p-4 rounded-[1.5rem] transition-all border shadow-sm group-hover:shadow-md ${!log.isRead ? 'bg-white border-orange-100' : 'bg-white/60 border-stone-100 group-hover:bg-white group-hover:border-stone-200'}`}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className={`p-1.5 rounded-lg ${getBgColor(log.type)}`}>
+                                                {getIcon(log.type)}
+                                            </div>
+                                            <span className="text-[10px] font-black text-stone-500 uppercase tracking-wider">
+                                                {log.action}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-bold text-stone-800 leading-tight">
+                                                {log.targetName}
+                                            </p>
+                                            <div className="flex items-center gap-1.5 pt-2 text-stone-400 group-hover:text-orange-600 transition-colors">
+                                                <span className="text-[9px] font-black uppercase tracking-widest">查看詳情</span>
+                                                <ArrowRight size={10} className="transition-transform group-hover:translate-x-1" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        ))}
+                        {visibleCount < filteredLogs.length && (
+                            <div className="py-4 text-center">
+                                <span className="text-[10px] text-stone-400 font-bold animate-pulse">載入更多紀錄...</span>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
             {/* 說明腳註 */}
             <div className="p-4 bg-stone-50 border-t border-stone-100 text-center shrink-0">
-                <p className="text-[9px] font-black text-stone-400 uppercase tracking-[0.2em]">系統僅保留最近 100 筆活動紀錄</p>
+                <p className="text-[9px] font-black text-stone-400 uppercase tracking-[0.2em]">系統保留最近 200 筆活動紀錄，更多歷史請洽管理員調閱</p>
             </div>
         </div>
     );

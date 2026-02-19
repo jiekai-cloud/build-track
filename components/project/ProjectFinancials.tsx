@@ -2,24 +2,12 @@ import React, { useState, useMemo, useRef } from 'react';
 import {
     Activity, DollarSign, HardHat, ChevronDown, Pencil, Trash2, Building2, ShoppingBag, Wallet, Users, Receipt, Loader2, FileText, Camera, Sparkles, X, Check
 } from 'lucide-react';
-import { Project, Expense, WorkAssignment, PaymentStage } from '../../types';
+import { Expense, WorkAssignment, PaymentStage } from '../../types';
 import { analyzeProjectFinancials, analyzeQuotationItems, scanReceipt } from '../../services/geminiService';
+import { useProject } from '../../contexts/ProjectContext';
 
-interface ProjectFinancialsProps {
-    project: Project;
-    isReadOnly: boolean;
-    onUpdateExpenses: (expenses: Expense[], totalCost?: number) => void;
-    onUpdateWorkAssignments: (assignments: WorkAssignment[]) => void;
-    onUpdatePayments: (payments: PaymentStage[]) => void;
-}
-
-const ProjectFinancials: React.FC<ProjectFinancialsProps> = ({
-    project,
-    isReadOnly,
-    onUpdateExpenses,
-    onUpdateWorkAssignments,
-    onUpdatePayments
-}) => {
+const ProjectFinancials: React.FC = () => {
+    const { project, isReadOnly, onUpdateExpenses, onUpdateWorkAssignments, onUpdatePayments } = useProject();
     const [isAnalyzingFinancials, setIsAnalyzingFinancials] = useState(false);
     const [financialAnalysis, setFinancialAnalysis] = useState<string | null>(null);
     const [isLaborDetailsExpanded, setIsLaborDetailsExpanded] = useState(false);

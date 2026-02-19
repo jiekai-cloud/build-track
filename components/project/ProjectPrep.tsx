@@ -1,18 +1,13 @@
 
 import React, { useState, useRef } from 'react';
 import { ExternalLink, Sparkles, Loader2, Wrench, Lock, ClipboardList, FileImage, Upload, FileText, X, Construction } from 'lucide-react';
-import { Project, ProjectPreConstruction } from '../../types';
+import { ProjectPreConstruction } from '../../types';
 import { generatePreConstructionPrep } from '../../services/geminiService';
 import { cloudFileService } from '../../services/cloudFileService';
+import { useProject } from '../../contexts/ProjectContext';
 
-interface ProjectPrepProps {
-    project: Project;
-    isReadOnly: boolean;
-    onUpdatePreConstruction: (data: ProjectPreConstruction) => void;
-    onImageClick?: (image: { url: string; category: string }) => void;
-}
-
-const ProjectPrep: React.FC<ProjectPrepProps> = ({ project, isReadOnly, onUpdatePreConstruction, onImageClick }) => {
+const ProjectPrep: React.FC = () => {
+    const { project, isReadOnly, onUpdatePreConstruction, onImageClick } = useProject();
     const [isGeneratingPrep, setIsGeneratingPrep] = useState(false);
     const [localMaterials, setLocalMaterials] = useState(project.preConstruction?.materialsAndTools || '');
     const [localNotice, setLocalNotice] = useState(project.preConstruction?.notice || '');

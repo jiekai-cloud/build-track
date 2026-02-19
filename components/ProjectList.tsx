@@ -59,7 +59,13 @@ const CardView = ({ projects, isReadOnly, onDetailClick, onEditClick, onDeleteCl
               </div>
             )}
             <div className="relative h-48 rounded-[2rem] overflow-hidden bg-stone-100 mb-2">
-              <img src={project.coverImage || `https://source.unsplash.com/random/800x600?construction&sig=${project.id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0" alt="cover" />
+              <img
+                src={project.coverImage || `https://source.unsplash.com/random/800x600?construction&sig=${project.id}`}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0"
+                alt="cover"
+                loading="lazy"
+                decoding="async"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-4 left-6 text-white w-[calc(100%-3rem)]">
                 <div className="flex justify-between items-end mb-1">
@@ -448,15 +454,9 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
   // Removed custom sortConfig as Ag-Grid handles it internally
 
-  const projectsWithFinancials = useMemo<ProjectWithFinancials[]>(() => {
-    let filtered = projects.filter(p => {
-      const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.id.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchStatus = statusFilter === 'all' || p.status === statusFilter;
-      const matchDeleted = showDeleted ? p.deletedAt : !p.deletedAt;
-      return matchSearch && matchStatus && matchDeleted;
-    });
-
-    const mapped = filtered.map(project => {
+  // 1. Heavy Computation: Calculate Financials only when projects/attendance changes
+  const computedProjects = useMemo<ProjectWithFinancials[]>(() => {
+    return projects.map(project => {
       // 0. Priority: Manual "Attributed Year" field
       let pYear = '';  // Default empty to show everything
       if (project.year && project.year.trim() !== '') {
@@ -545,41 +545,31 @@ const ProjectList: React.FC<ProjectListProps> = ({
         }
       };
     });
+  }, [projects, attendanceRecords, teamMembers]);
 
-    // Apply year filter after mapping
-    const yearFiltered = yearFilter === 'all'
-      ? mapped
-      : mapped.filter(p => p.calculatedYear === yearFilter);
-
-    // SORTING LOGIC: Sort by Sequence Number (Last 3 digits of ID) Descending
-    // The user requested: "按照案件編號的流水號來排序 也就是最後三個數字來排序"
-    // Default to Descending (9 -> 0)
-    const sorted = yearFiltered.sort((a, b) => {
-      // Extract last 3 digits
-      const seqA = parseInt(a.id.slice(-3)) || 0;
-      const seqB = parseInt(b.id.slice(-3)) || 0;
-      return seqB - seqA; // Always Descending by default for Card/Kanban/Initial Table
+  // 2. Light Filtering: Filter the pre-computed list
+  const projectsWithFinancials = useMemo<ProjectWithFinancials[]>(() => {
+    let filtered = computedProjects.filter(p => {
+      const matchSearch = searchTerm === '' || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchStatus = statusFilter === 'all' || p.status === statusFilter;
+      const matchDeleted = showDeleted ? p.deletedAt : !p.deletedAt;
+      return matchSearch && matchStatus && matchDeleted;
     });
 
-    // Debug logging
-    if (typeof window !== 'undefined') {
-      console.log('[ProjectList Debug]', {
-        totalProjects: projects.length,
-        afterMapping: mapped.length,
-        afterYearFilter: yearFiltered.length,
-        afterSorting: sorted.length,
-        currentYearFilter: yearFilter,
-        yearDistribution: mapped.reduce((acc, p) => {
-          const year = p.calculatedYear || 'unknown';
-          acc[year] = (acc[year] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>)
-      });
-    }
+    // Apply year filter after initial mapping
+    const yearFiltered = yearFilter === 'all'
+      ? filtered
+      : filtered.filter(p => p.calculatedYear === yearFilter);
+
+    // SORTING LOGIC: Sort by Sequence Number (Last 3 digits of ID) Descending
+    const sorted = yearFiltered.sort((a, b) => {
+      const seqA = parseInt(a.id.slice(-3)) || 0;
+      const seqB = parseInt(b.id.slice(-3)) || 0;
+      return seqB - seqA;
+    });
 
     return sorted;
-
-  }, [projects, attendanceRecords, teamMembers, searchTerm, statusFilter, showDeleted, yearFilter]);
+  }, [computedProjects, searchTerm, statusFilter, showDeleted, yearFilter]);
 
   const projectsByStatus = useMemo(() => {
     const groups: Record<string, ProjectWithFinancials[]> = {};

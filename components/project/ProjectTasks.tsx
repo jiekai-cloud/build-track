@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Check, Trash2, CalendarDays } from 'lucide-react';
-import { Project, Task, User } from '../../types';
+import { Task } from '../../types';
+import { useProject } from '../../contexts/ProjectContext';
 
-interface ProjectTasksProps {
-    project: Project;
-    user: User;
-    isReadOnly: boolean;
-    onUpdateTasks: (tasks: Task[]) => void;
-}
-
-const ProjectTasks: React.FC<ProjectTasksProps> = ({ project, user, isReadOnly, onUpdateTasks }) => {
+const ProjectTasks: React.FC = () => {
+    const { project, user, isReadOnly, onUpdateTasks } = useProject();
     // Local state for adding tasks is not needed if we use simple prompt or a form.
     // The original code used prompt. We can improve this later, but for now exact extraction.
     // Actually, let's keep it simple as in original.

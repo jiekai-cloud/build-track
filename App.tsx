@@ -39,6 +39,10 @@ import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveSer
 import { moduleService } from './services/moduleService';
 import { ModuleId, DEFAULT_ENABLED_MODULES, ALL_MODULES } from './moduleConfig';
 import { storageService } from './services/storageService';
+import { useAppData } from './hooks/useAppData';
+import { useCloudSync } from './hooks/useCloudSync';
+import { useEntityHandlers } from './hooks/useEntityHandlers';
+import { useSystemStartup } from './hooks/useSystemStartup';
 
 // Build Trigger: 2026-01-05 Module System Integration
 const App: React.FC = () => {
@@ -47,20 +51,37 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewingDeptId, setViewingDeptId] = useState<string>('all');
   const [currentDept, setCurrentDept] = useState<SystemContext>('FirstDept');
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
-  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
-  const [approvalTemplates, setApprovalTemplates] = useState<ApprovalTemplate[]>([]);
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  // ============ 使用 useAppData Hook 集中管理實體資料 ============
+  // 傳入 currentDept 與 enableAutoSave=true (當初始化完成後)
+  const appData = useAppData(currentDept, !isInitializing);
+  const {
+    projects, setProjects,
+    customers, setCustomers,
+    teamMembers, setTeamMembers,
+    activityLogs, setActivityLogs,
+    vendors, setVendors,
+    leads, setLeads,
+    inventoryItems, setInventoryItems,
+    inventoryLocations, setInventoryLocations,
+    purchaseOrders, setPurchaseOrders,
+    attendanceRecords, setAttendanceRecords,
+    payrollRecords, setPayrollRecords,
+    approvalRequests, setApprovalRequests,
+    approvalTemplates, setApprovalTemplates,
+    quotations, setQuotations,
+    mergeData, normalizeProjects, updateStateWithMerge,
+    addActivityLog: _addActivityLog,
+    clearAllData, saveToIndexedDB, dataRef,
+    lastSaved, // Get lastSaved from appData
+  } = appData;
+
+  // 包裝 addActivityLog 以自動傳入 user
+  const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
+    _addActivityLog(action, targetName, targetId, type, user);
+  }, [_addActivityLog, user]);
+
 
   // Calculate permissions dynamically
   // Calculate permissions dynamically
@@ -83,43 +104,7 @@ const App: React.FC = () => {
     return DEFAULT_ENABLED_MODULES;
   }, [user, teamMembers]);
 
-  useEffect(() => {
-    // Seed some mock leads if empty for demo
-    try {
-      const savedLeads = JSON.parse(localStorage.getItem('bt_leads') || '[]');
-      if (!Array.isArray(savedLeads) || savedLeads.length === 0) {
-        const mockLeads: Lead[] = [
-          {
-            id: 'L-1',
-            customerName: '張小姐',
-            phone: '0912-345-678',
-            address: '台北市士林區',
-            diagnosis: '浴室外牆產生壁癌，疑似冷熱水管滲漏導致水氣滲透。',
-            photos: ['https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800'],
-            timestamp: '2026-01-02 09:30',
-            status: 'new'
-          },
-          {
-            id: 'L-2',
-            customerName: '科技辦公室行政',
-            phone: '02-2345-6789',
-            address: '新北市中和區',
-            diagnosis: '頂樓女兒牆裂縫與防水層老化，雨後天花板有明顯滴水現象。',
-            photos: ['https://images.unsplash.com/photo-1516714435131-44d6b64dc392?auto=format&fit=crop&q=80&w=800'],
-            timestamp: '2026-01-02 10:15',
-            status: 'new'
-          }
-        ];
-        setLeads(mockLeads);
-        localStorage.setItem('bt_leads', JSON.stringify(mockLeads));
-      } else {
-        setLeads(savedLeads);
-      }
-    } catch (e) {
-      console.error('Leads initialization error', e);
-      setLeads([]);
-    }
-  }, []);
+  // Leads 初始化已移至 useAppData
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,7 +116,7 @@ const App: React.FC = () => {
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
 
-  const [inventoryLocations, setInventoryLocations] = useState<InventoryLocation[]>([]);
+  // inventoryLocations 已移至 useAppData
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
   const [isLocationManagerOpen, setIsLocationManagerOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
@@ -139,14 +124,9 @@ const App: React.FC = () => {
   const [transferItem, setTransferItem] = useState<InventoryItem | null>(null);
   const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | null>(null);
 
-  // 系統狀態
-  const [isCloudConnected, setIsCloudConnected] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
-  const [cloudError, setCloudError] = useState<string | null>(null);
-  const [lastCloudSync, setLastCloudSync] = useState<string | null>(null);
-  const [lastLocalSave, setLastLocalSave] = useState<string>(new Date().toLocaleTimeString());
-  const [isInitializing, setIsInitializing] = useState(true);
+  // 雲端狀態由 useCloudSync 管理 (isCloudConnected, isSyncing, cloudError, lastCloudSync)
+
+
   const [initialSyncDone, setInitialSyncDone] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
@@ -157,29 +137,79 @@ const App: React.FC = () => {
   const tabId = useMemo(() => Math.random().toString(36).substring(7), []);
 
   // Elect Master Tab to handle sync and prevent conflicts
+  // BroadcastChannel-based Leader Election
   useEffect(() => {
-    const electMaster = () => {
-      const now = Date.now();
-      const lockKey = 'bt_sync_lock';
-      const lockData = JSON.parse(localStorage.getItem(lockKey) || '{}');
+    const channel = new BroadcastChannel('LEADER_ELECTION');
+    let heartbeatInterval: NodeJS.Timeout | null = null;
+    let isLeader = false;
+    let lastHeartbeat = Date.now();
 
-      // If no master or current master is stale (> 8s) or is us, we take/keep the lead
-      if (!lockData.id || (now - lockData.timestamp > 8000) || lockData.id === tabId) {
-        localStorage.setItem(lockKey, JSON.stringify({ id: tabId, timestamp: now }));
-        if (!isMasterTab) setIsMasterTab(true);
-      } else {
-        if (isMasterTab) setIsMasterTab(false);
+    // Sends a heartbeat if we are the leader
+    const sendHeartbeat = () => {
+      channel.postMessage({ type: 'HEARTBEAT', id: tabId });
+    };
+
+    // Main election loop: Check if we should become leader
+    const checkLeaderStatus = () => {
+      const now = Date.now();
+      // If we are NOT leader, but haven't heard from one in 1.5s, take over
+      if (!isLeader && (now - lastHeartbeat > 1500)) {
+        console.log(`[System] No heartbeat detected (last: ${now - lastHeartbeat}ms). Electing self as Master.`);
+        isLeader = true;
+        setIsMasterTab(true);
+
+        // Start sending heartbeats immediately
+        sendHeartbeat();
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
+        heartbeatInterval = setInterval(sendHeartbeat, 500);
       }
     };
 
-    electMaster();
-    const interval = setInterval(electMaster, 5000);
-    window.addEventListener('beforeunload', () => {
-      const lockData = JSON.parse(localStorage.getItem('bt_sync_lock') || '{}');
-      if (lockData.id === tabId) localStorage.removeItem('bt_sync_lock');
-    });
-    return () => clearInterval(interval);
-  }, [tabId, isMasterTab]);
+    const electionLoop = setInterval(checkLeaderStatus, 500);
+
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'HEARTBEAT') {
+        const otherId = event.data.id;
+
+        // Update last heartbeat time regardless of who sent it (as long as it's not us, though BroadcastChannel doesn't echo to self usually)
+        if (otherId !== tabId) {
+          lastHeartbeat = Date.now();
+
+          // Conflict Resolution: If we thought we were leader, but someone else is also sending heartbeats
+          if (isLeader) {
+            // Tie-breaker: Compare IDs. Lexicographically higher ID wins.
+            if (otherId > tabId) {
+              console.log('[System] Conflict detected. Stepping down as Master (Other ID > My ID).');
+              isLeader = false;
+              setIsMasterTab(false);
+              if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+              }
+            } else {
+              // We win, ignore them (they should step down)
+              // console.log('[System] Conflict detected. Staying Leader (My ID > Other ID).');
+            }
+          }
+        }
+      } else if (event.data?.type === 'SYNC_NOTIFY') {
+        // When Master Tab finishes sync, notify others to reload from IndexedDB/State if needed
+        // Currently, useAppData handles IndexedDB reload automatically on focus or init,
+        // but we could force a refresh here if needed.
+        console.log('[System] Received SYNC_NOTIFY from Master Tab.');
+      }
+    };
+
+    // Initial check (random delay to reduce boot-up collisions)
+    setTimeout(checkLeaderStatus, Math.random() * 500);
+
+    return () => {
+      console.log('[System] Tab closing/unmounting. Cleaning up Leader Election.');
+      clearInterval(electionLoop);
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      channel.close();
+    };
+  }, [tabId]);
 
   const saveAiApiKey = () => {
     localStorage.setItem('GEMINI_API_KEY', aiApiKey);
@@ -239,310 +269,71 @@ const App: React.FC = () => {
   }, [teamMembers, user?.id, user?.role, user?.name, user?.picture, user?.accessibleModules]);
 
 
-  const lastRemoteModifiedTime = React.useRef<string | null>(null);
-  const isSyncingRef = React.useRef(false);
-  const syncTimeoutRef = React.useRef<any>(null);
-
-  const mergeData = useCallback(<T extends { id: string, updatedAt?: string, deletedAt?: string }>(local: T[], remote: T[]): T[] => {
-    const merged = [...local];
-    remote.forEach(remoteItem => {
-      const localIndex = merged.findIndex(item => item.id === remoteItem.id);
-      if (localIndex === -1) {
-        merged.push(remoteItem);
-      } else {
-        const localItem = merged[localIndex];
-        const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
-        const remoteTime = remoteItem.updatedAt ? new Date(remoteItem.updatedAt).getTime() : 0;
-
-        // If remote is newer, we want to update the object, but PRESERVE deep arrays if it's a project
-        if (remoteTime > localTime) {
-          // Special handling for Projects and Approvals (Objects with nested arrays)
-          if ('dailyLogs' in localItem || 'workflowLogs' in localItem) {
-            const l = localItem as any;
-            const r = remoteItem as any;
-
-            // Combine arrays without duplicates
-            const combine = (arr1: any[] = [], arr2: any[] = []) => {
-              const map = new Map();
-              [...arr1, ...arr2].forEach(x => { if (x.id || x.timestamp || x.step) map.set(x.id || (x.timestamp + (x.step || '')), x); });
-              return Array.from(map.values()).sort((a, b) =>
-                new Date(b.timestamp || b.date || b.createdAt || 0).getTime() - new Date(a.timestamp || a.date || a.createdAt || 0).getTime()
-              );
-            };
-
-            if ('dailyLogs' in localItem) {
-              merged[localIndex] = {
-                ...remoteItem,
-                dailyLogs: combine(l.dailyLogs, r.dailyLogs),
-                comments: combine(l.comments, r.comments),
-                files: combine(l.files, r.files),
-                expenses: combine(l.expenses, r.expenses),
-                payments: combine(l.payments, r.payments),
-                checklist: combine(l.checklist, r.checklist),
-                workAssignments: combine(l.workAssignments, r.workAssignments)
-              } as any;
-            } else if ('workflowLogs' in localItem) {
-              merged[localIndex] = {
-                ...remoteItem,
-                workflowLogs: combine(l.workflowLogs, r.workflowLogs)
-              } as any;
-            }
-          } else {
-            merged[localIndex] = remoteItem;
-          }
-        }
-      }
-    });
-    return merged;
-  }, []);
-
-  // Helper: Normalize, Correct, and Deduplicate Projects
-  // This ensures that whether data comes from LocalStorage or Cloud, it strictly follows our ID rules
-  const normalizeProjects = useCallback((projects: Project[] | null | undefined): Project[] => {
-    if (!projects || !Array.isArray(projects)) return [];
-
-    // Filter out null/undefined or malformed project objects first
-    const validProjects = projects.filter(p => p && typeof p === 'object' && (p.id || p.name));
-
-    // 0. ID CORRECTION: Removed aggressive remapping rules to prevent sync oscillation.
-    let processed = validProjects.map(p => {
-      let updatedProject = { ...p };
-
-      // MIGRATION: Fix legacy status '驗收中' to new '施工完成、待驗收'
-      if (updatedProject.status === '驗收中' as any) updatedProject.status = ProjectStatus.INSPECTION;
-
-      // Ensure fundamental arrays exist to prevent merge errors
-      if (!updatedProject.dailyLogs) updatedProject.dailyLogs = [];
-      if (!updatedProject.comments) updatedProject.comments = [];
-      if (!updatedProject.files) updatedProject.files = [];
-      if (!updatedProject.phases) updatedProject.phases = [];
-
-      return updatedProject;
-    });
-
-    // Deduplicate and Deep Merge projects by ID
-    const projectMap = new Map<string, Project>();
-    processed.forEach(p => {
-      if (!projectMap.has(p.id)) {
-        projectMap.set(p.id, p);
-      } else {
-        const existing = projectMap.get(p.id)!;
-
-        // SAFE MERGE STRATEGY: Preserve meaningful content (logs, comments) 
-        // from both versions, and choose the most recent basic info.
-        const mergeLogs = (l1: any[] = [], l2: any[] = []) => {
-          const map = new Map();
-          [...l1, ...l2].forEach(log => { if (log.id) map.set(log.id, log); });
-          return Array.from(map.values()).sort((a, b) => new Date(b.timestamp || b.date).getTime() - new Date(a.timestamp || a.date).getTime());
-        };
-
-        const existingTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
-        const currentTime = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
-
-        // Start with the more recent overall object
-        const merged: Project = currentTime > existingTime ? { ...p } : { ...existing };
-
-        // Deep merge protected fields
-        merged.dailyLogs = mergeLogs(existing.dailyLogs, p.dailyLogs);
-        merged.comments = mergeLogs(existing.comments, p.comments); // Reuse logic for comments
-        merged.files = mergeLogs(existing.files, p.files);
-        merged.expenses = mergeLogs(existing.expenses, p.expenses);
-        merged.checklist = mergeLogs(existing.checklist, p.checklist);
-        merged.payments = mergeLogs(existing.payments, p.payments);
-
-        // Final state: canonical/standard projects from MOCK should not overwrite user data fields if missing
-        if (MOCK_PROJECTS.some(mp => mp.id === p.id)) {
-          // If incoming 'p' is from MOCK (canonical), we update basic info but strictly preserve existing logs
-          if (existing.dailyLogs && existing.dailyLogs.length > (p.dailyLogs?.length || 0)) {
-            merged.dailyLogs = existing.dailyLogs;
-          }
-        }
-
-        projectMap.set(p.id, merged);
-      }
-    });
-
-    return Array.from(projectMap.values());
-  }, []);
-
-  const updateStateWithMerge = useCallback((cloudData: any) => {
-    if (!cloudData) return;
-
-    // Apply rigorous normalization to cloud data BEFORE merging
-    const cleanCloudProjects = normalizeProjects(cloudData.projects || []);
-
-    setProjects(prev => mergeData(prev, cleanCloudProjects));
-    setCustomers(prev => mergeData(prev, cloudData.customers || []));
-    setTeamMembers(prev => mergeData(prev, cloudData.teamMembers || []));
-    setVendors(prev => mergeData(prev, cloudData.vendors || []));
-    // Update inventory and locations from cloud
-    if (cloudData.inventory) {
-      setInventoryItems(prev => mergeData(prev, cloudData.inventory || []));
-    }
-    if (cloudData.locations) {
-      setInventoryLocations(prev => mergeData(prev, cloudData.locations || []));
-    }
-    if (cloudData.purchaseOrders) {
-      setPurchaseOrders(prev => mergeData(prev, cloudData.purchaseOrders || []));
-    }
-    if (cloudData.attendance) {
-      setAttendanceRecords(prev => mergeData(prev, cloudData.attendance || []));
-    }
-    if (cloudData.payroll) {
-      setPayrollRecords(prev => mergeData(prev, cloudData.payroll || []));
-    }
-    if (cloudData.approvalRequests) {
-      setApprovalRequests(prev => mergeData(prev, cloudData.approvalRequests || []));
-    }
-    if (cloudData.approvalTemplates) {
-      setApprovalTemplates(prev => mergeData(prev, cloudData.approvalTemplates || []));
-    }
-    if (cloudData.quotations) {
-      setQuotations(prev => mergeData(prev, cloudData.quotations || []));
-    }
-    // Activity logs 採取單純合併去重
-    setActivityLogs(prev => {
-      const combined = [...(cloudData.activityLogs || []), ...prev];
-      const seen = new Set();
-      return combined.filter(log => {
-        if (seen.has(log.id)) return false;
-        seen.add(log.id);
-        return true;
-      }).slice(0, 100);
-    });
-  }, [mergeData, normalizeProjects]);
+  // cloud refs 已移至 useCloudSync
 
   const handleLogout = useCallback((forced = false) => {
     if (forced || confirm('確定要安全登出生產系統嗎？')) {
-      // 1. Clear User Session
       setUser(null);
       localStorage.removeItem('bt_user');
-
-      // 2. Clear Critical Data State to prevent leakage between departments
-      setProjects([]);
-      setCustomers([]);
-      setTeamMembers([]);
-      setVendors([]);
-      setLeads([]);
-      setInventoryItems([]);
-      setPurchaseOrders([]);
-      setActivityLogs([]);
-      setQuotations([]);
-
+      clearAllData();
       setActiveTab('dashboard');
       console.log('[System] Logout complete, memory cleared.');
     }
-  }, []);
+  }, [clearAllData]);
 
-  const handleClockRecord = (type: 'work-start' | 'work-end', location: { lat: number; lng: number; address?: string }, customTimestamp?: string) => {
-    if (!user) return;
+  // ============ 使用 useEntityHandlers Hook 集中管理實體 CRUD ============
+  const {
+    handleClockRecord, handleImportRecords, handleImportLeaves,
+    handleSaveApprovalRequest, handleSaveApprovalTemplate,
+    handleDeleteApprovalTemplate, handleApprovalAction,
+    handleUpdateStatus, handleAddComment, handleAddDailyLog,
+    handleUpdateChecklist, handleUpdatePayments,
+    handleMarkLogAsRead, handleMarkAllLogsAsRead,
+    handleConvertLead, handleAddTestProject, handleSaveProject,
+  } = useEntityHandlers({
+    user, setProjects, setCustomers, setTeamMembers, setActivityLogs,
+    setVendors, setLeads, setInventoryItems, setInventoryLocations,
+    setPurchaseOrders, setAttendanceRecords, setApprovalRequests,
+    setApprovalTemplates, setQuotations,
+    projects, leads, approvalTemplates, inventoryLocations, purchaseOrders,
+    inventoryItems, activityLogs, quotations,
+    addActivityLog, viewingDeptId, setActiveTab, setSelectedProjectId,
+    setQuotationSystemParams,
+  });
 
-    // User ID is reliable enough. TeamMember lookup is secondary.
-    const employeeId = user.id;
-    const isSupplement = !!customTimestamp;
-    const recordTime = customTimestamp || new Date().toISOString();
+  // ============ 使用 useCloudSync Hook 集中管理雲端同步 ============
+  const {
+    isCloudConnected, setIsCloudConnected,
+    isSyncing, setIsSyncing,
+    cloudError, setCloudError,
+    lastCloudSync, setLastCloudSync,
+    lastRemoteModifiedTime, isSyncingRef,
+    autoConnectCloud, handleCloudSync,
+    handleConnectCloud, handleCloudRestore,
+    scheduleSyncIfNeeded,
+  } = useCloudSync({
+    updateStateWithMerge, normalizeProjects, dataRef,
+    setProjects, setCustomers, setTeamMembers, setActivityLogs,
+    setVendors, setInventoryItems, setInventoryLocations,
+    setPurchaseOrders, setAttendanceRecords, setPayrollRecords,
+    setApprovalRequests, setApprovalTemplates, setQuotations,
+    handleLogout, user,
+  });
 
-    const newRecord: AttendanceRecord = {
-      id: crypto.randomUUID(),
-      employeeId: employeeId,
-      name: user.name,
-      type,
-      timestamp: recordTime,
-      location,
-      departmentId: user.department === 'FirstDept' ? 'DEPT-4' : 'DEPT-8'
-    };
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
 
-    setAttendanceRecords(prev => [...prev, newRecord]);
+  // ============ 使用 useSystemStartup Hook 管理啟動與載入 ============
+  const { loadSystemData } = useSystemStartup({
+    normalizeProjects, autoConnectCloud,
+    setProjects, setCustomers, setTeamMembers, setVendors, setLeads,
+    setActivityLogs, setInventoryItems, setInventoryLocations,
+    setPurchaseOrders, setAttendanceRecords, setPayrollRecords,
+    setApprovalRequests, setApprovalTemplates, setQuotations,
+    setInitialSyncDone, setIsInitializing, setIsFirstTimeUser,
+    setUser, setCurrentDept, setViewingDeptId,
+  });
 
-    // Update Team Member Status (Only if it's a real-time clock in, supplement shouldn't change current status ideally, but let's keep it simple)
-    if (!isSupplement) {
-      setTeamMembers(prev => prev.map(member => {
-        // Match user to member by ID or Name
-        if (member.id === user.id || member.employeeId === user.id || member.name === user.name) {
-          return {
-            ...member,
-            status: type === 'work-start' ? 'Available' : 'OffDuty',
-            currentWorkStatus: type === 'work-start' ? 'OnDuty' : 'OffDuty',
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return member;
-      }));
-    }
-
-    const action = type === 'work-start' ? '上班' : '下班';
-    const displayTime = new Date(recordTime).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-    alert(`${isSupplement ? '✅ 補打卡' : action + '打卡'}成功！\n${isSupplement ? '記錄類型：' + action : '狀態變更：' + (type === 'work-start' ? '上班中' : '未上班')}\n時間：${displayTime}\n地點：${location.address || 'GPS ' + location.lat.toFixed(4)}`);
-  };
-
-  const handleImportRecords = (newRecords: AttendanceRecord[]) => {
-    setAttendanceRecords(prev => [...prev, ...newRecords]);
-    addActivityLog('批量匯入打卡紀錄', `${newRecords.length} 筆`, 'IMPORT', 'system');
-  };
-
-  const handleImportLeaves = (newRequests: ApprovalRequest[]) => {
-    setApprovalRequests(prev => [...prev, ...newRequests]);
-    addActivityLog('批量匯入請假紀錄', `${newRequests.length} 筆`, 'IMPORT', 'system');
-  };
-
-  const handleSaveApprovalRequest = (request: ApprovalRequest) => {
-    setApprovalRequests(prev => [request, ...prev]);
-    addActivityLog('提交了簽核申請', request.title, request.id, 'system');
-  };
-
-  const handleSaveApprovalTemplate = (template: ApprovalTemplate) => {
-    setApprovalTemplates(prev => {
-      const exists = prev.find(t => t.id === template.id);
-      if (exists) return prev.map(t => t.id === template.id ? template : t);
-      return [...prev, template];
-    });
-    addActivityLog('更新了簽核流程設定', template.name, template.id, 'system');
-  };
-
-  const handleDeleteApprovalTemplate = (id: string) => {
-    if (confirm('確定要刪除此簽核流程？這不會影響已提交的申請。')) {
-      const t = approvalTemplates.find(x => x.id === id);
-      setApprovalTemplates(prev => prev.filter(x => x.id !== id));
-      if (t) addActivityLog('刪除了簽核流程', t.name, id, 'system');
-    }
-  };
-
-  const handleApprovalAction = (requestId: string, action: 'approved' | 'rejected', comment?: string) => {
-    if (!user) return;
-
-    setApprovalRequests(prev => prev.map(req => {
-      if (req.id !== requestId) return req;
-
-      const template = approvalTemplates.find(t => t.id === req.templateId);
-      if (!template) return req;
-
-      const newLog = {
-        step: req.currentStep,
-        role: template.workflow[req.currentStep],
-        approverId: user.id,
-        approverName: user.name,
-        status: action,
-        comment,
-        timestamp: new Date().toISOString()
-      };
-
-      const nextStep = req.currentStep + 1;
-      const isFinished = action === 'rejected' || nextStep >= template.workflow.length;
-
-      return {
-        ...req,
-        status: action === 'rejected' ? 'rejected' : (isFinished ? 'approved' : 'pending'),
-        currentStep: isFinished ? req.currentStep : nextStep,
-        workflowLogs: [...req.workflowLogs, newLog],
-        updatedAt: new Date().toISOString(),
-        completedAt: isFinished ? new Date().toISOString() : undefined
-      };
-    }));
-
-    const actStr = action === 'approved' ? '核准' : '駁回';
-    addActivityLog(`${actStr}了簽核申請`, requestId, requestId, 'system');
-  };
+  // handleClockRecord ~ handleApprovalAction 已移至 useEntityHandlers
 
   // Auto-redirect to Attendance page on login
   const hasRedirectedRef = React.useRef(false);
@@ -558,619 +349,7 @@ const App: React.FC = () => {
     }
   }, [user, isInitializing, currentUserPermissions]);
 
-  const autoConnectCloud = useCallback(async () => {
-    try {
-      await googleDriveService.authenticate('none');
-      setIsCloudConnected(true);
-      setCloudError(null);
-
-      const metadata = await googleDriveService.getFileMetadata();
-      if (metadata) {
-        lastRemoteModifiedTime.current = metadata.modifiedTime;
-        const cloudData = await googleDriveService.loadFromCloud();
-        if (cloudData) {
-          updateStateWithMerge(cloudData);
-          setLastCloudSync(new Date().toLocaleTimeString());
-        }
-      }
-    } catch (e) {
-      setCloudError('會話已過期');
-    }
-  }, [updateStateWithMerge]);
-
-  const loadSystemData = useCallback(async (dept: SystemContext) => {
-    console.log(`[System] Initializing context for: ${dept}`);
-
-    // 1. Configure Cloud Context
-    const prefix = dept === 'ThirdDept' ? 'dept3_' : '';
-    const driveFilename = dept === 'ThirdDept' ? 'life_quality_system_data_dept3.json' : 'life_quality_system_data.json';
-    googleDriveService.setFilename(driveFilename);
-
-    // 2. Load Local Data (IndexedDB) with Prefix
-    try {
-      const defaultProjects = dept === 'FirstDept' ? MOCK_PROJECTS : [];
-      const defaultTeam = dept === 'FirstDept' ? MOCK_TEAM_MEMBERS : [];
-
-      // Load Projects
-      let initialProjects = await storageService.getItem<Project[]>(`${prefix}bt_projects`, defaultProjects);
-
-      // Restoration Logic (Legacy FirstDept Support)
-      if (dept === 'FirstDept') {
-        const criticalRestorationIds = ['BNI2601001', 'BNI2601002', 'BNI2601004', 'OC2601005', 'JW2601003'];
-
-        try {
-          if (initialProjects.length > 0) await storageService.setItem(`${prefix}bt_projects_backup`, initialProjects);
-        } catch (e) { }
-
-        try { initialProjects = JSON.parse(JSON.stringify(initialProjects)); } catch (e) { console.error('Deep clone failed', e); }
-
-        initialProjects = initialProjects.map((p: any) => {
-          if (criticalRestorationIds.includes(p.id) && p.deletedAt) {
-            const { deletedAt, ...rest } = p;
-            return { ...rest, updatedAt: new Date().toISOString() };
-          }
-          return p;
-        });
-
-        const missingProjects = MOCK_PROJECTS.filter(mockP =>
-          criticalRestorationIds.includes(mockP.id) &&
-          !initialProjects.some((p: Project) => p.id === mockP.id || p.name === mockP.name)
-        );
-        if (missingProjects.length > 0) {
-          initialProjects = [...initialProjects, ...JSON.parse(JSON.stringify(missingProjects))];
-        }
-      }
-
-      // Normalize
-      const deduplicatedProjects = normalizeProjects(initialProjects);
-
-      setProjects(deduplicatedProjects.map((p: Project) => ({
-        ...p,
-        expenses: p.expenses || [],
-        workAssignments: p.workAssignments || [],
-        files: p.files || [],
-        phases: p.phases || [],
-        dailyLogs: p.dailyLogs || [],
-        checklist: p.checklist || [],
-        payments: p.payments || []
-      })));
-
-      // Load other entities
-      const [customersData, initialTeamData, vendorsData, leadsData, logsData, inventoryData, locationsData, purchaseOrdersData, attendanceData, payrollData, approvalRequestsData, approvalTemplatesData] = await Promise.all([
-        storageService.getItem<Customer[]>(`${prefix}bt_customers`, []),
-        storageService.getItem<TeamMember[]>(`${prefix}bt_team`, defaultTeam),
-        storageService.getItem<Vendor[]>(`${prefix}bt_vendors`, []),
-        storageService.getItem<Lead[]>(`${prefix}bt_leads`, []),
-        storageService.getItem<any[]>(`${prefix}bt_logs`, []),
-        storageService.getItem<InventoryItem[]>(`${prefix}bt_inventory`, []),
-        storageService.getItem<InventoryLocation[]>(`${prefix}bt_locations`, [{ id: 'MAIN', name: '總倉庫', type: 'Main', isDefault: true }]),
-        storageService.getItem<PurchaseOrder[]>(`${prefix}bt_orders`, []),
-        storageService.getItem<AttendanceRecord[]>(`${prefix}bt_attendance`, []),
-        storageService.getItem<PayrollRecord[]>(`${prefix}bt_payroll`, []),
-        storageService.getItem<ApprovalRequest[]>(`${prefix}bt_approval_requests`, []),
-        storageService.getItem<ApprovalTemplate[]>(`${prefix}bt_approval_templates`, [
-          {
-            id: 'TPL-LEAVE',
-            name: '請假申請單',
-            description: '各類假別申請流程',
-            workflow: ['Manager', 'AdminStaff'],
-            formFields: [
-              { key: '假別', label: '假別類型', type: 'select', options: ['事假', '病假', '特休', '公假', '喪假', '婚假', '補休', '其他'], required: true },
-              { key: 'startDate', label: '開始日期', type: 'date', required: true },
-              { key: 'endDate', label: '結束日期', type: 'date', required: true },
-              { key: 'reason', label: '詳細原因', type: 'text', required: true }
-            ],
-            updatedAt: new Date().toISOString()
-          },
-          {
-            id: 'TPL-EXPENSE',
-            name: '費用報支申請',
-            description: '專案或行政費用報銷',
-            workflow: ['Manager', 'DeptAdmin', 'AdminStaff'],
-            formFields: [
-              { key: '項目', label: '報支項目', type: 'text', required: true },
-              { key: '金額', label: '報支金額', type: 'number', required: true },
-              { key: '日期', label: '發生日期', type: 'date', required: true },
-              { key: '備註', label: '備註說明', type: 'text', required: false }
-            ],
-            updatedAt: new Date().toISOString()
-          }
-        ])
-          // Ensure TPL-CORRECTION exists if not present (Migration)
-          .then(templates => {
-            if (!templates.find(t => t.id === 'TPL-CORRECTION')) {
-              templates.push({
-                id: 'TPL-CORRECTION',
-                name: '補打卡申請',
-                description: '忘記打卡或打卡異常時使用',
-                workflow: ['Manager', 'AdminStaff'],
-                formFields: [
-                  { key: 'date', label: '補打卡日期', type: 'date', required: true },
-                  { key: 'time', label: '補打卡時間', type: 'time', required: true },
-                  { key: 'type', label: '打卡類型', type: 'select', options: ['上班', '下班'], required: true },
-                  { key: 'reason', label: '補打卡原因', type: 'text', required: true }
-                ],
-                updatedAt: new Date().toISOString()
-              });
-            }
-            return templates;
-          })
-      ]);
-
-      setCustomers(customersData);
-      // Migration Logic: Strong Cleanup & Fixes
-      let processedTeamData = [...initialTeamData];
-
-      // 1. Purge Virtual Members (Force cleanup for ALL departments)
-      const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬'];
-      const PURGE_PREFIXES = ['T-', 'CEO'];
-
-      const originalCount = processedTeamData.length;
-      processedTeamData = processedTeamData.filter((m: any) => {
-        const isPurgeName = PURGE_NAMES.includes(m.name);
-        const isPurgeId = typeof m.id === 'string' && PURGE_PREFIXES.some(prefix => m.id.startsWith(prefix) && m.id.length < 8); // Only purge short IDs (Mock usually short)
-        return !isPurgeName && !isPurgeId;
-      });
-
-      if (processedTeamData.length < originalCount) {
-        console.log(`[Migration] Purged ${originalCount - processedTeamData.length} virtual members. FORCE SAVING...`);
-        // Force save to prevent them from coming back
-        const storageKey = dept === 'FirstDept' ? 'bt_team' : (dept === 'ThirdDept' ? 'dept3_bt_team' : 'bt_team');
-        storageService.setItem(storageKey, processedTeamData);
-      }
-
-      // 2. Fix Data Integrity for Real Users
-      processedTeamData.forEach((m: any) => {
-        // Fix monthly salary display if missing
-        if (m.salaryType === 'monthly' && m.monthlySalary === undefined) {
-          m.monthlySalary = 0;
-        }
-        // Ensure daily workers have default work hours
-        if ((m.salaryType === 'daily' || m.dailyRate > 0) && !m.workStartTime) {
-          console.log(`[Migration] Setting default work hours for daily worker: ${m.name}`);
-          m.workStartTime = '08:00';
-          m.workEndTime = '17:00';
-        }
-
-        // Initialize new salary fields
-        if (m.workDaysPerWeek === undefined) m.workDaysPerWeek = 5;
-        if (m.lunchBonus === undefined) m.lunchBonus = 0; // Default to 0, admin should set this
-
-      });
-
-      // Emergency Restore for JK001 (If missing)
-      if (!processedTeamData.some((m: any) => m.name === '陳信寬' || m.employeeId === 'JK001')) {
-        processedTeamData.push({
-          id: 'JK001',
-          employeeId: 'JK001',
-          name: '陳信寬',
-          role: '工務主管',
-          systemRole: 'DeptAdmin',
-          departmentId: 'DEPT-4',
-          departmentIds: ['DEPT-4'],
-          phone: '',
-          email: '',
-          status: 'Available',
-          activeProjectsCount: 0,
-          avatar: '', // User can re-upload
-          specialty: [],
-          certifications: [],
-          joinDate: new Date().toISOString().split('T')[0],
-          salaryType: 'monthly',
-          monthlySalary: 80000,
-          dailyRate: 0,
-          workStartTime: '09:00',
-          workEndTime: '18:00'
-        });
-        console.log('[Migration] Emergency restored JK001 陳信寬');
-        // Trigger save
-        const storageKey = dept === 'FirstDept' ? 'bt_team' : (dept === 'ThirdDept' ? 'dept3_bt_team' : 'bt_team');
-        storageService.setItem(storageKey, processedTeamData);
-      }
-
-      setTeamMembers(processedTeamData.map((m: any) => ({
-        ...m,
-        specialty: m.specialty || [],
-        certifications: m.certifications || [],
-        departmentIds: m.departmentIds || [m.departmentId]
-      })));
-      setVendors(vendorsData);
-      setLeads(leadsData);
-      setInventoryItems(inventoryData);
-      setInventoryLocations(locationsData);
-      setPurchaseOrders(purchaseOrdersData);
-      setAttendanceRecords(attendanceData);
-      setPayrollRecords(payrollData);
-      setApprovalRequests(approvalRequestsData);
-      setApprovalTemplates(approvalTemplatesData);
-      setActivityLogs(logsData);
-
-      const quotationsData = await storageService.getItem<Quotation[]>(`${prefix}bt_quotations`, []);
-      setQuotations(quotationsData);
-
-      setInitialSyncDone(true);
-      setIsInitializing(false);
-      console.log('System initialized successfully');
-
-      // Auto Connect
-      try {
-        await googleDriveService.init(DEFAULT_CLIENT_ID);
-        if (localStorage.getItem('bt_cloud_connected') === 'true') {
-          await autoConnectCloud();
-        }
-      } catch (e) {
-        console.warn('Google SDK 初始化背景執行中');
-      }
-
-    } catch (err) {
-      console.error('Initialization failed', err);
-      setIsInitializing(false);
-    }
-  }, [normalizeProjects, autoConnectCloud]);
-
-
-
-  // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
-  // 使用 Ref 追蹤最新數據與同步狀態，避免頻繁觸發 useEffect 重新整理
-  const dataRef = React.useRef({ projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations });
-  React.useEffect(() => {
-    dataRef.current = { projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations };
-  }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations]);
-
-
-
-  const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type']) => {
-    if (!user) return;
-    const newLog: ActivityLog = {
-      id: Date.now().toString(),
-      userId: user.employeeId || 'unknown',
-      userName: user.name,
-      userAvatar: user.picture,
-      action,
-      targetId,
-      targetName,
-      type,
-      timestamp: new Date().toISOString(),
-      isRead: false
-    };
-    setActivityLogs(prev => [newLog, ...prev].slice(0, 50)); // 保留最近 50 筆
-  }, [user]);
-
-
-  const handleCloudSync = useCallback(async () => {
-    if (!isCloudConnected || isSyncingRef.current || user?.role === 'Guest') return;
-
-    isSyncingRef.current = true;
-    setIsSyncing(true); // TRIGGER UI SPINNER
-
-    try {
-      if (cloudError === '會話已過期') {
-        await googleDriveService.authenticate('none');
-        setCloudError(null);
-      }
-
-      // 在存檔前先檢查雲端是否有更新
-      const metadata = await googleDriveService.getFileMetadata(true);
-      if (metadata && lastRemoteModifiedTime.current && metadata.modifiedTime !== lastRemoteModifiedTime.current) {
-        console.log('[Sync] Detected newer cloud version...');
-        const cloudData = await googleDriveService.loadFromCloud(true);
-
-        if (cloudData) {
-          // SANITY CHECK: Cloud Data Integrity
-          // If cloud has 0 projects but we have many (>3), assume cloud is corrupt/wiped by accident.
-          // Ignore cloud update, allowing local save to overwrite it.
-          const localCount = dataRef.current.projects.length;
-          const cloudCount = Array.isArray(cloudData.projects) ? cloudData.projects.length : 0;
-
-          if (localCount > 3 && cloudCount === 0) {
-            console.warn(`[Sync] ⚠️ DANGER: Cloud data appears empty (${cloudCount}) while local has ${localCount}. IGNORING CLOUD UPDATE to prevent data loss.`);
-            // Do NOT call updateStateWithMerge(cloudData);
-            // Proceed to upload local data to fix the cloud.
-          } else {
-            // Safe to merge
-            console.log('[Sync] Merging cloud data...');
-            updateStateWithMerge(cloudData);
-            lastRemoteModifiedTime.current = metadata.modifiedTime;
-
-            // CRITICAL FIX: Stop execution here! 
-            // We must allow React to process the state update (updateStateWithMerge) 
-            // and update dataRef.current in the next render cycle BEFORE we try to save back to cloud.
-            // If we proceed now, we would be uploading STALE local data (dataRef.current), 
-            // effectively undoing the merge we just requested and overwriting remote changes.
-            console.log('[Sync] Cloud merge requested. Pausing upload to allow state update.');
-            setCloudError(null);
-
-            // Reset flags
-            isSyncingRef.current = false;
-            setIsSyncing(false);
-            return;
-          }
-        }
-      }
-
-      // SAFETY CHECK: Prevent overwriting cloud with empty local state (Crisis Prevention)
-      const localData = dataRef.current;
-
-      // Enhanced Check: checking projects/team is empty is good, but let's be more specific.
-      // If we have "defaults" only, maybe we shouldn't overwrite a populated cloud?
-      if (!localData.projects || (localData.projects.length === 0 && localData.teamMembers.length <= 1)) {
-        console.warn('[Sync] Aborted save: Local state appears empty or uninitialized. Preventing cloud overwrite.');
-        isSyncingRef.current = false;
-        setIsSyncing(false);
-        return;
-      }
-
-      const success = await googleDriveService.saveToCloud({
-        projects: localData.projects,
-        customers: localData.customers,
-        teamMembers: localData.teamMembers,
-        vendors: localData.vendors,
-        leads: localData.leads,
-        inventory: localData.inventoryItems,
-        locations: localData.inventoryLocations,
-        purchaseOrders: localData.purchaseOrders,
-        attendance: localData.attendanceRecords,
-        payroll: localData.payrollRecords,
-        approvalRequests: localData.approvalRequests,
-        approvalTemplates: localData.approvalTemplates,
-        activityLogs: localData.activityLogs,
-        quotations: localData.quotations,
-        lastUpdated: new Date().toISOString(),
-        userEmail: user?.email
-      }, true);
-
-      if (success) {
-        const newMetadata = await googleDriveService.getFileMetadata(true);
-        if (newMetadata) lastRemoteModifiedTime.current = newMetadata.modifiedTime;
-        setLastCloudSync(new Date().toLocaleTimeString());
-        setCloudError(null);
-
-        // 如果是初始化帳號且同步成功，自動登出以引導使用個人帳戶
-        if (user?.role === 'SyncOnly') {
-          setTimeout(() => {
-            alert('✅ 同步完成！系統即將登出，請使用您個人的員工編號正式登入。');
-            handleLogout(true); // Force logout without confirmation
-          }, 1500);
-        }
-      } else {
-        const status = googleDriveService.getLastErrorStatus();
-        setCloudError(`同步失敗(${status || '?'})`);
-        if (isSyncing) alert(`上傳失敗 (${status})，請檢查網路或稍後再試。`);
-      }
-    } catch (e: any) {
-      console.error('Cloud sync failed:', e);
-      if (e.message === 'AUTH_INTERACTION_REQUIRED') {
-        setCloudError('需要重新驗證');
-      } else {
-        setCloudError('同步發生錯誤');
-      }
-      if (isSyncing && e.message !== 'AUTH_INTERACTION_REQUIRED') alert('同步發生錯誤，請檢查網路連線。');
-    } finally {
-      isSyncingRef.current = false;
-      setIsSyncing(false); // STOP UI SPINNER
-    }
-  }, [isCloudConnected, user?.email, user?.role, projects, customers, teamMembers, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, activityLogs, updateStateWithMerge, cloudError, handleLogout, approvalRequests, approvalTemplates, quotations]);
-
-  const handleConnectCloud = async () => {
-    if (user?.role === 'Guest') return;
-    try {
-      setIsSyncing(true);
-      setCloudError(null);
-      await googleDriveService.authenticate('consent');
-      localStorage.setItem('bt_cloud_connected', 'true');
-      setIsCloudConnected(true);
-
-      const cloudData = await googleDriveService.loadFromCloud();
-
-      // Auto-restore for SyncOnly user OR explicit confirmation for others
-      const shouldRestore = (user?.role === 'SyncOnly') || (cloudData && cloudData.projects && confirm('雲端發現現有數據，是否要切換為雲端版本？'));
-
-      if (shouldRestore && cloudData) {
-        const teamData = cloudData.teamMembers || [];
-        // Force Replace Local State
-        setProjects(normalizeProjects(cloudData.projects || []));
-        setCustomers(cloudData.customers || []);
-        setTeamMembers(teamData);
-        setActivityLogs(cloudData.activityLogs || []);
-        setVendors(cloudData.vendors || []);
-        setInventoryItems(cloudData.inventory || []);
-        setInventoryLocations(cloudData.locations || []);
-        setPurchaseOrders(cloudData.purchaseOrders || []);
-        setAttendanceRecords(cloudData.attendance || []);
-        setPayrollRecords(cloudData.payroll || []);
-        setApprovalRequests(cloudData.approvalRequests || []);
-        setApprovalTemplates(cloudData.approvalTemplates || []);
-        setQuotations(cloudData.quotations || []);
-        setLastCloudSync(new Date().toLocaleTimeString());
-
-        // 重要：在自動登出前，強制將下載的資料存入 IndexedDB
-        // 否則 useEffect 可能來不及在登出前存檔，導致登入時找不到帳號
-        await Promise.all([
-          storageService.setItem('bt_projects', cloudData.projects || []),
-          storageService.setItem('bt_team', teamData),
-          storageService.setItem('bt_customers', cloudData.customers || []),
-          storageService.setItem('bt_vendors', cloudData.vendors || []),
-          storageService.setItem('bt_leads', cloudData.leads || []),
-          storageService.setItem('bt_inventory', cloudData.inventory || []),
-          storageService.setItem('bt_locations', cloudData.locations || []),
-          storageService.setItem('bt_orders', cloudData.purchaseOrders || []),
-          storageService.setItem('bt_attendance', cloudData.attendance || []),
-          storageService.setItem('bt_payroll', cloudData.payroll || []),
-          storageService.setItem('bt_approval_requests', cloudData.approvalRequests || []),
-          storageService.setItem('bt_approval_templates', cloudData.approvalTemplates || []),
-          storageService.setItem('bt_logs', cloudData.activityLogs || []),
-          storageService.setItem('bt_quotations', cloudData.quotations || [])
-        ]);
-
-        // 如果是初始化帳號，切換完數據後自動登出
-        if (user?.role === 'SyncOnly') {
-          setTimeout(() => {
-            alert('✅ 數據同步完成！請使用您的「員工編號」正式登入。');
-            handleLogout(true); // Force logout without confirmation
-          }, 800);
-        } else {
-          // For normal users, give feedback
-          alert('✅ 已成功切換為雲端版本數據。');
-        }
-      } else {
-        // User cancelled or no data
-      }
-    } catch (err: any) {
-      setCloudError('驗證失敗');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const handleCloudRestore = async () => {
-    try {
-      setIsSyncing(true);
-      const cloudData = await googleDriveService.loadFromCloud(false);
-      if (cloudData) {
-        updateStateWithMerge(cloudData);
-        const metadata = await googleDriveService.getFileMetadata(false);
-        if (metadata) lastRemoteModifiedTime.current = metadata.modifiedTime;
-        alert('✅ 已從雲端強制同步最新數據。');
-      } else {
-        alert('❌ 雲端無可用數據。');
-      }
-    } catch (e) {
-      alert('還原失敗，請檢查網路。');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  // 安全儲存到 localStorage，處理 QuotaExceededError
-  // 儲存邏輯已移至 storageService
-
-  useEffect(() => {
-    if (!initialSyncDone || !user) return;
-
-    // 定期保存至 IndexedDB (容量極大，維持完整資料)
-    if (user.role !== 'Guest') {
-      const saveToIndexedDB = async () => {
-        const prefix = currentDept === 'ThirdDept' ? 'dept3_' : '';
-        try {
-          await Promise.all([
-            storageService.setItem(`${prefix}bt_projects`, projects),
-            storageService.setItem(`${prefix}bt_customers`, customers),
-            storageService.setItem(`${prefix}bt_team`, teamMembers),
-            storageService.setItem(`${prefix}bt_vendors`, vendors),
-            storageService.setItem(`${prefix}bt_leads`, leads),
-            storageService.setItem(`${prefix}bt_inventory`, inventoryItems),
-            storageService.setItem(`${prefix}bt_locations`, inventoryLocations),
-            storageService.setItem(`${prefix}bt_orders`, purchaseOrders),
-            storageService.setItem(`${prefix}bt_attendance`, attendanceRecords),
-            storageService.setItem(`${prefix}bt_payroll`, payrollRecords),
-            storageService.setItem(`${prefix}bt_approval_requests`, approvalRequests),
-            storageService.setItem(`${prefix}bt_approval_templates`, approvalTemplates),
-            storageService.setItem(`${prefix}bt_quotations`, quotations),
-            storageService.setItem(`${prefix}bt_logs`, activityLogs.slice(0, 50))
-          ]);
-          setLastLocalSave(new Date().toLocaleTimeString());
-        } catch (e) {
-          console.error('Auto-save failed', e);
-        }
-      };
-      saveToIndexedDB();
-    }
-
-    // 智慧雲端自動同步 (當資料變更後 10 秒才觸發)
-    if (isCloudConnected && !cloudError && user.role !== 'Guest' && isMasterTab) {
-      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-      syncTimeoutRef.current = setTimeout(() => {
-        handleCloudSync();
-      }, 10000);
-    }
-  }, [projects, customers, teamMembers, activityLogs, vendors, isCloudConnected, cloudError, initialSyncDone, handleCloudSync, user?.role, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, currentDept, approvalRequests, approvalTemplates, isMasterTab, quotations]);
-
-  // 背景心跳監測 (Heartbeat Polling) - 每 45 秒檢查一次雲端是否有新更動
-  useEffect(() => {
-    if (!isCloudConnected || user?.role === 'Guest' || !initialSyncDone || !isMasterTab) return;
-
-    const heartbeat = setInterval(async () => {
-      if (isSyncingRef.current) return;
-
-      try {
-        const metadata = await googleDriveService.getFileMetadata(true);
-        if (metadata && metadata.modifiedTime !== lastRemoteModifiedTime.current) {
-          console.log('[Heartbeat] Cloud data updated by another user or tab, syncing...');
-          const cloudData = await googleDriveService.loadFromCloud(true);
-          if (cloudData) {
-            updateStateWithMerge(cloudData);
-            lastRemoteModifiedTime.current = metadata.modifiedTime;
-            setLastCloudSync(new Date().toLocaleTimeString());
-          }
-        }
-      } catch (e) {
-        console.warn('Heartbeat check failed');
-      }
-    }, 45000);
-
-    return () => clearInterval(heartbeat);
-  }, [isCloudConnected, user?.role, initialSyncDone, updateStateWithMerge, isMasterTab]);
-
-  // Auto-Trigger Restore for First Time Users
-  useEffect(() => {
-    if (!isInitializing && initialSyncDone && isFirstTimeUser && !isCloudConnected && user?.role !== 'Guest') {
-      // 延遲一點點，確保介面載入完成
-      const timer = setTimeout(() => {
-        if (confirm('偵測到您是初次使用此設備，是否要立即從雲端還原所有資料？\n\n(建議選擇「是」以同步最新進度)')) {
-          handleConnectCloud().then(() => {
-            // handleConnectCloud inside already handles "loadFromCloud" and asking to sync.
-            // But for FORCE RESTORE experience, we might want to guide them more.
-            // The current handleConnectCloud implementation already asks "雲端發現現有數據，是否要切換為雲端版本？", which is good enough.
-          });
-        }
-        setIsFirstTimeUser(false); // Reset flag so it doesn't ask again this session
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [isInitializing, initialSyncDone, isFirstTimeUser, isCloudConnected, user, handleConnectCloud]);
-
-  // Startup Effect
-  const hasStartedRef = React.useRef(false);
-  useEffect(() => {
-    if (hasStartedRef.current) return;
-    hasStartedRef.current = true;
-
-    let safetyTimeout: any;
-
-    const startup = async () => {
-      safetyTimeout = setTimeout(() => {
-        setIsInitializing(false);
-        console.warn('啟動超時：進入自動跳過模式');
-      }, 5000);
-
-      try {
-        const savedUser = localStorage.getItem('bt_user');
-        if (savedUser) {
-          try {
-            const parsedUser = JSON.parse(savedUser);
-            setUser(parsedUser);
-            const dept = parsedUser.department || 'FirstDept';
-            setCurrentDept(dept);
-            setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
-            loadSystemData(dept);
-          } catch (e) {
-            console.error('Saved user parse error', e);
-            localStorage.removeItem('bt_user');
-            setIsInitializing(false);
-          }
-        } else {
-          setIsInitializing(false);
-        }
-      } catch (e) {
-        setIsInitializing(false);
-      }
-    };
-    startup();
-
-    return () => clearTimeout(safetyTimeout);
-  }, [loadSystemData]);
-
-  // Dedicated useEffect for Manual Sync/Restore Listeners (Decoupled from Startup)
+  // Sync / Restore 事件 Listeners
   useEffect(() => {
     const onManualSync = () => handleCloudSync();
     const onManualRestore = () => handleCloudRestore();
@@ -1182,212 +361,6 @@ const App: React.FC = () => {
       window.removeEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
     };
   }, [handleCloudSync, handleCloudRestore]);
-
-  const handleUpdateStatus = (projectId: string, status: ProjectStatus) => {
-    if (user?.role === 'Guest') return;
-    const project = projects.find(p => p.id === projectId);
-    if (project) {
-      addActivityLog(`變更專案狀態：${status} `, project.name, projectId, 'project');
-    }
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status, statusChangedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : p));
-  };
-
-  const handleMarkLogAsRead = (logId: string) => {
-    setActivityLogs(prev => prev.map(log => log.id === logId ? { ...log, isRead: true } : log));
-  };
-
-  // Listen for Trigger Cloud Restore (Crisis Management)
-  useEffect(() => {
-    const handleRestoreListener = async () => {
-      if (!isCloudConnected) {
-        alert('請先連結 Google Drive 才能執行雲端還原。');
-        return;
-      }
-
-      setIsSyncing(true);
-      try {
-        console.warn('STARTING FORCE RESTORE FROM CLOUD...');
-        const cloudData = await googleDriveService.loadFromCloud();
-        if (cloudData) {
-          // FORCE REPLACE LOCAL STATE
-          setProjects(normalizeProjects(cloudData.projects || [])); // No merging, just replacing
-          setCustomers(cloudData.customers || []);
-          setTeamMembers(cloudData.teamMembers || []);
-          setVendors(cloudData.vendors || []);
-          setInventoryItems(cloudData.inventory || []);
-          setInventoryLocations(cloudData.locations || []);
-          // Force save to IndexedDB immediately to prevent reversion
-          setTimeout(async () => {
-            await Promise.all([
-              storageService.setItem('bt_projects', cloudData.projects || []),
-              storageService.setItem('bt_customers', cloudData.customers || []),
-              storageService.setItem('bt_team', cloudData.teamMembers || []),
-              storageService.setItem('bt_vendors', cloudData.vendors || []),
-              storageService.setItem('bt_leads', cloudData.leads || []),
-              storageService.setItem('bt_inventory', cloudData.inventory || []),
-              storageService.setItem('bt_locations', cloudData.locations || []),
-              storageService.setItem('bt_orders', cloudData.purchaseOrders || []),
-              storageService.setItem('bt_attendance', cloudData.attendance || []),
-              storageService.setItem('bt_payroll', cloudData.payroll || []),
-              storageService.setItem('bt_approval_requests', cloudData.approvalRequests || []),
-              storageService.setItem('bt_approval_templates', cloudData.approvalTemplates || [])
-            ]);
-            alert('✅ 雲端還原成功！\n\n所有本地資料已強制覆蓋為雲端版本。頁面將重新整理。');
-            window.location.reload();
-          }, 500);
-        } else {
-          alert('雲端沒有可用的備份資料。');
-        }
-      } catch (e) {
-        console.error('Data Restore Failed', e);
-        alert('還原失敗，請檢查網路連線或稍後再試。');
-      } finally {
-        setIsSyncing(false);
-      }
-    };
-
-    window.addEventListener('TRIGGER_CLOUD_RESTORE', handleRestoreListener);
-    return () => window.removeEventListener('TRIGGER_CLOUD_RESTORE', handleRestoreListener);
-  }, [isCloudConnected, normalizeProjects]);
-
-
-
-  const handleAddComment = (projectId: string, text: string) => {
-    if (!user || user.role === 'Guest') return;
-    const project = projects.find(p => p.id === projectId);
-    const newComment: ProjectComment = {
-      id: Date.now().toString(),
-      authorName: user.name,
-      authorAvatar: user.picture,
-      authorRole: user.role === 'SuperAdmin' ? '管理總監' : '成員',
-      text,
-      timestamp: new Date().toLocaleString('zh-TW', { hour12: false }) || new Date().toISOString()
-    };
-    if (project) {
-      addActivityLog(`在案件中留言`, project.name, projectId, 'project');
-    }
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, comments: [newComment, ...(p.comments || [])], updatedAt: new Date().toISOString() } : p));
-  };
-
-  const handleAddDailyLog = (projectId: string, logData: { content: string, photoUrls: string[] }) => {
-    if (!user || user.role === 'Guest') return;
-    const project = projects.find(p => p.id === projectId);
-    const newLog: DailyLogEntry = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      content: logData.content,
-      photoUrls: logData.photoUrls,
-      authorId: user.employeeId || 'unknown',
-      authorName: user.name,
-      authorAvatar: user.picture
-    };
-    setProjects(prev => prev.map(p => p.id === projectId ? {
-      ...p,
-      dailyLogs: [newLog, ...(p.dailyLogs || [])],
-      updatedAt: new Date().toISOString()
-    } : p));
-  };
-
-  const handleUpdateChecklist = (projectId: string, checklist: ChecklistTask[]) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, checklist, updatedAt: new Date().toISOString() } : p));
-  };
-
-  const handleUpdatePayments = (projectId: string, payments: PaymentStage[]) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, payments, updatedAt: new Date().toISOString() } : p));
-  };
-
-  const handleConvertLead = (leadId: string) => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead) return;
-
-    const newProject: Project = {
-      id: `AI${new Date().toISOString().slice(2, 10).replace(/-/g, '')}${Math.floor(100 + Math.random() * 900)}`,
-      departmentId: viewingDeptId === 'all' ? 'DEPT-1' : viewingDeptId,
-      name: `${lead.customerName} - 智慧抓漏會勘件`,
-      category: '室內裝修',
-      source: 'AI會勘系統',
-      client: lead.customerName,
-      referrer: 'Tiiny Web App',
-      manager: user?.name || '',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: '',
-      createdDate: new Date().toISOString().split('T')[0],
-      budget: 0,
-      spent: 0,
-      progress: 0,
-      status: ProjectStatus.NEGOTIATING,
-      tasks: [],
-      phases: [],
-      checklist: [],
-      payments: [],
-      updatedAt: new Date().toISOString(),
-      inspectionData: {
-        diagnosis: lead.diagnosis,
-        suggestedFix: '待現場覆核後提供完整對策',
-        originalPhotos: lead.photos,
-        aiAnalysis: '初步特徵符合漏水徵兆，內容由智慧抓漏系統 v8.1 自動生成。',
-        timestamp: lead.timestamp
-      },
-      financials: { labor: 0, material: 0, subcontractor: 0, other: 0 }
-    };
-
-    setProjects([newProject, ...projects]);
-    setLeads(leads.map(l => l.id === leadId ? { ...l, status: 'converted' } : l));
-    addActivityLog('將會勘線索轉為專案', newProject.name, newProject.id, 'project');
-    setActiveTab('projects');
-    setSelectedProjectId(newProject.id);
-  };
-  const handleAddTestProject = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const testId = `TEST-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}-${Math.floor(100 + Math.random() * 900)}`;
-
-    const testProject: Project = {
-      id: testId,
-      departmentId: viewingDeptId === 'all' ? 'DEPT-1' : viewingDeptId,
-      name: '系統測試案件 - 萬大路室內裝修工程',
-      category: '室內裝修',
-      source: '系統測試',
-      client: '測試客戶 (林先生)',
-      location: { address: '台北市萬華區萬大路 123 號 5 樓', lat: 25.029, lng: 121.498 },
-      manager: user?.name || '測試經理',
-      startDate: today,
-      endDate: new Date(Date.now() + 86400000 * 30).toISOString().split('T')[0],
-      createdDate: today,
-      budget: 1200000,
-      spent: 0,
-      progress: 15,
-      status: ProjectStatus.CONSTRUCTING,
-      tasks: [
-        { id: 'T-1', title: '現場放樣與水電確認', status: 'Done', priority: 'High', dueDate: today, assignee: user?.name || 'Manager' },
-        { id: 'T-2', title: '拆除牆面與清運', status: 'Done', priority: 'Medium', dueDate: today, assignee: user?.name || 'Manager' },
-        { id: 'T-3', title: '泥作粉刷工程', status: 'Todo', priority: 'Medium', dueDate: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0], assignee: user?.name || 'Manager' }
-      ],
-      phases: [
-        { id: 'P-1', name: '準備階段', startDate: today, endDate: today, status: 'Completed', progress: 100 },
-        { id: 'P-2', name: '拆除工程', startDate: today, endDate: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0], status: 'Current', progress: 50 },
-        { id: 'P-3', name: '泥作工程', startDate: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0], endDate: new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0], status: 'Upcoming', progress: 0 }
-      ],
-      checklist: [
-        { id: 'C-1', title: '合約用印與簽署 (合約與文件)', isDone: true },
-        { id: 'C-2', title: '室內裝修審查申請 (合約與文件)', isDone: false }
-      ],
-      payments: [
-        { id: 'PY-1', stage: '開工案', amount: 360000, dueDate: today, status: 'paid', datePaid: today, label: '第一期', notes: '' },
-        { id: 'PY-2', stage: '泥作完成', amount: 360000, dueDate: new Date(Date.now() + 86400000 * 15).toISOString().split('T')[0], status: 'pending', label: '第二期', notes: '' }
-      ],
-      updatedAt: new Date().toISOString(),
-      financials: { labor: 0, material: 0, subcontractor: 0, other: 0 }
-    };
-
-    setProjects([testProject, ...projects]);
-    addActivityLog('新增測試案件', testProject.name, testProject.id, 'project');
-    setSelectedProjectId(testProject.id);
-  };
-
-  const handleMarkAllLogsAsRead = () => {
-    setActivityLogs(prev => prev.map(log => ({ ...log, isRead: true })));
-  };
-
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
@@ -1915,7 +888,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <Database size={16} className="text-emerald-500" />
-                  <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">無限量緩存</span><span className="text-[10px] font-bold text-stone-900">{lastLocalSave}</span></div>
+                  <div className="flex flex-col"><span className="text-[9px] font-black text-stone-400 uppercase tracking-widest leading-none">無限量緩存</span><span className="text-[10px] font-bold text-stone-900">{lastSaved}</span></div>
                 </div>
               </div>
             </div>
@@ -2000,172 +973,7 @@ const App: React.FC = () => {
       </main >
 
       {isModalOpen && user.role !== 'Guest' && <ProjectModal onClose={() => setIsModalOpen(false)} onConfirm={(data) => {
-        const sourcePrefixes: Record<string, string> = {
-          'BNI': 'BNI',
-          '台塑集團': 'FPC',
-          '士林電機': 'SE',
-          '信義居家': 'SY',
-          '企業': 'CORP',
-          '新建工程': 'NEW',
-          '網路客': 'OC',
-          '住宅': 'AB',
-          'JW': 'JW',
-          '台灣美光晶圓': 'MIC',
-          'AI會勘系統': 'AI'
-        };
-
-        if (editingProject) {
-          addActivityLog('更新了專案資訊', data.name, editingProject.id, 'project');
-          setProjects(prev => {
-            // Find the original project
-            const originalProject = prev.find(p => p.id === editingProject.id);
-            if (!originalProject) return prev;
-
-            let updatedId = originalProject.id;
-            // 如果來源變更，更新 ID 的字首
-            if (data.source && data.source !== originalProject.source) {
-              const oldPrefix = sourcePrefixes[originalProject.source] || 'PJ';
-              const newPrefix = sourcePrefixes[data.source] || 'PJ';
-              updatedId = originalProject.id.replace(oldPrefix, newPrefix);
-            }
-            const statusChangedAt = data.status !== originalProject.status ? new Date().toISOString() : (originalProject.statusChangedAt || originalProject.updatedAt || originalProject.createdDate);
-            // 優先使用手動輸入的 ID，若無更動則使用自動更換字首後的 ID
-            const finalId = data.id && data.id !== editingProject.id ? data.id : updatedId;
-
-            // 如果 ID 沒有變更，直接更新原物件
-            if (finalId === editingProject.id) {
-              const updatedProjects = prev.map(p => p.id === editingProject.id ? { ...p, ...data, statusChangedAt, updatedAt: new Date().toISOString() } : p);
-
-              // Sync quotations linked to this project
-              if (data.name !== originalProject.name || data.client !== originalProject.client) {
-                setQuotations(prevQuotations => prevQuotations.map(q => {
-                  if (q.projectId === editingProject.id || q.convertedProjectId === editingProject.id) {
-                    const updatedHeader = { ...q.header };
-
-                    // Update project name if changed
-                    if (data.name !== originalProject.name) {
-                      updatedHeader.projectName = data.name;
-                    }
-
-                    // Update client name if changed
-                    if (data.client !== originalProject.client) {
-                      updatedHeader.to = data.client;
-                    }
-
-                    // Update project address if changed
-                    if (data.location !== originalProject.location) {
-                      const addr = typeof data.location === 'object' && data.location.address
-                        ? data.location.address
-                        : (typeof data.location === 'string' ? data.location : '');
-                      if (addr) {
-                        updatedHeader.projectAddress = addr;
-                      }
-                    }
-
-                    return {
-                      ...q,
-                      header: updatedHeader,
-                      updatedAt: new Date().toISOString()
-                    };
-                  }
-                  return q;
-                }));
-              }
-
-              return updatedProjects;
-            } else {
-              // ID 有變更：執行「舊案刪除、新案建立」的邏輯 (Rename)
-              // 1. 標記舊案為已刪除 (Tombstone)，讓雲端同步知道此 ID 已失效
-              const tombstone = { ...originalProject, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-
-              // 2. 建立新 ID 的案件，繼承原有關聯資料
-              let determinedYear = data.year;
-              // 若 Year 未指定，嘗試從 ID 解析
-              if (!determinedYear) {
-                const yearMatch = finalId.match(/(20\d{2})/) || finalId.match(/^[A-Za-z]+(\d{2})/);
-                if (yearMatch) {
-                  determinedYear = yearMatch[1].length === 2 ? `20${yearMatch[1]}` : yearMatch[1];
-                }
-              }
-              // 若仍未指定，使用StartDate年份
-              if (!determinedYear && data.startDate) {
-                determinedYear = data.startDate.split('-')[0];
-              }
-
-              const newProject = { ...originalProject, ...data, id: finalId, year: determinedYear, statusChangedAt, updatedAt: new Date().toISOString() };
-
-              // 3. 回傳新陣列：原地替換舊案為 Tombstone (或保留)，並加入新案
-              // 為了列表穩定性，我們將舊案標記刪除，並將新案加入
-              const updatedProjects = [...prev.map(p => p.id === editingProject.id ? tombstone : p), newProject];
-
-              // Sync quotations linked to this project
-              if (data.name !== originalProject.name || data.client !== originalProject.client) {
-                setQuotations(prevQuotations => prevQuotations.map(q => {
-                  if (q.projectId === editingProject.id || q.convertedProjectId === editingProject.id) {
-                    const updatedHeader = { ...q.header };
-
-                    // Update project name if changed
-                    if (data.name !== originalProject.name) {
-                      updatedHeader.projectName = data.name;
-                    }
-
-                    // Update client name if changed
-                    if (data.client !== originalProject.client) {
-                      updatedHeader.to = data.client;
-                    }
-
-                    // Update project address if changed
-                    if (data.location !== originalProject.location) {
-                      const addr = typeof data.location === 'object' && data.location.address
-                        ? data.location.address
-                        : (typeof data.location === 'string' ? data.location : '');
-                      if (addr) {
-                        updatedHeader.projectAddress = addr;
-                      }
-                    }
-
-                    return {
-                      ...q,
-                      header: updatedHeader,
-                      updatedAt: new Date().toISOString()
-                    };
-                  }
-                  return q;
-                }));
-              }
-
-              return updatedProjects;
-            }
-          });
-        } else {
-          // 案件編號產生規則: [來源代碼][年份縮寫(YY)][月(MM)][流水號(001)]
-          const prefix = sourcePrefixes[data.source || 'BNI'] || 'PJ';
-          const projectDate = data.startDate ? new Date(data.startDate) : new Date();
-          const yearShort = projectDate.getFullYear().toString().slice(-2);
-          const month = '01'; // 固定使用 01
-
-          // 流水號計數改為「依字首+年份」獨立計數，且排除已永久刪除(isPurged)的案件以避免跳號
-          let sequence = 1;
-          if (projects.length > 0) {
-            const targetPattern = new RegExp(`^${prefix}${yearShort}`);
-            const sequences = projects
-              .filter(p => !p.isPurged && targetPattern.test(p.id)) // 只計算同來源、同年份且未被永久刪除的案件
-              .map(p => {
-                const match = p.id.match(/(\d{3})$/);
-                return match ? parseInt(match[1], 10) : 0;
-              })
-              .filter(num => !isNaN(num) && num > 0 && num < 1000);
-
-            if (sequences.length > 0) {
-              sequence = Math.max(...sequences) + 1;
-            }
-          }
-
-          const generatedId = `${prefix}${yearShort}${month}${sequence.toString().padStart(3, '0')}`;
-          const finalId = data.id || generatedId;
-          addActivityLog('建立新專案', data.name, finalId, 'project');
-          setProjects(prev => [{ ...data, id: finalId, status: ProjectStatus.NEGOTIATING, statusChangedAt: new Date().toISOString(), progress: 0, workAssignments: [], expenses: [], comments: [], files: [], phases: [], updatedAt: new Date().toISOString() } as any, ...prev]);
-        }
+        handleSaveProject(data, editingProject);
         setIsModalOpen(false);
       }} initialData={editingProject} teamMembers={teamMembers} />}
 

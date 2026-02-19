@@ -2,16 +2,13 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Trash2, Edit2, Save, X, CheckCircle2, Circle, AlertTriangle, MessageSquare, Calendar, ChevronDown, ChevronRight, Check, Download, Loader2, Image as ImageIcon, Video as VideoIcon, Play } from 'lucide-react';
 import { Project, DefectRecord, DefectItem } from '../types';
+import { useProject } from '../contexts/ProjectContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-interface DefectImprovementProps {
-    project: Project;
-    onUpdate: (records: DefectRecord[]) => void;
-    isReadOnly?: boolean;
-}
-
-const DefectImprovement: React.FC<DefectImprovementProps> = ({ project, onUpdate, isReadOnly }) => {
+const DefectImprovement: React.FC = () => {
+    const { project, onUpdateDefectRecords, isReadOnly } = useProject();
+    const onUpdate = onUpdateDefectRecords;
     const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
     const [expandedRecords, setExpandedRecords] = useState<string[]>([]);
     const [isExporting, setIsExporting] = useState(false);

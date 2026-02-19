@@ -1,24 +1,18 @@
 import React, { useState, useRef } from 'react';
 import { Activity, Trash2, ZoomIn, CalendarDays, Pencil, Loader2, Sparkles, X, ImageIcon } from 'lucide-react';
 import { Project, ProjectFile } from '../../types';
+import { useProject } from '../../contexts/ProjectContext';
 import { refineSiteNotes, analyzeSitePhoto } from '../../services/geminiService';
 import { cloudFileService } from '../../services/cloudFileService';
 
-interface ProjectLogsProps {
-    project: Project;
-    isReadOnly: boolean;
-    onDeleteDailyLog: (logId: string) => void;
-    onAddDailyLog: (log: { content: string, photoUrls: string[] }) => void;
-    onImageClick: (image: ProjectFile) => void;
-}
-
-const ProjectLogs: React.FC<ProjectLogsProps> = ({
-    project,
-    isReadOnly,
-    onDeleteDailyLog,
-    onAddDailyLog,
-    onImageClick
-}) => {
+const ProjectLogs: React.FC = () => {
+    const {
+        project,
+        isReadOnly,
+        onDeleteDailyLog,
+        onAddDailyLog,
+        onImageClick
+    } = useProject();
     const [logContent, setLogContent] = useState('');
     const [logPhotos, setLogPhotos] = useState<string[]>([]);
     const [isUploadingLog, setIsUploadingLog] = useState(false);

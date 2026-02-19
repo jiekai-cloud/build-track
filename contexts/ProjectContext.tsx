@@ -29,6 +29,10 @@ interface ProjectContextType {
     onNavigateToQuotation: (projectId: string, quotationId?: string) => void;
     onDeleteQuotation?: (id: string) => void;
     onLossClick: (project: Project) => void;
+    onImageClick: (image: ProjectFile) => void;
+    currentPhotoFilter: string;
+    onFilterChange: (filter: string) => void;
+    photoCategories: { id: string, label: string, icon: any }[];
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);

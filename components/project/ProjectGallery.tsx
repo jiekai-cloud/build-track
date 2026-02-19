@@ -1,27 +1,19 @@
 import React, { useRef, useState } from 'react';
 import { ImageIcon, Sparkles, Layers, Upload, Zap, Trash2 } from 'lucide-react';
-import { Project, ProjectFile } from '../../types';
+import { ProjectFile } from '../../types';
 import { cloudFileService } from '../../services/cloudFileService';
+import { useProject } from '../../contexts/ProjectContext';
 
-interface ProjectGalleryProps {
-    project: Project;
-    isReadOnly: boolean;
-    onUpdateFiles?: (files: ProjectFile[]) => void;
-    onImageClick: (file: ProjectFile) => void;
-    photoCategories: { id: string, label: string, icon: any }[]; // Passed from parent
-    currentPhotoFilter: string;
-    onFilterChange: (filter: string) => void;
-}
-
-const ProjectGallery: React.FC<ProjectGalleryProps> = ({
-    project,
-    isReadOnly,
-    onUpdateFiles,
-    onImageClick,
-    photoCategories,
-    currentPhotoFilter,
-    onFilterChange
-}) => {
+const ProjectGallery: React.FC = () => {
+    const {
+        project,
+        isReadOnly,
+        onUpdateFiles,
+        onImageClick,
+        photoCategories,
+        currentPhotoFilter,
+        onFilterChange
+    } = useProject();
     const [isUploading, setIsUploading] = useState(false);
     const [selectedUploadCategory, setSelectedUploadCategory] = useState('survey');
     const fileInputRef = useRef<HTMLInputElement>(null);

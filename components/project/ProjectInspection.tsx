@@ -1,12 +1,10 @@
 import React from 'react';
 import { Sparkles, Activity, ZoomIn } from 'lucide-react';
 import { Project } from '../../types';
+import { useProject } from '../../contexts/ProjectContext';
 
-interface ProjectInspectionProps {
-    project: Project;
-}
-
-const ProjectInspection: React.FC<ProjectInspectionProps> = ({ project }) => {
+const ProjectInspection: React.FC = () => {
+    const { project } = useProject();
     return (
         <div className="space-y-6 animate-in fade-in">
             {project.inspectionData ? (

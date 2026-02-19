@@ -1,22 +1,16 @@
 import React from 'react';
 import { Plus, Receipt, Trash2, Edit2 } from 'lucide-react';
 import { Project, Quotation } from '../../types';
+import { useProject } from '../../contexts/ProjectContext';
 
-interface ProjectQuotationsProps {
-    project: Project;
-    quotations: Quotation[];
-    isReadOnly: boolean;
-    onNavigateToQuotation: (projectId: string, quotationId?: string) => void;
-    onDeleteQuotation?: (id: string) => void;
-}
-
-const ProjectQuotations: React.FC<ProjectQuotationsProps> = ({
-    project,
-    quotations,
-    isReadOnly,
-    onNavigateToQuotation,
-    onDeleteQuotation
-}) => {
+const ProjectQuotations: React.FC = () => {
+    const {
+        project,
+        quotations,
+        isReadOnly,
+        onNavigateToQuotation,
+        onDeleteQuotation
+    } = useProject();
     const projectQuotations = quotations.filter(q => !q.deletedAt && (q.projectId === project.id || q.convertedProjectId === project.id));
 
     return (

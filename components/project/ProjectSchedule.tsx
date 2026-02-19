@@ -1,17 +1,13 @@
 
 import React, { useState } from 'react';
 import { CalendarDays, Sparkles, Check, Upload, Loader2, DownloadCloud, X, Edit2, Trash2, ExternalLink } from 'lucide-react';
-import { Project, ProjectPhase, ProjectStatus } from '../../types';
+import { ProjectPhase } from '../../types';
 import { suggestProjectSchedule, parseScheduleFromImage } from '../../services/geminiService';
 import GanttChart from '../GanttChart';
+import { useProject } from '../../contexts/ProjectContext';
 
-interface ProjectScheduleProps {
-    project: Project;
-    isReadOnly: boolean;
-    onUpdatePhases: (phases: ProjectPhase[]) => void;
-}
-
-const ProjectSchedule: React.FC<ProjectScheduleProps> = ({ project, isReadOnly, onUpdatePhases }) => {
+const ProjectSchedule: React.FC = () => {
+    const { project, isReadOnly, onUpdatePhases } = useProject();
     const [scheduleStartDate, setScheduleStartDate] = useState(project.startDate || new Date().toISOString().split('T')[0]);
     const [workOnHolidays, setWorkOnHolidays] = useState(false);
     const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
