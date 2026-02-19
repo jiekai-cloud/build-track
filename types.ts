@@ -306,7 +306,11 @@ export interface TeamMember {
   hourlyRate?: number; // 新增：時薪（計時制使用）
   laborFee?: number; // 新增：勞保自付額
   healthFee?: number; // 新增：健保自付額
-  spiderManAllowance?: number; // 新增：蜘蛛人津貼 (繩索吊掛作業額外津貼)
+  spiderManAllowance?: number; // @deprecated Use specific calculation based on ropeEquipment
+  workDaysPerWeek?: number; // 新增：每週工作天數 (預設 5)
+  lunchBonus?: number; // 新增：固定午餐獎勵金
+  insuranceBurdenRate?: number; // 新增：特殊保險負擔費率 (例如 15 或 40)
+  ropeLicenseLevel?: string; // 新增：繩索證照等級
   workStartTime?: string; // 新增：標準上班時間 (HH:MM 格式，如 "09:00")
   workEndTime?: string; // 新增：標準下班時間 (HH:MM 格式，如 "18:00")
   role: '總經理' | '副總經理' | '總經理特助' | '經理' | '副經理' | '專案經理' | '工地主任' | '工地助理' | '工務主管' | '現場工程師' | '行政助理' | '助理' | '設計師' | '工頭' | '外部協力' | '財務部經理';
@@ -465,6 +469,7 @@ export interface AttendanceRecord {
   departmentId?: string;
   photoUrl?: string; // Optional: photo verification
   isCorrection?: boolean; // 補打卡標記
+  ropeEquipment?: 'personal' | 'company' | null; // 當日使用裝備 (繩索作業)
 }
 
 export interface PayrollRecord {

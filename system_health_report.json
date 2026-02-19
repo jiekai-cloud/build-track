@@ -1,0 +1,1369 @@
+{
+  "timestamp": "2026-02-19T03:03:18.272Z",
+  "summary": {
+    "totalFiles": 132,
+    "bloatedFiles": [
+      {
+        "path": "components/AIAssistant.tsx",
+        "lines": 457
+      },
+      {
+        "path": "components/ApprovalSystem.tsx",
+        "lines": 743
+      },
+      {
+        "path": "components/AttendanceSystem.tsx",
+        "lines": 413
+      },
+      {
+        "path": "components/CustomerModal.tsx",
+        "lines": 430
+      },
+      {
+        "path": "components/Dashboard.tsx",
+        "lines": 749
+      },
+      {
+        "path": "components/DefectImprovement.tsx",
+        "lines": 594
+      },
+      {
+        "path": "components/DispatchManager.tsx",
+        "lines": 1223
+      },
+      {
+        "path": "components/InventoryModal.tsx",
+        "lines": 771
+      },
+      {
+        "path": "components/OrderManagerModal.tsx",
+        "lines": 686
+      },
+      {
+        "path": "components/PayrollSystem.tsx",
+        "lines": 1635
+      },
+      {
+        "path": "components/ProjectDetail.tsx",
+        "lines": 2902
+      },
+      {
+        "path": "components/ProjectList.tsx",
+        "lines": 710
+      },
+      {
+        "path": "components/QuotationEditor.tsx",
+        "lines": 1867
+      },
+      {
+        "path": "components/QuotationSystem.tsx",
+        "lines": 503
+      },
+      {
+        "path": "components/Settings.tsx",
+        "lines": 1028
+      },
+      {
+        "path": "components/TeamModal.tsx",
+        "lines": 611
+      },
+      {
+        "path": "services/geminiService.ts",
+        "lines": 770
+      },
+      {
+        "path": "services/quotationPdfService.ts",
+        "lines": 634
+      },
+      {
+        "path": "App.tsx",
+        "lines": 2496
+      },
+      {
+        "path": "components/AIAssistant.tsx",
+        "lines": 457
+      },
+      {
+        "path": "components/ApprovalSystem.tsx",
+        "lines": 743
+      },
+      {
+        "path": "components/AttendanceSystem.tsx",
+        "lines": 413
+      },
+      {
+        "path": "components/CustomerModal.tsx",
+        "lines": 430
+      },
+      {
+        "path": "components/Dashboard.tsx",
+        "lines": 749
+      },
+      {
+        "path": "components/DefectImprovement.tsx",
+        "lines": 594
+      },
+      {
+        "path": "components/DispatchManager.tsx",
+        "lines": 1223
+      },
+      {
+        "path": "components/InventoryModal.tsx",
+        "lines": 771
+      },
+      {
+        "path": "components/OrderManagerModal.tsx",
+        "lines": 686
+      },
+      {
+        "path": "components/PayrollSystem.tsx",
+        "lines": 1635
+      },
+      {
+        "path": "components/ProjectDetail.tsx",
+        "lines": 2902
+      },
+      {
+        "path": "components/ProjectList.tsx",
+        "lines": 710
+      },
+      {
+        "path": "components/QuotationEditor.tsx",
+        "lines": 1867
+      },
+      {
+        "path": "components/QuotationSystem.tsx",
+        "lines": 503
+      },
+      {
+        "path": "components/Settings.tsx",
+        "lines": 1028
+      },
+      {
+        "path": "components/TeamModal.tsx",
+        "lines": 611
+      },
+      {
+        "path": "data/quotationPresets.ts",
+        "lines": 553
+      },
+      {
+        "path": "services/geminiService.ts",
+        "lines": 770
+      },
+      {
+        "path": "services/quotationPdfService.ts",
+        "lines": 634
+      },
+      {
+        "path": "types.ts",
+        "lines": 698
+      }
+    ],
+    "complexComponents": [],
+    "heavyStates": [
+      {
+        "path": "components/ProjectDetail.tsx",
+        "count": 22
+      },
+      {
+        "path": "App.tsx",
+        "count": 21
+      },
+      {
+        "path": "components/ProjectDetail.tsx",
+        "count": 22
+      }
+    ]
+  },
+  "details": [
+    {
+      "path": "components/ProjectDetail.tsx",
+      "lines": 2902,
+      "stateCount": 22,
+      "effectCount": 2,
+      "propsCount": 18,
+      "todoCount": 0,
+      "score": 358
+    },
+    {
+      "path": "components/ProjectDetail.tsx",
+      "lines": 2902,
+      "stateCount": 22,
+      "effectCount": 2,
+      "propsCount": 18,
+      "todoCount": 0,
+      "score": 358
+    },
+    {
+      "path": "App.tsx",
+      "lines": 2496,
+      "stateCount": 21,
+      "effectCount": 12,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 328
+    },
+    {
+      "path": "components/QuotationEditor.tsx",
+      "lines": 1867,
+      "stateCount": 8,
+      "effectCount": 2,
+      "propsCount": 9,
+      "todoCount": 0,
+      "score": 218
+    },
+    {
+      "path": "components/QuotationEditor.tsx",
+      "lines": 1867,
+      "stateCount": 8,
+      "effectCount": 2,
+      "propsCount": 9,
+      "todoCount": 0,
+      "score": 218
+    },
+    {
+      "path": "components/PayrollSystem.tsx",
+      "lines": 1635,
+      "stateCount": 4,
+      "effectCount": 2,
+      "propsCount": 7,
+      "todoCount": 0,
+      "score": 185
+    },
+    {
+      "path": "components/PayrollSystem.tsx",
+      "lines": 1635,
+      "stateCount": 4,
+      "effectCount": 2,
+      "propsCount": 7,
+      "todoCount": 0,
+      "score": 185
+    },
+    {
+      "path": "components/Settings.tsx",
+      "lines": 1028,
+      "stateCount": 4,
+      "effectCount": 1,
+      "propsCount": 22,
+      "todoCount": 0,
+      "score": 136
+    },
+    {
+      "path": "components/Settings.tsx",
+      "lines": 1028,
+      "stateCount": 4,
+      "effectCount": 1,
+      "propsCount": 22,
+      "todoCount": 0,
+      "score": 136
+    },
+    {
+      "path": "components/DispatchManager.tsx",
+      "lines": 1223,
+      "stateCount": 4,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 135
+    },
+    {
+      "path": "components/DispatchManager.tsx",
+      "lines": 1223,
+      "stateCount": 4,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 135
+    },
+    {
+      "path": "components/Dashboard.tsx",
+      "lines": 749,
+      "stateCount": 4,
+      "effectCount": 0,
+      "propsCount": 10,
+      "todoCount": 0,
+      "score": 93
+    },
+    {
+      "path": "components/Dashboard.tsx",
+      "lines": 749,
+      "stateCount": 4,
+      "effectCount": 0,
+      "propsCount": 10,
+      "todoCount": 0,
+      "score": 93
+    },
+    {
+      "path": "components/ApprovalSystem.tsx",
+      "lines": 743,
+      "stateCount": 4,
+      "effectCount": 0,
+      "propsCount": 8,
+      "todoCount": 0,
+      "score": 90
+    },
+    {
+      "path": "components/ProjectList.tsx",
+      "lines": 710,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 12,
+      "todoCount": 0,
+      "score": 90
+    },
+    {
+      "path": "components/ApprovalSystem.tsx",
+      "lines": 743,
+      "stateCount": 4,
+      "effectCount": 0,
+      "propsCount": 8,
+      "todoCount": 0,
+      "score": 90
+    },
+    {
+      "path": "components/ProjectList.tsx",
+      "lines": 710,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 12,
+      "todoCount": 0,
+      "score": 90
+    },
+    {
+      "path": "components/InventoryModal.tsx",
+      "lines": 771,
+      "stateCount": 0,
+      "effectCount": 2,
+      "propsCount": 6,
+      "todoCount": 0,
+      "score": 89
+    },
+    {
+      "path": "components/InventoryModal.tsx",
+      "lines": 771,
+      "stateCount": 0,
+      "effectCount": 2,
+      "propsCount": 6,
+      "todoCount": 0,
+      "score": 89
+    },
+    {
+      "path": "components/OrderManagerModal.tsx",
+      "lines": 686,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 8,
+      "todoCount": 0,
+      "score": 79
+    },
+    {
+      "path": "components/TeamModal.tsx",
+      "lines": 611,
+      "stateCount": 4,
+      "effectCount": 2,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 79
+    },
+    {
+      "path": "components/OrderManagerModal.tsx",
+      "lines": 686,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 8,
+      "todoCount": 0,
+      "score": 79
+    },
+    {
+      "path": "components/TeamModal.tsx",
+      "lines": 611,
+      "stateCount": 4,
+      "effectCount": 2,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 79
+    },
+    {
+      "path": "services/geminiService.ts",
+      "lines": 770,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 77
+    },
+    {
+      "path": "services/geminiService.ts",
+      "lines": 770,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 77
+    },
+    {
+      "path": "components/QuotationSystem.tsx",
+      "lines": 503,
+      "stateCount": 5,
+      "effectCount": 2,
+      "propsCount": 9,
+      "todoCount": 0,
+      "score": 75
+    },
+    {
+      "path": "components/QuotationSystem.tsx",
+      "lines": 503,
+      "stateCount": 5,
+      "effectCount": 2,
+      "propsCount": 9,
+      "todoCount": 0,
+      "score": 75
+    },
+    {
+      "path": "types.ts",
+      "lines": 698,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 70
+    },
+    {
+      "path": "components/AIAssistant.tsx",
+      "lines": 457,
+      "stateCount": 5,
+      "effectCount": 2,
+      "propsCount": 6,
+      "todoCount": 0,
+      "score": 68
+    },
+    {
+      "path": "components/AIAssistant.tsx",
+      "lines": 457,
+      "stateCount": 5,
+      "effectCount": 2,
+      "propsCount": 6,
+      "todoCount": 0,
+      "score": 68
+    },
+    {
+      "path": "components/DefectImprovement.tsx",
+      "lines": 594,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 64
+    },
+    {
+      "path": "components/DefectImprovement.tsx",
+      "lines": 594,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 64
+    },
+    {
+      "path": "services/quotationPdfService.ts",
+      "lines": 634,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 63
+    },
+    {
+      "path": "services/quotationPdfService.ts",
+      "lines": 634,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 63
+    },
+    {
+      "path": "data/quotationPresets.ts",
+      "lines": 553,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 55
+    },
+    {
+      "path": "components/AttendanceSystem.tsx",
+      "lines": 413,
+      "stateCount": 3,
+      "effectCount": 1,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 53
+    },
+    {
+      "path": "components/CustomerModal.tsx",
+      "lines": 430,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 53
+    },
+    {
+      "path": "components/AttendanceSystem.tsx",
+      "lines": 413,
+      "stateCount": 3,
+      "effectCount": 1,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 53
+    },
+    {
+      "path": "components/CustomerModal.tsx",
+      "lines": 430,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 53
+    },
+    {
+      "path": "components/HelpCenter.tsx",
+      "lines": 400,
+      "stateCount": 4,
+      "effectCount": 1,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 52
+    },
+    {
+      "path": "components/HelpCenter.tsx",
+      "lines": 400,
+      "stateCount": 4,
+      "effectCount": 1,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 52
+    },
+    {
+      "path": "components/InventoryList.tsx",
+      "lines": 374,
+      "stateCount": 2,
+      "effectCount": 0,
+      "propsCount": 10,
+      "todoCount": 0,
+      "score": 51
+    },
+    {
+      "path": "components/InventoryList.tsx",
+      "lines": 374,
+      "stateCount": 2,
+      "effectCount": 0,
+      "propsCount": 10,
+      "todoCount": 0,
+      "score": 51
+    },
+    {
+      "path": "components/Login.tsx",
+      "lines": 383,
+      "stateCount": 4,
+      "effectCount": 1,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 50
+    },
+    {
+      "path": "components/TeamList.tsx",
+      "lines": 356,
+      "stateCount": 3,
+      "effectCount": 0,
+      "propsCount": 8,
+      "todoCount": 0,
+      "score": 50
+    },
+    {
+      "path": "components/Login.tsx",
+      "lines": 383,
+      "stateCount": 4,
+      "effectCount": 1,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 50
+    },
+    {
+      "path": "components/TeamList.tsx",
+      "lines": 356,
+      "stateCount": 3,
+      "effectCount": 0,
+      "propsCount": 8,
+      "todoCount": 0,
+      "score": 50
+    },
+    {
+      "path": "components/ScanTransferModal.tsx",
+      "lines": 378,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 49
+    },
+    {
+      "path": "components/ScanTransferModal.tsx",
+      "lines": 378,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 49
+    },
+    {
+      "path": "components/QuotationPrintTemplate.tsx",
+      "lines": 379,
+      "stateCount": 1,
+      "effectCount": 2,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 48
+    },
+    {
+      "path": "components/QuotationPrintTemplate.tsx",
+      "lines": 379,
+      "stateCount": 1,
+      "effectCount": 2,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 48
+    },
+    {
+      "path": "components/ProjectModal.tsx",
+      "lines": 366,
+      "stateCount": 1,
+      "effectCount": 1,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 46
+    },
+    {
+      "path": "components/ProjectModal.tsx",
+      "lines": 366,
+      "stateCount": 1,
+      "effectCount": 1,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 46
+    },
+    {
+      "path": "components/ModuleManager.tsx",
+      "lines": 382,
+      "stateCount": 0,
+      "effectCount": 1,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 42
+    },
+    {
+      "path": "components/ModuleManager.tsx",
+      "lines": 382,
+      "stateCount": 0,
+      "effectCount": 1,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 42
+    },
+    {
+      "path": "components/DataImportModal.tsx",
+      "lines": 363,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 41
+    },
+    {
+      "path": "components/DataImportModal.tsx",
+      "lines": 363,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 41
+    },
+    {
+      "path": "components/project/ProjectLogs.tsx",
+      "lines": 272,
+      "stateCount": 4,
+      "effectCount": 0,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 39
+    },
+    {
+      "path": "components/project/ProjectLogs.tsx",
+      "lines": 272,
+      "stateCount": 4,
+      "effectCount": 0,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 39
+    },
+    {
+      "path": "components/CustomerList.tsx",
+      "lines": 280,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 35
+    },
+    {
+      "path": "components/Sidebar.tsx",
+      "lines": 204,
+      "stateCount": 2,
+      "effectCount": 2,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 35
+    },
+    {
+      "path": "components/VendorModal.tsx",
+      "lines": 256,
+      "stateCount": 1,
+      "effectCount": 1,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 35
+    },
+    {
+      "path": "components/CustomerList.tsx",
+      "lines": 280,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 35
+    },
+    {
+      "path": "components/Sidebar.tsx",
+      "lines": 204,
+      "stateCount": 2,
+      "effectCount": 2,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 35
+    },
+    {
+      "path": "components/VendorModal.tsx",
+      "lines": 256,
+      "stateCount": 1,
+      "effectCount": 1,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 35
+    },
+    {
+      "path": "components/DefectExportModal.tsx",
+      "lines": 277,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 32
+    },
+    {
+      "path": "components/DefectExportModal.tsx",
+      "lines": 277,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 32
+    },
+    {
+      "path": "components/Analytics.tsx",
+      "lines": 304,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 31
+    },
+    {
+      "path": "components/MapLocation.tsx",
+      "lines": 203,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 31
+    },
+    {
+      "path": "services/moduleService.ts",
+      "lines": 309,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 31
+    },
+    {
+      "path": "components/Analytics.tsx",
+      "lines": 304,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 31
+    },
+    {
+      "path": "components/MapLocation.tsx",
+      "lines": 203,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 31
+    },
+    {
+      "path": "pages/ContractSigningPage.tsx",
+      "lines": 222,
+      "stateCount": 3,
+      "effectCount": 1,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 31
+    },
+    {
+      "path": "services/moduleService.ts",
+      "lines": 309,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 31
+    },
+    {
+      "path": "moduleConfig.ts",
+      "lines": 297,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 30
+    },
+    {
+      "path": "components/NotificationPanel.tsx",
+      "lines": 211,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 28
+    },
+    {
+      "path": "services/googleDriveService.ts",
+      "lines": 282,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 28
+    },
+    {
+      "path": "components/NotificationPanel.tsx",
+      "lines": 211,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 28
+    },
+    {
+      "path": "services/googleDriveService.ts",
+      "lines": 282,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 28
+    },
+    {
+      "path": "components/OnboardingTour.tsx",
+      "lines": 181,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 27
+    },
+    {
+      "path": "components/OnboardingTour.tsx",
+      "lines": 181,
+      "stateCount": 2,
+      "effectCount": 1,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 27
+    },
+    {
+      "path": "components/Header.tsx",
+      "lines": 115,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 13,
+      "todoCount": 0,
+      "score": 25
+    },
+    {
+      "path": "components/Header.tsx",
+      "lines": 115,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 13,
+      "todoCount": 0,
+      "score": 25
+    },
+    {
+      "path": "components/BusinessCardScanner.tsx",
+      "lines": 203,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 24
+    },
+    {
+      "path": "components/LocationManagerModal.tsx",
+      "lines": 154,
+      "stateCount": 2,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 24
+    },
+    {
+      "path": "components/BusinessCardScanner.tsx",
+      "lines": 203,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 24
+    },
+    {
+      "path": "components/LocationManagerModal.tsx",
+      "lines": 154,
+      "stateCount": 2,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 24
+    },
+    {
+      "path": "components/SyncOnlyScreen.tsx",
+      "lines": 117,
+      "stateCount": 0,
+      "effectCount": 1,
+      "propsCount": 7,
+      "todoCount": 0,
+      "score": 22
+    },
+    {
+      "path": "components/TransferModal.tsx",
+      "lines": 159,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 22
+    },
+    {
+      "path": "hooks/useQuotationPresets.ts",
+      "lines": 166,
+      "stateCount": 1,
+      "effectCount": 1,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 22
+    },
+    {
+      "path": "components/SyncOnlyScreen.tsx",
+      "lines": 117,
+      "stateCount": 0,
+      "effectCount": 1,
+      "propsCount": 7,
+      "todoCount": 0,
+      "score": 22
+    },
+    {
+      "path": "components/TransferModal.tsx",
+      "lines": 159,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 4,
+      "todoCount": 0,
+      "score": 22
+    },
+    {
+      "path": "hooks/useQuotationPresets.ts",
+      "lines": 166,
+      "stateCount": 1,
+      "effectCount": 1,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 22
+    },
+    {
+      "path": "constants.ts",
+      "lines": 208,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 21
+    },
+    {
+      "path": "components/SupplementModal.tsx",
+      "lines": 118,
+      "stateCount": 3,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 20
+    },
+    {
+      "path": "components/SupplementModal.tsx",
+      "lines": 118,
+      "stateCount": 3,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 20
+    },
+    {
+      "path": "data/standardItems.ts",
+      "lines": 179,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 18
+    },
+    {
+      "path": "components/GanttChart.tsx",
+      "lines": 163,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 17
+    },
+    {
+      "path": "components/GanttChart.tsx",
+      "lines": 163,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 17
+    },
+    {
+      "path": "components/OrgChart.tsx",
+      "lines": 140,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 16
+    },
+    {
+      "path": "components/OrgChart.tsx",
+      "lines": 140,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 16
+    },
+    {
+      "path": "services/cloudFileService.ts",
+      "lines": 151,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 15
+    },
+    {
+      "path": "services/cloudFileService.ts",
+      "lines": 151,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 15
+    },
+    {
+      "path": "utils/initialData.ts",
+      "lines": 146,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 15
+    },
+    {
+      "path": "components/project/ProjectQuotations.tsx",
+      "lines": 93,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 14
+    },
+    {
+      "path": "components/project/ProjectQuotations.tsx",
+      "lines": 93,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 5,
+      "todoCount": 0,
+      "score": 14
+    },
+    {
+      "path": "components/LossReasonModal.tsx",
+      "lines": 70,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 12
+    },
+    {
+      "path": "components/LossReasonModal.tsx",
+      "lines": 70,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 3,
+      "todoCount": 0,
+      "score": 12
+    },
+    {
+      "path": "components/SignaturePad.tsx",
+      "lines": 68,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 11
+    },
+    {
+      "path": "components/SignaturePad.tsx",
+      "lines": 68,
+      "stateCount": 1,
+      "effectCount": 0,
+      "propsCount": 2,
+      "todoCount": 0,
+      "score": 11
+    },
+    {
+      "path": "components/LocationModal.tsx",
+      "lines": 75,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 9
+    },
+    {
+      "path": "components/project/ProjectInspection.tsx",
+      "lines": 76,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 9
+    },
+    {
+      "path": "services/storageService.ts",
+      "lines": 89,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 9
+    },
+    {
+      "path": "components/LocationModal.tsx",
+      "lines": 75,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 9
+    },
+    {
+      "path": "components/project/ProjectInspection.tsx",
+      "lines": 76,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 9
+    },
+    {
+      "path": "services/storageService.ts",
+      "lines": 89,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 9
+    },
+    {
+      "path": "utils/csvExport.ts",
+      "lines": 90,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 9
+    },
+    {
+      "path": "data/standardNotes.ts",
+      "lines": 78,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 8
+    },
+    {
+      "path": "services/googleSheetService.ts",
+      "lines": 61,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 6
+    },
+    {
+      "path": "services/googleSheetService.ts",
+      "lines": 61,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 6
+    },
+    {
+      "path": "services/lineService.ts",
+      "lines": 53,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 5
+    },
+    {
+      "path": "index.tsx",
+      "lines": 48,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 5
+    },
+    {
+      "path": "services/lineService.ts",
+      "lines": 53,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 5
+    },
+    {
+      "path": "utils/quotationIdGenerator.ts",
+      "lines": 45,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 5
+    },
+    {
+      "path": "components/LoadingScreen.tsx",
+      "lines": 31,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 4
+    },
+    {
+      "path": "components/LoadingScreen.tsx",
+      "lines": 31,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 1,
+      "todoCount": 0,
+      "score": 4
+    },
+    {
+      "path": "vite.config.ts",
+      "lines": 28,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 3
+    },
+    {
+      "path": "MainRouter.tsx",
+      "lines": 21,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 2
+    },
+    {
+      "path": "services/stampImage.ts",
+      "lines": 9,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 1
+    },
+    {
+      "path": "services/stampImage.ts",
+      "lines": 9,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 1
+    },
+    {
+      "path": "components/AddProjectModal.tsx",
+      "lines": 4,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 0
+    },
+    {
+      "path": "components/AddProjectModal.tsx",
+      "lines": 4,
+      "stateCount": 0,
+      "effectCount": 0,
+      "propsCount": 0,
+      "todoCount": 0,
+      "score": 0
+    }
+  ]
+}

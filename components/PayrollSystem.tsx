@@ -76,6 +76,8 @@ interface PayrollData {
     overtimePay: number; // 新增：應發加班費
     allowances: { // 新增：津貼明細
         spiderman: number;
+        ropeAccess: number; // 新增：繩索證照/設備津貼
+        lunchBonus: number; // 新增：午餐獎勵金
         meal: number;
         transport: number;
         other: number;
@@ -87,6 +89,7 @@ interface PayrollData {
         leave: number; // 请假扣款
         labor: number;
         health: number;
+        insuranceExtra: number; // 新增：特殊排班保險轉嫁
         other: number;
     };
     netSalary: number; // 實領薪資
@@ -97,10 +100,13 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
     const [isEditing, setIsEditing] = useState(false);
     const [form, setForm] = useState({
         baseSalary: data.baseSalary,
+        lunchBonus: data.allowances.lunchBonus,
+        ropeAccess: data.allowances.ropeAccess,
         meal: data.allowances.meal,
         transport: data.allowances.transport,
         otherAllowance: data.allowances.other,
         leave: data.deductions.leave,
+        insuranceExtra: data.deductions.insuranceExtra,
         otherDeduction: data.deductions.other,
         labor: data.deductions.labor,
         health: data.deductions.health
@@ -110,10 +116,13 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
     useEffect(() => {
         setForm({
             baseSalary: data.baseSalary,
+            lunchBonus: data.allowances.lunchBonus,
+            ropeAccess: data.allowances.ropeAccess, // 通常由打卡紀錄計算，但也允許手動調整
             meal: data.allowances.meal,
             transport: data.allowances.transport,
             otherAllowance: data.allowances.other,
             leave: data.deductions.leave,
+            insuranceExtra: data.deductions.insuranceExtra, // 自動計算，但允許調整
             otherDeduction: data.deductions.other,
             labor: data.deductions.labor,
             health: data.deductions.health
@@ -137,9 +146,9 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
         </div>
     );
 
-    const totalAllowances = data.allowances.spiderman + form.meal + form.transport + form.otherAllowance;
+    const totalAllowances = data.allowances.spiderman + form.ropeAccess + form.lunchBonus + form.meal + form.transport + form.otherAllowance;
     const gross = form.baseSalary + data.overtimePay + totalAllowances;
-    const totalDeductions = form.labor + form.health + data.deductions.late + form.leave + form.otherDeduction;
+    const totalDeductions = form.labor + form.health + data.deductions.late + form.leave + form.insuranceExtra + form.otherDeduction;
     const net = Math.max(0, gross - totalDeductions);
 
     const handleReset = () => {
@@ -161,10 +170,13 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
 
         setForm({
             baseSalary: defaultBaseSalary,
+            lunchBonus: member.lunchBonus || 0,
+            ropeAccess: data.allowances.ropeAccess, // Reset to calculated value
             meal: 0,
             transport: 0,
             otherAllowance: 0,
             leave: 0,
+            insuranceExtra: data.deductions.insuranceExtra, // Reset to calculated value
             otherDeduction: 0,
             labor: member.laborFee || 0,
             health: member.healthFee || 0
@@ -307,6 +319,8 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                                     </div>
                                     <div className="border-t border-slate-100 my-1 pt-1">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">津貼 Adjustments</p>
+                                        <Input label="午餐獎勵金" value={form.lunchBonus} onChange={(v: number) => setForm({ ...form, lunchBonus: v })} className="mb-1" />
+                                        <Input label="繩索津貼" value={form.ropeAccess} onChange={(v: number) => setForm({ ...form, ropeAccess: v })} className="mb-1" />
                                         <Input label="伙食津貼" value={form.meal} onChange={(v: number) => setForm({ ...form, meal: v })} className="mb-1" />
                                         <Input label="交通津貼" value={form.transport} onChange={(v: number) => setForm({ ...form, transport: v })} className="mb-1" />
                                         <Input label="其他津貼" value={form.otherAllowance} onChange={(v: number) => setForm({ ...form, otherAllowance: v })} />
@@ -322,8 +336,11 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                                         <span className="font-bold text-slate-500">加班費</span>
                                         <span className="font-black text-amber-600">+${data.overtimePay.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-bold text-slate-500">各項津貼</span>
+                                    {form.lunchBonus > 0 && <div className="flex justify-between text-sm"><span className="font-bold text-slate-500">午餐獎勵</span><span className="font-black text-blue-600">+${form.lunchBonus.toLocaleString()}</span></div>}
+                                    {form.ropeAccess > 0 && <div className="flex justify-between text-sm"><span className="font-bold text-slate-500">繩索津貼</span><span className="font-black text-blue-600">+${form.ropeAccess.toLocaleString()}</span></div>}
+                                    {data.allowances.spiderman > 0 && <div className="flex justify-between text-sm"><span className="font-bold text-slate-500">蜘蛛人津貼</span><span className="font-black text-blue-600">+${data.allowances.spiderman.toLocaleString()}</span></div>}
+                                    <div className="flex justify-between text-sm border-t border-slate-100 pt-1 mt-1">
+                                        <span className="font-bold text-slate-500">合計津貼</span>
                                         <span className="font-black text-blue-600">+${totalAllowances.toLocaleString()}</span>
                                     </div>
                                 </>
@@ -350,6 +367,7 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                                         <span className="text-rose-500">-${data.deductions.late}</span>
                                     </div>
                                     <Input label="請假扣薪" value={form.leave} onChange={(v: number) => setForm({ ...form, leave: v })} />
+                                    <Input label="保險差額轉嫁" value={form.insuranceExtra} onChange={(v: number) => setForm({ ...form, insuranceExtra: v })} />
                                     <Input label="其他扣除" value={form.otherDeduction} onChange={(v: number) => setForm({ ...form, otherDeduction: v })} />
                                 </div>
                             ) : (
@@ -378,6 +396,12 @@ const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({ member, data, m
                                         <div className="flex justify-between text-sm">
                                             <span className="font-bold text-rose-500">其他扣除</span>
                                             <span className="font-black text-rose-600">-${form.otherDeduction.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {form.insuranceExtra > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="font-bold text-rose-500">保險差額轉嫁</span>
+                                            <span className="font-black text-rose-600">-${form.insuranceExtra.toLocaleString()}</span>
                                         </div>
                                     )}
                                 </>
@@ -680,6 +704,8 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                     overtimePay: 0,
                     allowances: {
                         spiderman: 0,
+                        ropeAccess: 0,
+                        lunchBonus: m.lunchBonus || 0, // 預設載入設定值
                         meal: 0,
                         transport: 0,
                         other: 0,
@@ -691,6 +717,7 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                         leave: 0,
                         labor: m.laborFee || 0,
                         health: m.healthFee || 0,
+                        insuranceExtra: 0,
                         other: 0
                     },
                     netSalary: 0,
@@ -944,9 +971,25 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                     }
 
                     // Allowance Calculation
+                    // 1. Spiderman Allowance (Legacy/Fixed)
                     if (m.spiderManAllowance && m.spiderManAllowance > 0) {
                         allowance += m.spiderManAllowance;
                         context.allowances.spiderman += m.spiderManAllowance;
+                    }
+
+                    // 2. Rope Access Allowance (Dynamic based on equipment)
+                    const ropeWorkRec = dayWorkRecs.find(r => r.ropeEquipment);
+                    if (ropeWorkRec && ropeWorkRec.ropeEquipment) {
+                        let ropeAmt = 0;
+                        if (ropeWorkRec.ropeEquipment === 'personal') ropeAmt = 1500;
+                        else if (ropeWorkRec.ropeEquipment === 'company') ropeAmt = 1200;
+
+                        if (ropeAmt > 0) {
+                            allowance += ropeAmt;
+                            context.allowances.ropeAccess += ropeAmt;
+                            // Add note to daily log
+                            note = note ? `${note}, 繩索津貼($${ropeAmt})` : `繩索津貼($${ropeAmt})`;
+                        }
                     }
 
                 } else if (dayLeave) {
@@ -996,6 +1039,35 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 }
             }
 
+            // Insurance Burden Shift Logic (Special Schedule)
+            // Rule: < 5 days/week -> Employee bears part of Company Burden
+            // 4 days -> 15% of Company Burden
+            // < 4 days -> 40% of Company Burden
+            const workDaysPerWeek = m.workDaysPerWeek || 5;
+            if (workDaysPerWeek < 5) {
+                let burdenRate = 0;
+                if (workDaysPerWeek === 4) burdenRate = 0.15;
+                else if (workDaysPerWeek < 4) burdenRate = 0.40;
+
+                if (burdenRate > 0) {
+                    // Estimated Company Burden Calculation
+                    // Labor Insurance: Company shares ~70%, Employee ~20% -> Company is ~3.5x Employee
+                    // Health Insurance: Company shares ~60%, Employee ~30% -> Company is ~2.0x Employee
+                    // Pension: Company pays 6% of Insured Salary (Full Burden)
+
+                    const estCompanyLabor = (m.laborFee || 0) * 3.5;
+                    const estCompanyHealth = (m.healthFee || 0) * 2.0;
+                    // Use Monthly Salary or (Daily * 22) as base for Pension estimation
+                    const base = m.monthlySalary || (m.dailyRate || 0) * 22;
+                    const estPension = base * 0.06;
+
+                    const totalEstCompanyBurden = estCompanyLabor + estCompanyHealth + estPension;
+                    const shiftAmount = Math.round(totalEstCompanyBurden * burdenRate);
+
+                    context.deductions.insuranceExtra = shiftAmount;
+                }
+            }
+
             // Apply Adjustments
             const adjKey = `${selectedMonth}-${empId}`;
             const adj = payrollAdjustments[adjKey];
@@ -1013,21 +1085,28 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
 
                 context.allowances.meal = Number(adj.meal || 0);
                 context.allowances.transport = Number(adj.transport || 0);
+                context.allowances.meal = Number(adj.meal || 0);
+                context.allowances.transport = Number(adj.transport || 0);
                 context.allowances.other = Number(adj.otherAllowance || 0);
+                // New fields adjustment
+                if (adj.lunchBonus !== undefined) context.allowances.lunchBonus = Number(adj.lunchBonus);
+                if (adj.ropeAccess !== undefined) context.allowances.ropeAccess = Number(adj.ropeAccess);
+                if (adj.insuranceExtra !== undefined) context.deductions.insuranceExtra = Number(adj.insuranceExtra);
             }
 
-            context.allowances.total = context.allowances.spiderman + context.allowances.meal + context.allowances.transport + context.allowances.other;
+            context.allowances.total = context.allowances.spiderman + context.allowances.ropeAccess + context.allowances.lunchBonus + context.allowances.meal + context.allowances.transport + context.allowances.other;
             context.grossSalary = context.baseSalary + context.overtimePay + context.allowances.total;
 
             // 實領薪資 = 應發總額 - 勞健保 - 遲到扣款 - 請假 - 其他
-            context.netSalary = Math.max(0, context.grossSalary - context.deductions.labor - context.deductions.health - context.deductions.late - context.deductions.leave - context.deductions.other);
+            // 實領薪資 = 應發總額 - 勞健保 - 遲到扣款 - 請假 - 額外保險負擔 - 其他
+            context.netSalary = Math.max(0, context.grossSalary - context.deductions.labor - context.deductions.health - context.deductions.late - context.deductions.leave - context.deductions.insuranceExtra - context.deductions.other);
         });
 
         return Object.values(stats).sort((a, b) => (b.workDays - a.workDays));
     }, [mergedRecords, teamMembers, selectedMonth, approvalRequests, payrollAdjustments]);
 
     const exportPayrollCSV = () => {
-        const headers = ['員工姓名', '員工編號', '職稱', '出勤天數', '請假天數', '總工時', '加班工時', '日薪/月薪/時薪', '本薪總額', '加班費', '各項津貼', '遲到扣款', '勞保費', '健保費', '實領薪資'];
+        const headers = ['員工姓名', '員工編號', '職稱', '出勤天數', '請假天數', '總工時', '加班工時', '日薪/月薪/時薪', '本薪總額', '加班費', '繩索津貼', '午餐獎勵', '其他津貼', '津貼合計', '遲到扣款', '請假扣薪', '保險負擔轉嫁', '勞保費', '健保費', '其他扣除', '實領薪資'];
         const rows = payrollData.map(d => {
             return [
                 d.member?.name || '未知',
@@ -1040,10 +1119,16 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                 d.member?.salaryType === 'monthly' ? `${d.member?.monthlySalary}(月)` : d.member?.salaryType === 'hourly' ? `${d.member?.hourlyRate}(時)` : d.member?.dailyRate || 0,
                 d.baseSalary,
                 d.overtimePay,
-                d.allowances.total,
+                d.allowances.ropeAccess, // 繩索津貼
+                d.allowances.lunchBonus, // 午餐獎勵
+                d.allowances.total - d.allowances.ropeAccess - d.allowances.lunchBonus, // 其他津貼
+                d.allowances.total, // 津貼合計
                 d.deductions.late,
+                d.deductions.leave,
+                d.deductions.insuranceExtra, // 保險轉嫁
                 d.deductions.labor,
                 d.deductions.health,
+                d.deductions.other,
                 d.netSalary
             ];
         });

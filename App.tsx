@@ -1,5 +1,8 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import SyncOnlyScreen from './components/SyncOnlyScreen';
+import LoadingScreen from './components/LoadingScreen';
 import Dashboard from './components/Dashboard';
 import ProjectList from './components/ProjectList';
 import DispatchManager from './components/DispatchManager';
@@ -728,6 +731,11 @@ const App: React.FC = () => {
           m.workStartTime = '08:00';
           m.workEndTime = '17:00';
         }
+
+        // Initialize new salary fields
+        if (m.workDaysPerWeek === undefined) m.workDaysPerWeek = 5;
+        if (m.lunchBonus === undefined) m.lunchBonus = 0; // Default to 0, admin should set this
+
       });
 
       // Emergency Restore for JK001 (If missing)
@@ -1430,26 +1438,7 @@ const App: React.FC = () => {
   }, [projects, customers, teamMembers, vendors, quotations, viewingDeptId, showDeleted]);
 
   if (isInitializing) {
-    return (
-      <div className="h-screen w-screen bg-[#1c1917] flex flex-col items-center justify-center space-y-8 animate-in fade-in">
-        <div className="relative">
-          <img src="./pwa-icon.png" alt="Loading" className="w-24 h-24 object-contain animate-pulse" />
-        </div>
-        <div className="text-center space-y-3">
-          <h2 className="text-white font-black text-2xl uppercase tracking-[0.2em]">Quality of Life</h2>
-          <div className="flex items-center justify-center gap-2">
-            <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-bounce"></span>
-            <p className="text-stone-500 text-[10px] font-black uppercase tracking-[0.2em]">Development Corporation</p>
-          </div>
-          <button
-            onClick={() => setIsInitializing(false)}
-            className="mt-4 text-stone-600 text-[10px] font-bold underline underline-offset-4 hover:text-orange-500 opacity-50 hover:opacity-100 transition-all"
-          >
-            直接進入系統 (跳過等待)
-          </button>
-        </div>
-      </div>
-    );
+    return <LoadingScreen onSkip={() => setIsInitializing(false)} />;
   }
 
   if (!user) return <Login onLoginSuccess={(u, d) => {
@@ -1474,94 +1463,15 @@ const App: React.FC = () => {
   // 同步專用視角 (用於初始化新設備)
   if (user.role === 'SyncOnly') {
     return (
-      <div className="h-screen w-screen bg-stone-950 flex flex-col items-center justify-center p-8 overflow-hidden font-sans relative">
-        <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-3xl z-0"></div>
-        <div className="relative z-10 w-full max-w-lg bg-white rounded-[3rem] p-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-stone-200">
-          <div className="text-center space-y-4 mb-10">
-            <div className="w-20 h-20 bg-emerald-500 rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/20 mb-6">
-              <Cloud size={40} className="text-white animate-bounce" />
-            </div>
-            <h1 className="text-3xl font-black text-stone-900 tracking-tight">系統同步中心</h1>
-            <p className="text-stone-500 text-sm font-bold uppercase tracking-widest">Initial Cloud Synchronization</p>
-          </div>
-
-          {/* Auto-Trigger Connect for SyncOnly User */}
-          {React.useEffect(() => {
-            if (!isCloudConnected && !isSyncing) {
-              handleConnectCloud();
-            }
-          }, [])}
-
-          <div className="space-y-6">
-            <div className={`p-6 rounded-3xl border transition-all ${isCloudConnected ? 'bg-emerald-50 border-emerald-100' : 'bg-stone-50 border-stone-200'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isCloudConnected ? 'bg-emerald-500 text-white' : 'bg-stone-200 text-stone-400'}`}>
-                    {isCloudConnected ? <CheckCircle size={24} /> : <CloudOff size={24} />}
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-stone-400 mb-1">連線狀態</p>
-                    <p className={`text-sm font-black ${isCloudConnected ? 'text-emerald-700' : 'text-stone-600'}`}>
-                      {isCloudConnected ? '已連結至 Google Drive' : '尚未連結雲端'}
-                    </p>
-                  </div>
-                </div>
-                {!isCloudConnected && (
-                  <button onClick={handleConnectCloud} className="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95">
-                    立即連結
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {isCloudConnected && (
-              <div className="p-6 bg-stone-50 rounded-3xl border border-stone-200 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-stone-200 shadow-sm">
-                      <RefreshCw size={24} className={`text-stone-400 ${isSyncing ? 'animate-spin' : ''}`} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-widest text-stone-400 mb-1">同步進度</p>
-                      <p className="text-sm font-black text-stone-900">
-                        {isSyncing ? '正在下載數據...' : lastCloudSync ? `最後同步: ${lastCloudSync}` : '等待下載'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    disabled={isSyncing}
-                    onClick={handleCloudSync}
-                    className="p-3 bg-white border border-stone-200 rounded-2xl text-stone-600 hover:text-orange-600 hover:border-orange-200 transition-all shadow-sm disabled:opacity-50"
-                  >
-                    <Download size={20} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {cloudError && (
-              <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 animate-in shake duration-500">
-                <AlertCircle className="text-rose-500 shrink-0" size={18} />
-                <p className="text-rose-600 text-xs font-bold">{cloudError}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-12 space-y-4">
-            <p className="text-center text-[10px] text-stone-400 font-bold leading-relaxed px-6">
-              ✨ 同步完成後，請點擊下方按鈕登出。
-              <br />之後即可使用您的個人員工編號直接登入本設備。
-            </p>
-            <button
-              onClick={handleLogout}
-              className="w-full py-5 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-stone-950/20 flex items-center justify-center gap-3"
-            >
-              登出並完成初始化
-              <LogOut size={16} />
-            </button>
-          </div>
-        </div>
-      </div>
+      <SyncOnlyScreen
+        isCloudConnected={isCloudConnected}
+        isSyncing={isSyncing}
+        lastCloudSync={lastCloudSync}
+        cloudError={cloudError}
+        onConnectCloud={handleConnectCloud}
+        onSync={handleCloudSync}
+        onLogout={handleLogout}
+      />
     );
   }
 
@@ -1580,66 +1490,21 @@ const App: React.FC = () => {
       </div>
 
       <main className="flex-1 flex flex-col h-full w-full min-0 relative print:h-auto print:overflow-visible print:block">
-        <header className="h-16 shrink-0 bg-white/80 backdrop-blur-xl border-b border-stone-200 px-4 lg:px-8 flex items-center justify-between no-print z-40">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-stone-600 hover:bg-stone-100 rounded-lg"><Menu size={24} /></button>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-2xl shadow-lg ${user.role === 'Guest' ? 'bg-stone-900 text-orange-400' : 'bg-stone-900 text-white'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${user.role === 'Guest' ? 'bg-orange-500' : 'bg-emerald-400'}`}></div>
-                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{user.role === 'Guest' ? '訪客唯讀' : 'V3.0 SYNC-SHIELD'}</span>
-                <span className="text-[10px] font-black uppercase tracking-widest sm:hidden">V3.0</span>
-              </div>
-
-              {user.role !== 'Guest' && (
-                <div className="flex items-center">
-                  {cloudError ? (
-                    <button onClick={handleConnectCloud} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-rose-50 text-rose-600 rounded-2xl border border-rose-200 animate-pulse"><AlertCircle size={14} /><span className="text-[10px] font-black uppercase tracking-[0.1em] hidden sm:inline">{cloudError}</span></button>
-                  ) : isCloudConnected ? (
-                    <div className="flex items-center gap-1 sm:gap-2.5 px-2 sm:px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-100 shadow-sm">
-                      <div className="relative"><CheckCircle size={14} className="text-emerald-500" />{isSyncing && <RefreshCw size={10} className="absolute -top-1 -right-1 text-emerald-600 animate-spin bg-white rounded-full p-0.5" />}</div>
-                      <div className="flex flex-col"><span className="text-[9px] font-black uppercase tracking-widest leading-none hidden sm:inline">{isSyncing ? '同步中...' : '雲端同步就緒'}</span></div>
-                    </div>
-                  ) : (
-                    <button onClick={handleConnectCloud} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-stone-100 text-stone-400 rounded-2xl border border-stone-200 hover:text-orange-600"><CloudOff size={14} /></button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button
-              onClick={() => setIsNotificationOpen(true)}
-              className="relative p-2.5 bg-white text-stone-900 rounded-2xl border border-stone-200 shadow-sm hover:ring-2 hover:ring-orange-100 hover:border-orange-200 transition-all active:scale-95 flex items-center justify-center shrink-0"
-            >
-              <Bell size={18} className="text-stone-600" />
-              {activityLogs.length > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 bg-orange-600 rounded-full border-2 border-white animate-pulse"></span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setIsAISettingsOpen(true)}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border transition-all hover:scale-105 active:scale-95 bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm"
-            >
-              <Sparkles size={12} className="text-emerald-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                AI 智慧服務已啟用
-              </span>
-            </button>
-
-            <div className="hidden sm:flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
-              <Layers size={14} className="text-stone-400" />
-              <select className="bg-transparent text-[11px] font-black text-stone-900 outline-none" value={viewingDeptId} onChange={(e) => setViewingDeptId(e.target.value)}>
-                <option value="all">全公司視野</option>
-                {MOCK_DEPARTMENTS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-
-            <button onClick={handleLogout} className="p-2 text-stone-400 hover:text-rose-600 transition-colors"><LogOut size={20} /></button>
-          </div>
-        </header>
+        <Header
+          user={user}
+          isSidebarOpen={isSidebarOpen}
+          onMenuClick={() => setIsSidebarOpen(true)}
+          cloudError={cloudError}
+          isCloudConnected={isCloudConnected}
+          isSyncing={isSyncing}
+          onConnectCloud={handleConnectCloud}
+          onNotificationClick={() => setIsNotificationOpen(true)}
+          activityLogsLength={activityLogs.length}
+          onAISettingsClick={() => setIsAISettingsOpen(true)}
+          viewingDeptId={viewingDeptId}
+          onViewingDeptChange={setViewingDeptId}
+          onLogout={handleLogout}
+        />
 
         <div className="flex-1 overflow-y-auto touch-scroll">
           {selectedProject ? (
