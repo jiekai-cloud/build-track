@@ -10,6 +10,8 @@ import { storageService } from '../services/storageService';
 import { SystemContext } from '../types';
 
 // 集中管理所有實體資料 state 與合併/正規化邏輯
+import { fetchLeakDetectionLeads } from '../services/sheetService';
+
 // 集中管理所有實體資料 state 與合併/正規化邏輯
 export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoSave: boolean = false) => {
     // ============ 核心業務資料 State ============
@@ -27,6 +29,43 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
     const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
     const [approvalTemplates, setApprovalTemplates] = useState<ApprovalTemplate[]>([]);
     const [quotations, setQuotations] = useState<Quotation[]>([]);
+
+    // ============ 外部表單同步 (Google Sheet) ============
+    const syncExternalLeads = useCallback(async () => {
+        if (typeof window !== 'undefined' && !window.navigator.onLine) return;
+
+        try {
+            console.log('[Sheet Sync] Checking for new leads from Google Sheet...');
+            const sheetLeads = await fetchLeakDetectionLeads();
+
+            if (sheetLeads.length > 0) {
+                setLeads(prev => {
+                    const existingIds = new Set(prev.map(l => l.id));
+                    const newUniqueLeads = sheetLeads.filter(l => !existingIds.has(l.id));
+
+                    if (newUniqueLeads.length === 0) return prev;
+
+                    console.log(`[Sheet Sync] Imported ${newUniqueLeads.length} new leads.`);
+                    // New leads go to top
+                    const allLeads = [...newUniqueLeads, ...prev];
+                    // Also update localStorage for immediate backup
+                    localStorage.setItem('bt_leads', JSON.stringify(allLeads));
+                    return allLeads;
+                });
+            }
+        } catch (e) {
+            console.error('[Sheet Sync] Background sync failed', e);
+        }
+    }, []);
+
+    // 初次載入時自動同步
+    useEffect(() => {
+        // Delay slightly to allow main hydration
+        const timer = setTimeout(() => {
+            syncExternalLeads();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [syncExternalLeads]);
 
     // ============ 初始化 Leads (Demo 資料) ============
     useEffect(() => {
@@ -319,6 +358,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
         addActivityLog,
         clearAllData,
         saveToIndexedDB,
+        syncExternalLeads, // Expose syncing function
         dataRef,
     };
 };
