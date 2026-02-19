@@ -21,7 +21,8 @@ const ProjectMap: React.FC<ProjectMapProps> = ({ project, isReadOnly }) => {
 
         setIsSearchingNearby(true);
         try {
-            const results = await searchNearbyResources(project.location.lat, project.location.lng, resourceType);
+            const address = project.location?.address || project.client || '未知地點';
+            const results = await searchNearbyResources(address, project.location.lat, project.location.lng, resourceType);
             setNearbyResults(results);
         } catch (error) {
             console.error(error);

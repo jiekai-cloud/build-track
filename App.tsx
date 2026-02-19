@@ -1557,7 +1557,7 @@ const App: React.FC = () => {
               onUpdatePreConstruction={(prep) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, preConstruction: prep, updatedAt: new Date().toISOString() } : p))}
               onUpdateContractUrl={(url) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, contractUrl: url, updatedAt: new Date().toISOString() } : p))}
               onUpdateDefectRecords={(records) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, defectRecords: records, updatedAt: new Date().toISOString() } : p))}
-              onDeleteDefectRecord={(recordId) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, defectRecords: p.defectRecords?.filter(r => r.id !== recordId), updatedAt: new Date().toISOString() } : p))}
+
               onLossClick={() => handleUpdateStatus(selectedProjectId!, ProjectStatus.LOST)}
               quotations={quotations}
               onNavigateToQuotation={(projectId, quotationId) => {
