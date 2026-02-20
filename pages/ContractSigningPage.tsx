@@ -4,6 +4,8 @@ import { Quotation } from '../types';
 import QuotationPrintTemplate from '../components/QuotationPrintTemplate';
 import SignaturePad from '../components/SignaturePad';
 import { storageService } from '../services/storageService';
+import { supabase } from '../services/supabaseClient';
+import { supabaseDb } from '../services/supabaseDb';
 import { CheckCircle } from 'lucide-react';
 
 const ContractSigningPage: React.FC = () => {
@@ -105,6 +107,26 @@ const ContractSigningPage: React.FC = () => {
                     }
                 }
 
+                // Strategy 3: Try Supabase Cloud (Crucial for external clients!)
+                if (!target && id) {
+                    try {
+                        console.log('[Contract Signing] Trying Supabase Cloud...');
+                        const { data, error } = await supabase
+                            .from('app_data')
+                            .select('data')
+                            .eq('collection', 'quotations')
+                            .eq('item_id', id)
+                            .single();
+
+                        if (data && !error) {
+                            console.log('[Contract Signing] Found in Supabase Cloud');
+                            target = data.data as Quotation;
+                        }
+                    } catch (cloudError) {
+                        console.error('[Contract Signing] Error fetching from Supabase:', cloudError);
+                    }
+                }
+
                 if (target) {
                     console.log('[Contract Signing] Quotation loaded successfully');
                     setQuotation(target);
@@ -148,8 +170,28 @@ const ContractSigningPage: React.FC = () => {
             const prefix = quotation.departmentId === 'DEPT-8' ? 'dept3_' : '';
             const key = `${prefix}bt_quotations`;
             const quotes = await storageService.getItem<Quotation[]>(key, []);
-            const newQuotes = quotes.map(q => q.id === quotation.id ? updatedQuotation : q);
-            await storageService.setItem(key, newQuotes);
+            let newQuotes = quotes;
+            if (quotes.some(q => q.id === quotation.id)) {
+                newQuotes = quotes.map(q => q.id === quotation.id ? updatedQuotation : q);
+                await storageService.setItem(key, newQuotes);
+            }
+
+            // Strategy: Force update to Supabase!
+            // Crucial so that the signed contract is immediately pushed to the cloud backend.
+            try {
+                const { error } = await supabase
+                    .from('app_data')
+                    .upsert({ collection: 'quotations', item_id: quotation.id, data: updatedQuotation }, { onConflict: 'collection,item_id' });
+
+                if (error) {
+                    console.error('[Contract Signing] Failed to push signature to Supabase:', error);
+                    alert('注意：雲端同步失敗，請聯絡管理員確認簽署狀態。');
+                } else {
+                    console.log('[Contract Signing] Successfully pushed signature to Supabase');
+                }
+            } catch (cloudErr) {
+                console.error('[Contract Signing] Exception pushing to Supabase:', cloudErr);
+            }
 
         } catch (e) {
             console.error('Failed to save signature', e);
