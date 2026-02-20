@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   X, User, Shield, Phone, Mail, Award, Save, Camera,
   Loader2, Key, Hash, Calendar, MapPin, Landmark,
-  Heart, CreditCard, Sparkles, AlertCircle
+  Heart, CreditCard, Sparkles, AlertCircle, Eye, EyeOff
 } from 'lucide-react';
 import { TeamMember, User as UserType } from '../types';
 import { MOCK_DEPARTMENTS } from '../constants';
@@ -29,6 +29,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
   const [specialtyInput, setSpecialtyInput] = useState('');
   const [certInput, setCertInput] = useState('');
   const [nicknameInput, setNicknameInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState<Partial<TeamMember>>({
     employeeId: '',
@@ -161,8 +162,22 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">登入密碼</label>
                     <div className="relative">
-                      <Key size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                      <input type="password" disabled={!isEditable} placeholder={initialData ? "留空則不修改" : "請設定初始密碼"} className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm font-black" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                      <Key size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        disabled={!isEditable}
+                        placeholder={initialData ? "留空則不修改" : "請設定初始密碼"}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-12 py-3 text-sm font-black focus:border-[#4B7330] focus:ring-1 focus:ring-[#4B7330] outline-none transition-shadow"
+                        value={formData.password}
+                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                     </div>
                   </div>
                 </div>
