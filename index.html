@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Quality of Life SEMS - Production v2.0</title>
+    <!-- 使用相對路徑以相容 GitHub Pages -->
+    <meta name="theme-color" content="#7A9A7E">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SEMS">
+    <link rel="apple-touch-icon" href="/build-track/assets/pwa-icon-BfZdPnGC.png">
+    <meta property="og:image" content="/build-track/assets/pwa-icon-BfZdPnGC.png">
+    <meta property="og:title" content="Quality of Life SEMS - Production v2.0">
+    <meta property="og:description" content="Professional Engineering Management System">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        orange: {
+                            50: '#FAF9F6',  // 米白 (Cream) - matches slide background
+                            100: '#F5F5F0', // 淺灰米
+                            200: '#EBECE6', // 畫布色
+                            300: '#D2DCD4', // 淺鼠尾草
+                            400: '#A3C2A8', // 嫩綠
+                            500: '#7A9A7E', // 鼠尾草綠 (Sage Green) - Primary Brand Color
+                            600: '#5F7A62', // 深鼠尾草 (Hover)
+                            700: '#485D4B', // 橄欖綠
+                            800: '#354437', // 森林綠
+                            900: '#263028', // 深墨綠
+                            950: '#1A211C',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #1c1917;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            color: #1c1917;
+        }
+
+        #root {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: #fafaf9;
+            padding-top: var(--sat);
+            padding-bottom: var(--sab);
+            padding-left: var(--sal);
+            padding-right: var(--sar);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .touch-scroll {
+            -webkit-overflow-scrolling: touch;
+            overflow-y: auto;
+        }
+
+        /* 桌面版自定義橫向捲軸 */
+        @media (min-width: 1024px) {
+            .desktop-scrollbar::-webkit-scrollbar {
+                height: 5px;
+            }
+
+            .desktop-scrollbar::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.03);
+                border-radius: 10px;
+            }
+
+            .desktop-scrollbar::-webkit-scrollbar-thumb {
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 10px;
+                transition: background 0.3s;
+            }
+
+            .desktop-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: rgba(0, 0, 0, 0.2);
+            }
+        }
+
+        @media print {
+
+            aside,
+            header,
+            #ai-assistant-root,
+            .no-print,
+            .fixed {
+                display: none !important;
+            }
+
+            main {
+                margin-left: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                overflow: visible !important;
+            }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <!-- Google API 腳本 -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+
+  <script type="module" crossorigin src="/build-track/assets/index-CMEtHUzn.js"></script>
+  <link rel="stylesheet" crossorigin href="/build-track/assets/index-DfbHwvVX.css">
+</head>
+
+<body>
+    <div id="root"></div>
+</body>
+
+</html>
