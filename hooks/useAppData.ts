@@ -225,10 +225,20 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
             departmentId: c.departmentId || 'DEPT-4'
         }));
 
+        const cleanVendors = (cloudData.vendors || []).map((v: any) => ({
+            ...v,
+            departmentId: v.departmentId || 'DEPT-4'
+        }));
+
+        const cleanQuotations = (cloudData.quotations || []).map((q: any) => ({
+            ...q,
+            departmentId: q.departmentId || 'DEPT-4'
+        }));
+
         setProjects(prev => mergeData(prev, cleanCloudProjects));
         setCustomers(prev => mergeData(prev, cleanCustomers));
         setTeamMembers(prev => mergeData(prev, cloudData.teamMembers || []));
-        setVendors(prev => mergeData(prev, cloudData.vendors || []));
+        setVendors(prev => mergeData(prev, cleanVendors));
         if (cloudData.inventory) setInventoryItems(prev => mergeData(prev, cloudData.inventory || []));
         if (cloudData.locations) setInventoryLocations(prev => mergeData(prev, cloudData.locations || []));
         if (cloudData.purchaseOrders) setPurchaseOrders(prev => mergeData(prev, cloudData.purchaseOrders || []));
@@ -236,7 +246,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
         if (cloudData.payroll) setPayrollRecords(prev => mergeData(prev, cloudData.payroll || []));
         if (cloudData.approvalRequests) setApprovalRequests(prev => mergeData(prev, cloudData.approvalRequests || []));
         if (cloudData.approvalTemplates) setApprovalTemplates(prev => mergeData(prev, cloudData.approvalTemplates || []));
-        if (cloudData.quotations) setQuotations(prev => mergeData(prev, cloudData.quotations || []));
+        if (cloudData.quotations) setQuotations(prev => mergeData(prev, cleanQuotations));
         if (cloudData.calendarEvents) setCalendarEvents(prev => mergeData(prev, cloudData.calendarEvents || []));
 
         setActivityLogs(prev => {
