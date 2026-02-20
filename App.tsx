@@ -645,6 +645,10 @@ const App: React.FC = () => {
                   approvalRequests={approvalRequests}
                   teamMembers={teamMembers}
                   leads={leads}
+                  calendarEvents={calendarEvents}
+                  setCalendarEvents={setCalendarEvents}
+                  user={user}
+                  isCloudConnected={isCloudConnected}
                 />
               )}
               {activeTab === 'projects' && moduleService.isModuleEnabled(ModuleId.PROJECTS) && <ProjectList

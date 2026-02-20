@@ -3,7 +3,8 @@ import {
     Project, ProjectStatus, Customer, TeamMember, User, ActivityLog,
     Vendor, Lead, InventoryItem, InventoryLocation, PurchaseOrder,
     AttendanceRecord, PayrollRecord, ApprovalRequest, ApprovalTemplate,
-    Quotation, ChecklistTask, PaymentStage, DailyLogEntry, ProjectComment
+    Quotation, ChecklistTask, PaymentStage, DailyLogEntry, ProjectComment,
+    SystemCalendarEvent
 } from '../types';
 import { MOCK_PROJECTS, MOCK_TEAM_MEMBERS } from '../constants';
 import { storageService } from '../services/storageService';
@@ -29,6 +30,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
     const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
     const [approvalTemplates, setApprovalTemplates] = useState<ApprovalTemplate[]>([]);
     const [quotations, setQuotations] = useState<Quotation[]>([]);
+    const [calendarEvents, setCalendarEvents] = useState<SystemCalendarEvent[]>([]);
 
     // ============ 外部表單同步 (Google Sheet) ============
     const syncExternalLeads = useCallback(async () => {
@@ -225,6 +227,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
         if (cloudData.approvalRequests) setApprovalRequests(prev => mergeData(prev, cloudData.approvalRequests || []));
         if (cloudData.approvalTemplates) setApprovalTemplates(prev => mergeData(prev, cloudData.approvalTemplates || []));
         if (cloudData.quotations) setQuotations(prev => mergeData(prev, cloudData.quotations || []));
+        if (cloudData.calendarEvents) setCalendarEvents(prev => mergeData(prev, cloudData.calendarEvents || []));
 
         setActivityLogs(prev => {
             const combined = [...(cloudData.activityLogs || []), ...prev];
@@ -241,15 +244,15 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
     const dataRef = useRef({
         projects, customers, teamMembers, activityLogs, vendors, leads,
         inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords,
-        payrollRecords, approvalRequests, approvalTemplates, quotations
+        payrollRecords, approvalRequests, approvalTemplates, quotations, calendarEvents
     });
     useEffect(() => {
         dataRef.current = {
             projects, customers, teamMembers, activityLogs, vendors, leads,
             inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords,
-            payrollRecords, approvalRequests, approvalTemplates, quotations
+            payrollRecords, approvalRequests, approvalTemplates, quotations, calendarEvents
         };
-    }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations]);
+    }, [projects, customers, teamMembers, activityLogs, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations, calendarEvents]);
 
     // ============ 活動日誌 ============
     const addActivityLog = useCallback((action: string, targetName: string, targetId: string, type: ActivityLog['type'], user: User | null) => {
@@ -280,6 +283,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
         setPurchaseOrders([]);
         setActivityLogs([]);
         setQuotations([]);
+        setCalendarEvents([]);
         // Add other clears if needed
     }, []);
 
@@ -304,6 +308,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
                 storageService.setItem(`${prefix}bt_approval_requests`, approvalRequests),
                 storageService.setItem(`${prefix}bt_approval_templates`, approvalTemplates),
                 storageService.setItem(`${prefix}bt_quotations`, quotations),
+                storageService.setItem(`${prefix}bt_calendar_events`, calendarEvents),
                 storageService.setItem(`${prefix}bt_logs`, activityLogs.slice(0, 200))
             ]);
             console.log(`[AutoSave] Data saved to IndexedDB (${targetDept})`);
@@ -313,7 +318,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
             console.error('Auto-save failed', e);
             return false;
         }
-    }, [projects, customers, teamMembers, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations, activityLogs, currentDept]);
+    }, [projects, customers, teamMembers, vendors, leads, inventoryItems, inventoryLocations, purchaseOrders, attendanceRecords, payrollRecords, approvalRequests, approvalTemplates, quotations, calendarEvents, activityLogs, currentDept]);
 
     // ============ 自動存檔 Effect ============
     useEffect(() => {
@@ -330,7 +335,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
         projects, customers, teamMembers, vendors, leads,
         inventoryItems, inventoryLocations, purchaseOrders,
         attendanceRecords, payrollRecords, approvalRequests,
-        approvalTemplates, quotations, activityLogs
+        approvalTemplates, quotations, calendarEvents, activityLogs
     ]);
 
     return {
@@ -349,6 +354,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
         approvalRequests, setApprovalRequests,
         approvalTemplates, setApprovalTemplates,
         quotations, setQuotations,
+        calendarEvents, setCalendarEvents,
         lastSaved, // Expose lastSaved state
 
         // 核心函式

@@ -6,7 +6,7 @@
 // 已預設內建 Client ID，使用者無需手動輸入
 export const DEFAULT_CLIENT_ID = '378270508156-ugp3r5i8109op63vlas1h5ls6h1nj0q9.apps.googleusercontent.com';
 export const BACKUP_FILENAME = 'life_quality_system_data.json';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events';
 
 class GoogleDriveService {
   private tokenClient: any = null;
@@ -98,16 +98,21 @@ class GoogleDriveService {
     this.tokenClient.requestAccessToken({ prompt: prompt === 'none' ? '' : 'consent' });
   }
 
-  private async fetchWithAuth(url: string, options: RequestInit = {}, isBackground: boolean = false) {
+  public async getValidAccessToken(isBackground: boolean = false): Promise<string> {
     if (!this.accessToken) {
       await this.authenticate('none', isBackground);
     }
+    return this.accessToken!;
+  }
+
+  private async fetchWithAuth(url: string, options: RequestInit = {}, isBackground: boolean = false) {
+    const token = await this.getValidAccessToken(isBackground);
 
     let res = await fetch(url, {
       ...options,
       headers: {
         ...options.headers,
-        Authorization: `Bearer ${this.accessToken}`,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -115,12 +120,12 @@ class GoogleDriveService {
       this.accessToken = null;
       localStorage.removeItem('bt_google_access_token'); // 清除無效的 token
       console.log('[Drive] Token expired, cleared from localStorage');
-      await this.authenticate(isBackground ? 'none' : 'consent', isBackground);
+      const newToken = await this.authenticate(isBackground ? 'none' : 'consent', isBackground);
       res = await fetch(url, {
         ...options,
         headers: {
           ...options.headers,
-          Authorization: `Bearer ${this.accessToken}`,
+          Authorization: `Bearer ${newToken}`,
         },
       });
     }

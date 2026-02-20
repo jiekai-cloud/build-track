@@ -695,3 +695,17 @@ export interface RecordItem {
   description: string;
   result: string;
 }
+
+export interface SystemCalendarEvent {
+  id: string;
+  title: string;
+  startDate: string; // ISO string
+  endDate: string; // ISO string
+  type: 'visit' | 'meeting' | 'inspection' | 'other' | 'milestone';
+  description?: string;
+  linkedProjectId?: string;
+  googleEventId?: string; // If synced to Google Calendar
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+}
