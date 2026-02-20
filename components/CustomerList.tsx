@@ -19,14 +19,8 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers, user, onAddClick
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
 
-  // Define authorized roles for editing (Administrative privileges)
-  const canEdit = user?.role === 'SuperAdmin' ||
-    user?.role === 'Admin' ||
-    user?.role === 'DeptAdmin' ||
-    user?.role === 'AdminStaff' ||
-    user?.role === 'Manager';
-
-  const isReadOnly = !canEdit;
+  // Align read-only logic with other components (allow all non-guest users to edit)
+  const isReadOnly = user?.role === 'Guest';
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(c => {
