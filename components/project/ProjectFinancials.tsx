@@ -69,13 +69,13 @@ const ProjectFinancials: React.FC = () => {
                         <Activity size={48} className="text-blue-900" />
                     </div>
                     <p className="text-[9px] font-black text-stone-400 uppercase mb-2 tracking-widest">預算執行率</p>
-                    <p className="text-2xl font-black text-stone-900">{((currentSpent / project.budget) * 100).toFixed(1)}%</p>
+                    <p className="text-2xl font-black text-stone-900">{project.budget ? ((currentSpent / project.budget) * 100).toFixed(1) : '0.0'}%</p>
                     <div className="w-full bg-stone-100 h-1.5 rounded-full mt-3 overflow-hidden">
                         <div
-                            className={`h-full transition-all duration-1000 ${(currentSpent / project.budget) > 1 ? 'bg-rose-500' :
-                                (currentSpent / project.budget) > 0.8 ? 'bg-amber-500' : 'bg-blue-600'
+                            className={`h-full transition-all duration-1000 ${project.budget && (currentSpent / project.budget) > 1 ? 'bg-rose-500' :
+                                project.budget && (currentSpent / project.budget) > 0.8 ? 'bg-amber-500' : 'bg-blue-600'
                                 }`}
-                            style={{ width: `${Math.min((currentSpent / project.budget) * 100, 100)}%` }}
+                            style={{ width: `${project.budget ? Math.min((currentSpent / project.budget) * 100, 100) : 0}%` }}
                         ></div>
                     </div>
                 </div>
