@@ -9,7 +9,7 @@ import {
   AlertCircle, Clock, CheckCircle2, DollarSign, ArrowUpRight,
   ArrowDownRight, Activity, ShieldAlert, Zap, ExternalLink,
   Sparkles, Phone, MapPin, FileWarning, CalendarDays, AlertTriangle,
-  Layers, Target, ArrowRight, Briefcase, Loader2, Download, X, RefreshCw
+  Layers, Target, ArrowRight, Briefcase, Loader2, Download, X, RefreshCw, Bell
 } from 'lucide-react';
 import { Project, ProjectStatus, Lead, SystemContext } from '../types';
 import DefectExportModal from './DefectExportModal';
@@ -89,78 +89,108 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
     });
   }, [projects, selectedYear, selectedMonth]);
 
-  // 2. 統計數據聚合
-  const stats = useMemo(() => {
+  // 高效能統計資料單一歷遍 (Single Pass Optimization)
+  const {
+    stats,
+    riskProjects,
+    monitorStats,
+    efficiencyData
+  } = useMemo(() => {
     const counts: Record<string, number> = {};
     let totalBudget = 0;
     let totalSpent = 0;
-    let totalNetProfit = 0; // 總毛利
+    let totalNetProfit = 0;
 
+    const risks: any[] = [];
+    let laborAtRisk = 0;
+
+    // 用於全局平均工資比例計算 (不受單月篩選影響)
+    let totalLaborCostAll = 0;
+    let totalBudgetAll = 0;
+
+    const now = new Date();
+
+    const efficiencyList: any[] = [];
+
+    // 一次性歷遍所有過濾後的專案核心數據，消滅多餘迴圈
     filteredProjects.forEach(p => {
       if (!p) return;
+
+      // 1. 各狀態數量與基礎財務統計
       counts[p.status] = (counts[p.status] || 0) + 1;
       totalBudget += (p.budget || 0);
       totalSpent += (p.spent || 0);
-      // 毛利 = 預算 - 已支出
       totalNetProfit += ((p.budget || 0) - (p.spent || 0));
-    });
 
-    // 毛利率 = (總毛利 / 總預算) * 100
-    const profitMargin = totalBudget > 0 ? ((totalNetProfit / totalBudget) * 100) : 0;
+      const laborCost = (p.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
 
-    return { counts, totalBudget, totalSpent, totalNetProfit, profitMargin };
-  }, [filteredProjects]);
-
-  // 3. 進階異常檢測：工資超標、進度落後、預算超支
-  const riskProjects = useMemo(() => {
-    const now = new Date();
-
-    // 時間與進度風險 (Schedule Risk)
-    const scheduleRisks = filteredProjects
-      .filter(p => p.startDate && p.endDate && p.status === ProjectStatus.CONSTRUCTING)
-      .map(p => {
-        const start = new Date(p.startDate!).getTime();
-        const end = new Date(p.endDate!).getTime();
+      // 2. 風險檢測 (Risks)
+      // 時間與進度風險 (Schedule Risk)
+      if (p.startDate && p.endDate && p.status === ProjectStatus.CONSTRUCTING) {
+        const start = new Date(p.startDate).getTime();
+        const end = new Date(p.endDate).getTime();
         const totalDuration = end - start;
         const elapsed = now.getTime() - start;
         const timeRatio = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
         const progressGap = timeRatio - p.progress;
-        return { ...p, riskType: 'schedule', riskValue: Math.round(progressGap) };
-      })
-      .filter(p => p.riskValue >= 20); // 如果時間消耗比進度多出 20%，則發出警訊
+        if (progressGap >= 20) {
+          risks.push({ ...p, riskType: 'schedule', riskValue: Math.round(progressGap) });
+        }
+      }
 
-    // 工資效率風險 (Labor Efficiency Risk)
-    const laborRisks = filteredProjects
-      .filter(p => p.budget > 0 && p.status === ProjectStatus.CONSTRUCTING)
-      .map(p => {
-        const laborCost = (p.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
-        const laborRatio = (laborCost / p.budget) * 100;
-        return { ...p, riskType: 'labor', riskValue: Math.round(laborRatio), progress: p.progress };
-      })
-      .filter(p => p.riskValue > 50 && p.progress < 40); // 如果工資已耗去預算一半但進度未達 40%
-
-    // 報價逾期風險
-    const timeRisks = filteredProjects
-      .filter(p => (p.statusChangedAt || p.createdDate) && (p.status === ProjectStatus.NEGOTIATING || p.status === ProjectStatus.QUOTING))
-      .map(p => {
+      // 報價/洽談逾期風險 (Delay Risk)
+      if ((p.statusChangedAt || p.createdDate) && (p.status === ProjectStatus.NEGOTIATING || p.status === ProjectStatus.QUOTING)) {
         const statusTime = p.statusChangedAt || p.createdDate;
         const diff = now.getTime() - new Date(statusTime!).getTime();
-        return { ...p, riskType: 'delay', riskValue: Math.floor(diff / (1000 * 60 * 60 * 24)) };
-      })
-      .filter(p => p.riskValue >= 5);
+        const delayDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+        if (delayDays >= 5) {
+          risks.push({ ...p, riskType: 'delay', riskValue: delayDays });
+        }
+      }
 
-    // 預算超支風險
-    const financialRisks = filteredProjects
-      .filter(p => p.budget > 0)
-      .map(p => {
-        const ratio = p.spent / p.budget;
-        return { ...p, riskType: 'budget', riskValue: Math.round(ratio * 100) };
-      })
-      .filter(p => p.riskValue >= 90);
+      // 預算與工資風險 (Budget & Labor Risks)
+      if (p.budget > 0) {
+        const laborRatio = (laborCost / p.budget) * 100;
+        const spentRatio = (p.spent / p.budget) * 100;
 
-    return [...scheduleRisks, ...laborRisks, ...timeRisks, ...financialRisks]
-      .sort((a, b) => b.riskValue - a.riskValue);
-  }, [filteredProjects]);
+        if (p.status === ProjectStatus.CONSTRUCTING && laborRatio > 50 && p.progress < 40) {
+          risks.push({ ...p, riskType: 'labor', riskValue: Math.round(laborRatio), progress: p.progress });
+        }
+
+        if (spentRatio >= 90) {
+          risks.push({ ...p, riskType: 'budget', riskValue: Math.round(spentRatio) });
+        }
+
+        // 監控數據 
+        if (laborRatio > 40 && p.progress < 30) {
+          laborAtRisk += 1;
+        }
+
+        // 效率取樣資料
+        if (efficiencyList.length < 8) {
+          efficiencyList.push({ ...p, laborRatio: Math.round(laborRatio) });
+        }
+      }
+    });
+
+    // 計算全局監控 (包含未過濾的所有年份數值)
+    projects.forEach(p => {
+      totalBudgetAll += (p.budget || 0);
+      totalLaborCostAll += (p.workAssignments || []).reduce((la, lc) => la + lc.totalCost, 0);
+    });
+
+    const profitMargin = totalBudget > 0 ? ((totalNetProfit / totalBudget) * 100) : 0;
+    const avgLaborRatio = totalBudgetAll > 0 ? Math.round((totalLaborCostAll / totalBudgetAll) * 100) : 0;
+
+    risks.sort((a, b) => b.riskValue - a.riskValue);
+
+    return {
+      stats: { counts, totalBudget, totalSpent, totalNetProfit, profitMargin },
+      riskProjects: risks,
+      monitorStats: { laborAtRisk, scheduleAtRisk: risks.filter(r => r.riskType === 'schedule').length, avgLaborRatio },
+      efficiencyData: efficiencyList
+    };
+  }, [filteredProjects, projects]);
 
   const overdueByManager = useMemo(() => {
     const overdueOnes = riskProjects.filter(r => r.riskType === 'delay');
@@ -173,33 +203,6 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
   }, [riskProjects]);
-
-  // 4. 智慧監控數據預算
-  const monitorStats = useMemo(() => {
-    const laborAtRisk = filteredProjects.filter(p => {
-      const labor = (p.workAssignments || []).reduce((a, c) => a + c.totalCost, 0);
-      return p.budget > 0 && (labor / p.budget) > 0.4 && p.progress < 30;
-    }).length;
-
-    const scheduleAtRisk = riskProjects.filter(r => r.riskType === 'schedule').length;
-
-    const totalLabor = projects.reduce((a, p) => a + (p.workAssignments || []).reduce((la, lc) => la + lc.totalCost, 0), 0);
-    const totalBudget = projects.reduce((a, p) => a + (p.budget || 0), 0);
-    const avgLaborRatio = totalBudget > 0 ? Math.round((totalLabor / totalBudget) * 100) : 0;
-
-    return { laborAtRisk, scheduleAtRisk, avgLaborRatio };
-  }, [filteredProjects, riskProjects, projects]);
-
-  const efficiencyData = useMemo(() => {
-    return filteredProjects
-      .filter(p => p.budget > 0)
-      .slice(0, 8)
-      .map(p => {
-        const labor = (p.workAssignments || []).reduce((a, c) => a + c.totalCost, 0);
-        const ratio = Math.round((labor / p.budget) * 100);
-        return { ...p, laborRatio: ratio };
-      });
-  }, [filteredProjects]);
 
   // Chart Data Preparation
   const statusData = useMemo(() => {
@@ -543,9 +546,22 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                           <p className="text-[9px] font-black text-stone-400 uppercase tracking-tighter mb-0.5">負責人</p>
                           <p className="text-[10px] font-black text-stone-700">{p.quotationManager || p.manager || '未指定'}</p>
                         </div>
-                        <button onClick={() => onProjectClick(p.id)} className="w-8 h-8 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-900 hover:border-stone-400 transition-all shadow-sm">
-                          <ArrowRight size={14} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const msg = `【案件風險提醒】\n專案：${p.name}\n狀態：${p.riskType === 'delay' ? `報價已逾期 ${p.riskValue} 天尚未處理` : p.riskType === 'labor' ? `工資佔比已達 ${p.riskValue}% (超標)` : p.riskType === 'schedule' ? `進度時效已滯後 ${p.riskValue}%` : `預算執行已達 ${p.riskValue}% (即將超支)`}\n再請負責人協助登入系統查詢！`;
+                              navigator.clipboard.writeText(msg).then(() => alert('已複製提醒文案，可直接貼上至 Line 通知負責人！'));
+                            }}
+                            className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 hover:text-indigo-700 hover:bg-indigo-100 transition-all shadow-sm"
+                            title="一鍵複製提醒文案"
+                          >
+                            <Bell size={12} />
+                          </button>
+                          <button onClick={() => onProjectClick(p.id)} className="w-8 h-8 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-900 hover:border-stone-400 transition-all shadow-sm">
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
