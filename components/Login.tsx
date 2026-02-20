@@ -82,9 +82,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         console.log('[Login] Local member not found, fetching team from Supabase...');
         const cloudTeam = await supabaseDb.getCollection<any>('teamMembers');
         if (cloudTeam && cloudTeam.length > 0) {
-          // 存回對應部門的 Storage 以供後續系統加速使用
-          await storageService.setItem(teamKey, cloudTeam);
-          member = cloudTeam.find((m: any) => m && m.employeeId === cleanId.toUpperCase());
+          // Normalize the data (just in case)
+          const normalizedCloudTeam = cloudTeam.map(m => ({
+            ...m,
+            employeeId: m.employeeId || m.employee_id || m.id
+          }));
+
+          // 存回 Storage
+          await storageService.setItem(teamKey, normalizedCloudTeam);
+          member = normalizedCloudTeam.find((m: any) => m && m.employeeId && m.employeeId.toUpperCase() === cleanId.toUpperCase());
         }
       } catch (err) {
         console.error('[Login] Auto-fetch from Supabase failed', err);
