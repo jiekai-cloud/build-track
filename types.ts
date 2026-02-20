@@ -234,6 +234,7 @@ export interface Project {
   updatedAt?: string;
   deletedAt?: string;
   isPurged?: boolean;
+  hideInCalendar?: boolean; // 新增：是否在行事曆中隱藏
 }
 
 export interface DefectItem {

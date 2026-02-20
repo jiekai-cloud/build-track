@@ -28,6 +28,9 @@ interface CalendarViewProps {
     setCalendarEvents?: React.Dispatch<React.SetStateAction<SystemCalendarEvent[]>>;
     user: UserType;
     isCloudConnected: boolean;
+    onUpdateProject?: (id: string, updates: Partial<Project>) => void;
+    onDeleteProject?: (id: string) => void;
+    onEditProjectClick?: (project: Project) => void;
 }
 
 interface CustomEvent extends RBCEvent {
@@ -37,7 +40,7 @@ interface CustomEvent extends RBCEvent {
     color: string;
 }
 
-export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRequests, teamMembers, leads = [], calendarEvents = [], setCalendarEvents, user, isCloudConnected }) => {
+export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRequests, teamMembers, leads = [], calendarEvents = [], setCalendarEvents, user, isCloudConnected, onUpdateProject, onDeleteProject, onEditProjectClick }) => {
     const [view, setView] = useState<View>(Views.MONTH);
     const [date, setDate] = useState(new Date());
 
@@ -47,7 +50,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
         leaves: true,
         visits: true,
         dispatches: true,
-        custom: true
+        custom: true,
+        hiddenProjects: false
     });
 
     const [onlyMyEvents, setOnlyMyEvents] = useState(false);
@@ -71,6 +75,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                 if (onlyMyEvents && p.manager !== user.name && p.quotationManager !== user.name && p.engineeringManager !== user.name) {
                     return;
                 }
+
+                if (p.hideInCalendar && !filter.hiddenProjects) return;
 
                 const start = new Date(p.startDate);
                 let end = p.endDate ? new Date(p.endDate) : new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -390,6 +396,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                     <input type="checkbox" checked={filter.custom} onChange={e => setFilter(prev => ({ ...prev, custom: e.target.checked }))} className="rounded text-sky-500 focus:ring-sky-500" />
                     <div className="w-2.5 h-2.5 rounded-full bg-sky-500"></div> <span className="font-bold">自訂行程</span>
                 </label>
+
+                <div className="w-px h-6 bg-stone-200 mx-2 hidden lg:block"></div>
+
+                <label className="flex items-center gap-2 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer text-xs lg:text-sm transition-all text-stone-500">
+                    <input type="checkbox" checked={filter.hiddenProjects} onChange={e => setFilter(prev => ({ ...prev, hiddenProjects: e.target.checked }))} className="rounded text-stone-400 focus:ring-stone-400" />
+                    <span className="font-bold">顯示已隱藏的專案</span>
+                </label>
             </div>
 
             {/* Calendar Main Grid */}
@@ -455,7 +468,43 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                                             <p className="pt-2 border-t border-stone-200">{selectedEvent.raw.description}</p>
                                         )}
                                     </div>
-                                    <div className="flex justify-end pt-4">
+                                    <div className="flex justify-between items-center pt-4 border-t border-stone-200">
+                                        <div className="flex gap-2">
+                                            {selectedEvent.type === 'project' && onUpdateProject && (
+                                                <button
+                                                    onClick={() => {
+                                                        const p = selectedEvent.raw as Project;
+                                                        onUpdateProject(p.id, { hideInCalendar: !p.hideInCalendar });
+                                                        setIsModalOpen(false);
+                                                    }}
+                                                    className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${selectedEvent.raw?.hideInCalendar ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+                                                >
+                                                    {selectedEvent.raw?.hideInCalendar ? '取消隱藏' : '從行事曆隱藏'}
+                                                </button>
+                                            )}
+                                            {selectedEvent.type === 'project' && onEditProjectClick && (
+                                                <button
+                                                    onClick={() => {
+                                                        onEditProjectClick(selectedEvent.raw as Project);
+                                                        setIsModalOpen(false);
+                                                    }}
+                                                    className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold rounded-xl transition-all"
+                                                >
+                                                    編輯專案
+                                                </button>
+                                            )}
+                                            {selectedEvent.type === 'project' && onDeleteProject && (
+                                                <button
+                                                    onClick={() => {
+                                                        onDeleteProject(selectedEvent.raw.id);
+                                                        setIsModalOpen(false);
+                                                    }}
+                                                    className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-bold rounded-xl transition-all"
+                                                >
+                                                    刪除專案
+                                                </button>
+                                            )}
+                                        </div>
                                         <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl transition-all">關閉</button>
                                     </div>
                                 </div>

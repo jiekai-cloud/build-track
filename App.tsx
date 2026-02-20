@@ -646,6 +646,13 @@ const App: React.FC = () => {
                   approvalRequests={approvalRequests}
                   teamMembers={teamMembers}
                   leads={leads}
+                  onEditProjectClick={(p) => { setEditingProject(p); setIsModalOpen(true); }}
+                  onUpdateProject={(id, updates) => setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p))}
+                  onDeleteProject={(id) => {
+                    if (confirm('確定要刪除此專案嗎？（此操作可到系統設定救援）')) {
+                      setProjects(prev => prev.map(p => p.id === id ? { ...p, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : p));
+                    }
+                  }}
 
                   user={user}
                   isCloudConnected={isCloudConnected}
