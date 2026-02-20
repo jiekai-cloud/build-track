@@ -9,7 +9,6 @@ import {
   Vendor, InventoryItem, AttendanceRecord, PayrollRecord,
   Quotation, Lead, PurchaseOrder, ApprovalRequest, ApprovalTemplate, InventoryLocation
 } from '../types';
-import { BACKUP_FILENAME } from '../services/googleDriveService';
 import { useMigrationEngine } from '../hooks/useMigrationEngine';
 
 interface SettingsProps {
@@ -303,7 +302,7 @@ const Settings: FC<SettingsProps> = ({
                             <ShieldCheck size={28} className="text-emerald-500" />
                             <div>
                               <p className="text-sm font-black text-emerald-900">連線穩定</p>
-                              <p className="text-xs text-emerald-600 font-bold">同步檔案：{BACKUP_FILENAME}</p>
+                              <div className="text-xs text-gray-500 mt-1">檔案已儲存至：<span className="font-mono text-gray-700 bg-gray-100 px-1 rounded truncate w-32 inline-block align-bottom">{`life_quality_system_data.json`}</span></div>
                             </div>
                           </div>
                           <button

@@ -1,147 +1,63 @@
-
-import { googleDriveService } from './googleDriveService';
-
-const ASSETS_FOLDER_NAME = 'life_quality_photos';
+import { supabase } from './supabaseClient';
 
 class CloudFileService {
-    private folderId: string | null = null;
-
     /**
-     * 尋找或建立專用的專案照片資料夾
-     */
-    private async getOrCreateFolder(): Promise<string | null> {
-        if (this.folderId) return this.folderId;
-
-        try {
-            const query = `name='${ASSETS_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-            const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id)`;
-
-            // @ts-ignore - access private method for generic auth fetch
-            const response = await googleDriveService.fetchWithAuth(searchUrl);
-            const data = await response.json();
-
-            if (data.files && data.files.length > 0) {
-                this.folderId = data.files[0].id;
-                return this.folderId;
-            }
-
-            // 建立資料夾
-            const createUrl = 'https://www.googleapis.com/drive/v3/files';
-            const metadata = {
-                name: ASSETS_FOLDER_NAME,
-                mimeType: 'application/vnd.google-apps.folder'
-            };
-
-            // @ts-ignore
-            const createRes = await googleDriveService.fetchWithAuth(createUrl, {
-                method: 'POST',
-                body: JSON.stringify(metadata),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const folder = await createRes.json();
-            this.folderId = folder.id;
-
-            // 設定資料夾為任何人可讀 (繼承用)
-            try {
-                const permissionUrl = `https://www.googleapis.com/drive/v3/files/${this.folderId}/permissions`;
-                // @ts-ignore
-                await googleDriveService.fetchWithAuth(permissionUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        role: 'reader',
-                        type: 'anyone'
-                    }),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            } catch (e) {
-                console.warn('資料夾權限設定失敗:', e);
-            }
-
-            return this.folderId;
-        } catch (e) {
-            console.error('資料夾建立失敗:', e);
-            return null;
-        }
-    }
-
-    /**
-     * 上傳檔案至雲端並取得公開連結
+     * 上傳檔案至 Supabase Storage 並取得公開連結
      */
     async uploadFile(file: File): Promise<{ id: string; url: string } | null> {
-        const parentId = await this.getOrCreateFolder();
-        if (!parentId) return null;
-
         try {
-            const metadata = {
-                name: `${Date.now()}_${file.name}`,
-                parents: [parentId]
-            };
+            // 檔名加上時間戳記避免重複，移除非法字元
+            const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const fileName = `${Date.now()}_${safeName}`;
 
-            const boundary = '-------314159265358979323846';
-            const delimiter = "\r\n--" + boundary + "\r\n";
-            const close_delim = "\r\n--" + boundary + "--";
-
-            const reader = new FileReader();
-            const fileContent: ArrayBuffer = await new Promise((resolve, reject) => {
-                reader.onload = () => resolve(reader.result as ArrayBuffer);
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-            });
-
-            const metadataPart = [
-                'Content-Type: application/json; charset=UTF-8\r\n\r\n',
-                JSON.stringify(metadata),
-                '\r\n'
-            ].join('');
-
-            const mediaPartHead = [
-                `Content-Type: ${file.type}\r\n\r\n`
-            ].join('');
-
-            const body = new Blob([
-                delimiter,
-                metadataPart,
-                delimiter,
-                mediaPartHead,
-                new Uint8Array(fileContent),
-                close_delim
-            ], { type: 'multipart/related; boundary=' + boundary });
-
-            const uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webContentLink,webViewLink,thumbnailLink';
-
-            // @ts-ignore
-            const response = await googleDriveService.fetchWithAuth(uploadUrl, {
-                method: 'POST',
-                body
-            });
-
-            if (!response.ok) throw new Error('Upload failed');
-
-            const result = await response.json();
-
-            // 設定權限為任何人可讀，確保跨帳號可視
-            try {
-                const permissionUrl = `https://www.googleapis.com/drive/v3/files/${result.id}/permissions`;
-                // @ts-ignore
-                await googleDriveService.fetchWithAuth(permissionUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        role: 'reader',
-                        type: 'anyone'
-                    }),
-                    headers: { 'Content-Type': 'application/json' }
+            // 嘗試上傳到名為 'assets' 的 bucket
+            let uploadResult = await supabase.storage
+                .from('assets')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
                 });
-            } catch (permError) {
-                console.warn('權限設定失敗 (但不影響上傳):', permError);
+
+            // 若遇到 Bucket 不存在的錯誤，自動嘗試建立 (需資料庫權限允許)
+            if (uploadResult.error && uploadResult.error.message.includes('Bucket not found')) {
+                console.log('[Supabase Storage] Bucket "assets" not found, attempting to create...');
+                const { error: createError } = await supabase.storage.createBucket('assets', {
+                    public: true,
+                    allowedMimeTypes: ['image/*', 'application/pdf', 'video/*'],
+                    fileSizeLimit: 52428800 // 50MB
+                });
+
+                if (createError) {
+                    console.error('[Supabase Storage] Failed to create bucket:', createError);
+                    throw createError;
+                }
+
+                // 建立成功後重新嘗試上傳
+                uploadResult = await supabase.storage
+                    .from('assets')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
             }
 
-            // 使用 lh3.googleusercontent.com/d/{id} 格式，這是目前最穩定且支援手機端顯示的公開網址格式
+            if (uploadResult.error) {
+                console.error('[Supabase Storage] Upload error:', uploadResult.error);
+                throw uploadResult.error;
+            }
+
+            // 獲取公開 URL
+            const { data: publicUrlData } = supabase.storage
+                .from('assets')
+                .getPublicUrl(fileName);
+
             return {
-                id: result.id,
-                url: `https://lh3.googleusercontent.com/d/${result.id}=w1600`
+                id: fileName,
+                url: publicUrlData.publicUrl
             };
         } catch (e) {
             console.error('檔案上傳失敗:', e);
+            // 本地 fallback：萬一後端沒開通 Storage，至少傳回一個假網址讓前端不會壞
             return null;
         }
     }

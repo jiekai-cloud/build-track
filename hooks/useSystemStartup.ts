@@ -6,7 +6,6 @@ import {
     PayrollRecord, SystemContext, SystemCalendarEvent
 } from '../types';
 import { storageService } from '../services/storageService';
-import { googleDriveService, DEFAULT_CLIENT_ID } from '../services/googleDriveService';
 import { MOCK_PROJECTS, MOCK_TEAM_MEMBERS } from '../constants';
 
 interface SystemStartupDeps {
@@ -56,8 +55,6 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
 
         // 1. Configure Cloud Context
         const prefix = dept === 'ThirdDept' ? 'dept3_' : '';
-        const driveFilename = dept === 'ThirdDept' ? 'life_quality_system_data_dept3.json' : 'life_quality_system_data.json';
-        googleDriveService.setFilename(driveFilename);
 
         // 2. Load Local Data (IndexedDB) with Prefix
         try {
@@ -263,12 +260,9 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
 
             // Auto Connect
             try {
-                await googleDriveService.init(DEFAULT_CLIENT_ID);
-                if (localStorage.getItem('bt_cloud_connected') === 'true') {
-                    await autoConnectCloud();
-                }
+                await autoConnectCloud();
             } catch (e) {
-                console.warn('Google SDK 初始化背景執行中');
+                console.warn('Supabase 連線失敗', e);
             }
 
         } catch (err) {

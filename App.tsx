@@ -41,7 +41,6 @@ import { Menu, LogOut, Layers, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCir
 import NotificationPanel from './components/NotificationPanel';
 import { MOCK_PROJECTS, MOCK_DEPARTMENTS, MOCK_TEAM_MEMBERS } from './constants';
 import { Project, ProjectStatus, Customer, TeamMember, User, SystemContext, ProjectComment, ActivityLog, Vendor, ChecklistTask, PaymentStage, DailyLogEntry, Lead, InventoryItem, InventoryCategory, InventoryLocation, InventoryTransaction, PurchaseOrder, AttendanceRecord, PayrollRecord, ApprovalRequest, ApprovalTemplate, Quotation } from './types';
-import { googleDriveService, DEFAULT_CLIENT_ID } from './services/googleDriveService';
 import { moduleService } from './services/moduleService';
 import { ModuleId, DEFAULT_ENABLED_MODULES, ALL_MODULES } from './moduleConfig';
 import { storageService } from './services/storageService';
@@ -741,7 +740,7 @@ const App: React.FC = () => {
                   isCloudConnected={isCloudConnected}
                   onConnectCloud={handleConnectCloud}
                   onDownloadBackup={() => {
-                    googleDriveService.exportAsFile({
+                    const data = {
                       projects,
                       customers,
                       teamMembers,
@@ -753,7 +752,16 @@ const App: React.FC = () => {
                       attendance: attendanceRecords,
                       payroll: payrollRecords,
                       quotations
-                    });
+                    };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
                   }}
                   onRestoreLocalBackup={async () => {
                     try {
