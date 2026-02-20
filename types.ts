@@ -78,6 +78,17 @@ export interface ProjectPhase {
   endDate: string;
 }
 
+export interface ProjectEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  allDay?: boolean;
+  type?: 'general' | 'meeting' | 'milestone' | 'reminder';
+  description?: string;
+  color?: string;
+}
+
 export interface ProjectFinancials {
   labor: number;
   material: number;
@@ -209,6 +220,7 @@ export interface Project {
   manager?: string; // Legacy field support
   tasks: Task[];
   phases: ProjectPhase[];
+  events?: ProjectEvent[];
   dailyLogs?: DailyLogEntry[];
   checklist?: ChecklistTask[];
   payments?: PaymentStage[];
@@ -304,6 +316,7 @@ export interface TeamMember {
   name: string;
   nicknames?: string[]; // 新增：多個外號 (用於 AI 辨識)
   salaryType?: 'monthly' | 'daily' | 'hourly'; // 新增：薪資類型（月薪制、日薪制、計時制）
+  jobLevel?: string; // 新增：職等
   monthlySalary?: number; // 新增：月薪（月薪制使用）
   dailyRate?: number; // 新增：日薪 (日薪制使用，用於成本計算)
   hourlyRate?: number; // 新增：時薪（計時制使用）
@@ -317,7 +330,7 @@ export interface TeamMember {
   workStartTime?: string; // 新增：標準上班時間 (HH:MM 格式，如 "09:00")
   workEndTime?: string; // 新增：標準下班時間 (HH:MM 格式，如 "18:00")
   role: '總經理' | '副總經理' | '總經理特助' | '經理' | '副經理' | '專案經理' | '工地主任' | '工地助理' | '工務主管' | '現場工程師' | '行政助理' | '助理' | '設計師' | '工頭' | '外部協力' | '財務部經理';
-  systemRole: 'SuperAdmin' | 'DeptAdmin' | 'AdminStaff' | 'Staff' | 'Guest' | 'SyncOnly'; // 新增 AdminStaff (行政人員)
+  systemRole: 'SuperAdmin' | 'DeptAdmin' | 'AdminStaff' | 'Staff' | 'Guest' | 'SyncOnly' | 'HRAdmin'; // 新增 HRAdmin (人事主管)
   phone: string;
   personalPhone?: string; // 個人電話
   email: string;
@@ -344,7 +357,7 @@ export interface TeamMember {
   deletedAt?: string;
 }
 
-export type Role = 'SuperAdmin' | 'Admin' | 'Manager' | 'AdminStaff' | 'Staff' | 'Guest' | 'SyncOnly' | 'DeptAdmin';
+export type Role = 'SuperAdmin' | 'Admin' | 'Manager' | 'AdminStaff' | 'Staff' | 'Guest' | 'SyncOnly' | 'DeptAdmin' | 'HRAdmin';
 
 export type SystemContext = 'FirstDept' | 'ThirdDept'; // 第一工程部 | 第三工程部
 

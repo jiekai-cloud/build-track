@@ -19,7 +19,7 @@ interface TeamListProps {
 }
 
 const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onAddClick, onEditClick, onDeleteClick, currentUserRole }) => {
-  const canManage = ['SuperAdmin', 'Admin', 'DeptAdmin', 'Manager'].includes(currentUserRole || '');
+  const canManage = ['SuperAdmin', 'Admin', 'DeptAdmin', 'Manager', 'HRAdmin'].includes(currentUserRole || '');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('all');
   const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');

@@ -23,6 +23,31 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
     '行政助理', '助理', '設計師', '工頭', '外部協力', '財務部經理'
   ];
 
+  const JOB_LEVELS = [
+    { level: '不指定', dailyRate: 0, lunchBonus: 0, monthlySalary: 0 },
+    { level: '一等 (無經驗/建教實習)', dailyRate: 1500, lunchBonus: 60, monthlySalary: 30000 },
+    { level: '二等 (半技師/專員)', dailyRate: 1800, lunchBonus: 80, monthlySalary: 35000 },
+    { level: '三等 (技師/資深專員)', dailyRate: 2000, lunchBonus: 100, monthlySalary: 40000 },
+    { level: '四等 (領班/副組長)', dailyRate: 2500, lunchBonus: 120, monthlySalary: 50000 },
+    { level: '五等 (主任/組長)', dailyRate: 3000, lunchBonus: 150, monthlySalary: 60000 },
+    { level: '六等 (中高階主管)', dailyRate: 3500, lunchBonus: 200, monthlySalary: 80000 },
+  ];
+
+  const handleJobLevelChange = (levelString: string) => {
+    const match = JOB_LEVELS.find(lvl => lvl.level === levelString);
+    if (match && match.level !== '不指定') {
+      setFormData(prev => ({
+        ...prev,
+        jobLevel: levelString,
+        dailyRate: match.dailyRate,
+        monthlySalary: match.monthlySalary,
+        lunchBonus: match.lunchBonus
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, jobLevel: levelString }));
+    }
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'hr' | 'pro' | 'payroll' | 'perm'>('basic');
@@ -82,10 +107,11 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
 
   const isSuperAdmin = currentUser.role === 'SuperAdmin';
   const isDeptAdmin = currentUser.role === 'DeptAdmin';
+  const isHRAdmin = currentUser.role === 'HRAdmin';
   const isFinance = currentUser.roleName === '財務部經理';
 
   // 真實權限判定
-  const canViewAllTabs = isSuperAdmin || isDeptAdmin || isFinance;
+  const canViewAllTabs = isSuperAdmin || isDeptAdmin || isFinance || isHRAdmin;
 
   const tabs = [
     { id: 'basic', label: '基本資料', icon: User, visible: true },
@@ -102,9 +128,9 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
     }
   }, [activeTab, tabs]);
 
-  const isEditable = isSuperAdmin;
-  const canEditPayroll = isSuperAdmin || isFinance;
-  const showSubmit = isSuperAdmin || (activeTab === 'payroll' && isFinance);
+  const isEditable = isSuperAdmin || isHRAdmin;
+  const canEditPayroll = isSuperAdmin || isFinance || isHRAdmin;
+  const showSubmit = isSuperAdmin || isHRAdmin || (activeTab === 'payroll' && isFinance);
 
   const handleCall = (number: string) => {
     window.location.href = `tel:${number}`;
@@ -224,6 +250,12 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                   </select>
                 </div>
                 <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">對應職等 (影響基礎薪資與餐費)</label>
+                  <select disabled={!isEditable} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold" value={formData.jobLevel || '不指定'} onChange={e => handleJobLevelChange(e.target.value)}>
+                    {JOB_LEVELS.map(l => <option key={l.level} value={l.level}>{l.level}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-2">
 
 
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex justify-between">
@@ -475,6 +507,28 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                       />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4 bg-amber-50/50 p-3 rounded-xl border border-amber-100/50">
+                    <div>
+                      <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 ml-1">每週工作天 (影響勞健保負擔)</label>
+                      <input
+                        type="number"
+                        disabled={!canEditPayroll}
+                        className="w-full bg-white border border-amber-100 rounded-xl px-3 py-2 text-sm font-bold text-center"
+                        value={formData.workDaysPerWeek || 5}
+                        onChange={e => setFormData({ ...formData, workDaysPerWeek: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 ml-1">午餐獎勵 Lunch Bonus (每日)</label>
+                      <input
+                        type="number"
+                        disabled={!canEditPayroll}
+                        className="w-full bg-white border border-amber-100 rounded-xl px-3 py-2 text-sm font-bold text-center"
+                        value={formData.lunchBonus || ''}
+                        onChange={e => setFormData({ ...formData, lunchBonus: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="pt-4 border-t border-amber-100 grid grid-cols-2 gap-4">
                   <div>
@@ -540,6 +594,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                     <option value="Staff">一般成員 (僅限查看所属專案)</option>
                     <option value="AdminStaff">行政人員 (可管理客戶/廠商資料)</option>
                     <option value="DeptAdmin">部門主管 (可查看該部門所有資料)</option>
+                    <option value="HRAdmin">人事主管 (可管理所有人事不含權限)</option>
                     <option value="SuperAdmin">最高權限 (可存取系統所有功能)</option>
                   </select>
                   <div className="mt-4 p-4 bg-orange-50 rounded-2xl border border-orange-100 text-[10px] text-orange-800 leading-relaxed">
@@ -548,6 +603,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
                       <li><b>一般成員：</b> 僅能查看列表及指派給自己的任務。</li>
                       <li><b>行政人員：</b> 擁有編輯客戶與廠商清單的權限。</li>
                       <li><b>部門主管：</b> 可查看並管理該部門下的所有成員與專案。</li>
+                      <li><b>人事主管：</b> 擁有完整人事資料編輯權（不包含模組權限）。</li>
                       <li><b>最高權限：</b> 擁有系統完整控制權，包含刪除資料與指派權限。</li>
                     </ul>
                   </div>

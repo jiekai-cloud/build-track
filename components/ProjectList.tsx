@@ -216,10 +216,30 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick, showDe
       width: 120,
       cellRenderer: (params: any) => {
         const val = params.value;
-        const colorClass = val === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-          val === 'Planning' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-            val === 'Completed' ? 'bg-stone-100 text-stone-500 border-stone-200' :
-              'bg-slate-50 text-slate-500 border-slate-200';
+        let colorClass = 'bg-slate-50 text-slate-500 border-slate-200';
+
+        switch (val) {
+          case '洽談中': colorClass = 'bg-stone-50 text-stone-600 border-stone-200'; break;
+          case '報價中': colorClass = 'bg-amber-50 text-amber-600 border-amber-200'; break;
+          case '已報價': colorClass = 'bg-yellow-50 text-yellow-600 border-yellow-200'; break;
+          case '待簽約': colorClass = 'bg-orange-50 text-orange-600 border-orange-200'; break;
+          case '已簽約待施工': colorClass = 'bg-teal-50 text-teal-600 border-teal-200'; break;
+          case '施工中': colorClass = 'bg-blue-50 text-blue-600 border-blue-200'; break;
+          case '施工完成、待驗收': colorClass = 'bg-indigo-50 text-indigo-600 border-indigo-200'; break;
+          case '請款資料製作中': colorClass = 'bg-purple-50 text-purple-600 border-purple-200'; break;
+          case '已送件待通知開發票': colorClass = 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200'; break;
+          case '已開發票': colorClass = 'bg-pink-50 text-pink-600 border-pink-200'; break;
+          case '已部分付款(尚有保留款未付)': colorClass = 'bg-rose-50 text-rose-600 border-rose-200'; break;
+          case '已完工': colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-200'; break;
+          case '結案': colorClass = 'bg-green-50 text-green-700 border-green-200 bg-opacity-70 text-opacity-80'; break;
+          case '撤案': colorClass = 'bg-gray-50 text-gray-500 border-gray-200 line-through opacity-70'; break;
+          case '未成交': colorClass = 'bg-red-50 text-red-600 border-red-200 bg-opacity-70 text-opacity-80'; break;
+          // Legacy mapping
+          case 'Active': colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-100'; break;
+          case 'Planning': colorClass = 'bg-blue-50 text-blue-600 border-blue-100'; break;
+          case 'Completed': colorClass = 'bg-stone-100 text-stone-500 border-stone-200'; break;
+        }
+
         return (
           <div className="h-full flex items-center">
             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${colorClass}`}>{val}</span>
@@ -607,6 +627,22 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case '洽談中': return 'bg-stone-50 text-stone-700 border-stone-200';
+      case '報價中': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case '已報價': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case '待簽約': return 'bg-orange-50 text-orange-700 border-orange-200';
+      case '已簽約待施工': return 'bg-teal-50 text-teal-700 border-teal-200';
+      case '施工中': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case '施工完成、待驗收': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case '請款資料製作中': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case '已送件待通知開發票': return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200';
+      case '已開發票': return 'bg-pink-50 text-pink-700 border-pink-200';
+      case '已部分付款(尚有保留款未付)': return 'bg-rose-50 text-rose-700 border-rose-200';
+      case '已完工': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case '結案': return 'bg-green-50 text-green-800 border-green-200 bg-opacity-70 opacity-80';
+      case '撤案': return 'bg-gray-50 text-gray-600 border-gray-200 opacity-70';
+      case '未成交': return 'bg-red-50 text-red-700 border-red-200 bg-opacity-70 opacity-80';
+      // Legacy mapping
       case 'Active': return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'Completed': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'Planning': return 'bg-blue-50 text-blue-700 border-blue-200';

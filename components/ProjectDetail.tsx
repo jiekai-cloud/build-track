@@ -7,7 +7,7 @@ import {
   Layers, Camera, HardHat, CheckCircle, ShieldCheck, Edit2, Wrench, ClipboardList, Construction, FileImage, Zap, Lock, ChevronDown,
   ChevronLeft, ChevronRight, Plus, Minus, ZoomOut, AlertTriangle, Wallet, Users, Calendar
 } from 'lucide-react';
-import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage, Quotation } from '../types';
+import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage, Quotation, ProjectEvent } from '../types';
 import DefectImprovement from './DefectImprovement';
 import { cloudFileService } from '../services/cloudFileService';
 import ProjectQuotations from './project/ProjectQuotations';
@@ -52,6 +52,7 @@ interface ProjectDetailProps {
   onUpdatePreConstruction: (prep: any) => void;
   onUpdateFiles?: (files: ProjectFile[]) => void;
   onUpdatePhases?: (phases: ProjectPhase[]) => void;
+  onUpdateEvents?: (events: ProjectEvent[]) => void;
   onAddDailyLog: (log: { content: string, photoUrls: string[] }) => void;
   onDeleteDailyLog: (logId: string) => void;
   onUpdateChecklist: (checklist: ChecklistTask[]) => void;
@@ -67,7 +68,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
   const {
     project, user, teamMembers, onBack, onEdit, onDelete, onLossClick,
     onUpdateTasks, onUpdateProgress, onUpdateStatus, onAddComment, onDeleteComment,
-    onUpdateExpenses, onUpdateWorkAssignments, onUpdateFiles, onUpdatePhases,
+    onUpdateExpenses, onUpdateWorkAssignments, onUpdateFiles, onUpdatePhases, onUpdateEvents,
     onAddDailyLog, onDeleteDailyLog, onUpdateChecklist, onUpdatePayments, onUpdateContractUrl,
     onUpdateDefectRecords, onNavigateToQuotation, quotations, onDeleteQuotation
   } = props;
@@ -160,6 +161,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
       onUpdatePreConstruction={props.onUpdatePreConstruction}
       onUpdateFiles={onUpdateFiles}
       onUpdatePhases={onUpdatePhases}
+      onUpdateEvents={onUpdateEvents}
       onAddDailyLog={onAddDailyLog}
       onDeleteDailyLog={onDeleteDailyLog}
       onUpdateChecklist={onUpdateChecklist}

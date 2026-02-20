@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { Project, ProjectStatus, Task, Expense, WorkAssignment, ProjectFile, ProjectPhase, User, TeamMember, ChecklistTask, PaymentStage, Quotation } from '../types';
+import { Project, ProjectStatus, Task, Expense, WorkAssignment, ProjectFile, ProjectPhase, User, TeamMember, ChecklistTask, PaymentStage, Quotation, ProjectEvent } from '../types';
 
 interface ProjectContextType {
     project: Project;
@@ -20,6 +20,7 @@ interface ProjectContextType {
     onUpdatePreConstruction: (prep: any) => void;
     onUpdateFiles?: (files: ProjectFile[]) => void;
     onUpdatePhases?: (phases: ProjectPhase[]) => void;
+    onUpdateEvents?: (events: ProjectEvent[]) => void;
     onAddDailyLog: (log: { content: string, photoUrls: string[] }) => void;
     onDeleteDailyLog: (logId: string) => void;
     onUpdateChecklist: (checklist: ChecklistTask[]) => void;
