@@ -434,7 +434,7 @@ const App: React.FC = () => {
     setCurrentDept(d);
     // 修正部門 ID 對應：第一工程部(DEPT-4), 第三工程部(DEPT-8)
     const deptId = d === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4';
-    setViewingDeptId(u.role === 'SuperAdmin' ? 'all' : deptId);
+    setViewingDeptId(u.role === 'SuperAdmin' ? 'all' : (u.departmentId || deptId));
     localStorage.setItem('bt_user', JSON.stringify(fullUser));
     // Data loading happens in background but UI is blocked by isInitializing
     loadSystemData(d);

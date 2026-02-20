@@ -298,7 +298,8 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
                         setUser(parsedUser);
                         const dept = parsedUser.department || 'FirstDept';
                         setCurrentDept(dept);
-                        setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || 'DEPT-1'));
+                        const fallbackDeptId = dept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4';
+                        setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || fallbackDeptId));
                         loadSystemData(dept);
                     } catch (e) {
                         console.error('Saved user parse error', e);

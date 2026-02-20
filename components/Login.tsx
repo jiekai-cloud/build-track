@@ -42,7 +42,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         email: "admin@lifequality.ai",
         picture: `https://ui-avatars.com/api/?name=Admin&background=ea580c&color=fff`,
         role: 'SuperAdmin',
-        department: selectedDept
+        department: selectedDept,
+        departmentId: selectedDept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4'
       }, selectedDept);
       return;
     }
@@ -55,7 +56,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         email: "sync@lifequality.ai",
         picture: `https://ui-avatars.com/api/?name=Sync&background=0ea5e9&color=fff`,
         role: 'SyncOnly',
-        department: selectedDept
+        department: selectedDept,
+        departmentId: selectedDept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4'
       }, selectedDept);
       return;
     }
@@ -113,7 +115,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           picture: member.avatar,
           role: finalRole,
           roleName: member.role,
-          department: selectedDept
+          department: selectedDept,
+          departmentId: member.departmentId || (selectedDept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4')
         }, selectedDept);
       } else {
         setError('密碼輸入錯誤');
@@ -180,7 +183,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 picture: foundMember.avatar || profile.pictureUrl, // Use LINE picture if avatar missing
                 role: finalRole,
                 roleName: foundMember.role,
-                department: foundDept
+                department: foundDept,
+                departmentId: foundMember.departmentId || (foundDept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4')
               }, foundDept);
               return;
             } else {
@@ -222,7 +226,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         email: "guest@lifequality.ai",
         picture: `https://ui-avatars.com/api/?name=Guest&background=1e293b&color=fff`,
         role: 'Guest',
-        department: selectedDept
+        department: selectedDept,
+        departmentId: selectedDept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4'
       }, selectedDept);
     }, 500);
   };
