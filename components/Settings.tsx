@@ -2,7 +2,7 @@
 import React, { useState, useMemo, FC } from 'react';
 import {
   User, ChevronRight, Download, ShieldCheck,
-  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Sparkles
+  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Sparkles, Server
 } from 'lucide-react';
 import {
   Project, Customer, TeamMember, User as UserType,
@@ -10,8 +10,10 @@ import {
   Quotation, Lead, PurchaseOrder, ApprovalRequest, ApprovalTemplate, InventoryLocation
 } from '../types';
 import { BACKUP_FILENAME } from '../services/googleDriveService';
+import { useMigrationEngine } from '../hooks/useMigrationEngine';
 
 interface SettingsProps {
+  appData: any;
   user: UserType;
   projects: Project[];
   customers: Customer[];
@@ -42,8 +44,9 @@ const Settings: FC<SettingsProps> = ({
   quotations, leads, approvalRequests, approvalTemplates,
   onResetData, onImportData,
   isCloudConnected, onConnectCloud, onDisconnectCloud, lastSyncTime,
-  onDownloadBackup, onRestoreLocalBackup
+  onDownloadBackup, onRestoreLocalBackup, appData
 }) => {
+  const { performMigration, isMigrating, progress, error: migrationError } = useMigrationEngine({ user, appData });
   const [activeSection, setActiveSection] = useState('cloud');
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -127,6 +130,10 @@ const Settings: FC<SettingsProps> = ({
   // Add modules section for SuperAdmin
   if (user.role === 'SuperAdmin') {
     sections.push({ id: 'modules', label: '功能模組', icon: LayoutDashboard });
+  }
+
+  if (user.role === 'Admin' || user.role === 'SuperAdmin') {
+    sections.push({ id: 'database', label: '資料庫遷移 (Beta)', icon: Server });
   }
 
   return (
@@ -310,6 +317,51 @@ const Settings: FC<SettingsProps> = ({
                     )}
                   </>
                 )}
+              </div>
+            )}
+
+            {activeSection === 'database' && (
+              <div className="space-y-8 animate-in slide-in-from-right-4">
+                <div className="flex items-center gap-5">
+                  <div className="p-5 rounded-[2rem] bg-rose-50 text-rose-600 shadow-lg">
+                    <Server size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-rose-900 uppercase tracking-tight">Supabase 企業級資料庫升級</h3>
+                    <p className="text-sm text-stone-500 font-medium">將現有本機/雲端資料強力推播至最新的 NoSQL 資料庫架構中。</p>
+                  </div>
+                </div>
+
+                <div className="bg-stone-50 p-10 rounded-[2.5rem] border border-stone-200 text-center space-y-6">
+                  <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                    <Database size={32} className="text-rose-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-black text-stone-900 uppercase">執行資料庫搬遷</h4>
+                    <p className="text-sm text-stone-500 max-w-sm mx-auto mt-2">點擊下方按鈕，系統將接管您的資料並分批上傳至 Supabase。<br />請確保網路連線穩定。</p>
+                  </div>
+
+                  {migrationError && (
+                    <div className="p-4 bg-rose-100 text-rose-700 rounded-xl text-xs font-bold text-left">
+                      {migrationError}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={performMigration}
+                    disabled={isMigrating}
+                    className="w-full max-w-xs mx-auto bg-rose-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-rose-100 hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    {isMigrating ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
+                    {isMigrating ? `搬遷中 (${progress.current}/${progress.total})` : '開始執行搬遷'}
+                  </button>
+
+                  {isMigrating && (
+                    <div className="text-xs font-black text-stone-500 animate-pulse mt-4">
+                      當前進度：{progress.task}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

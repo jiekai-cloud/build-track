@@ -697,6 +697,7 @@ const App: React.FC = () => {
               />}
               {activeTab === 'settings' && (
                 <Settings
+                  appData={appData}
                   user={user} projects={projects} customers={customers} teamMembers={teamMembers}
                   vendors={vendors} inventory={inventoryItems} locations={inventoryLocations}
                   purchaseOrders={purchaseOrders} attendance={attendanceRecords} payroll={payrollRecords}
