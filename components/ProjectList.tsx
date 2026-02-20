@@ -475,7 +475,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
             pYear = project.startDate.split('-')[0];
           } else {
             // Handle both createdAt and createdDate (legacy data)
-            const d = project.createdAt || (project as any).createdDate;
+            const d = (project as any).createdAt || project.createdDate;
             if (d) {
               pYear = new Date(d).getFullYear().toString();
             }

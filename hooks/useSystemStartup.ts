@@ -3,7 +3,7 @@ import {
     Project, Customer, TeamMember, Vendor, Lead, ActivityLog,
     InventoryItem, InventoryLocation, PurchaseOrder,
     AttendanceRecord, ApprovalRequest, ApprovalTemplate, Quotation,
-    PayrollRecord, SystemContext
+    PayrollRecord, SystemContext, SystemCalendarEvent
 } from '../types';
 import { storageService } from '../services/storageService';
 import { googleDriveService, DEFAULT_CLIENT_ID } from '../services/googleDriveService';
@@ -27,6 +27,7 @@ interface SystemStartupDeps {
     setApprovalRequests: (fn: any) => void;
     setApprovalTemplates: (fn: any) => void;
     setQuotations: (fn: any) => void;
+    setCalendarEvents: (fn: any) => void;
     setInitialSyncDone: (value: boolean) => void;
     setIsInitializing: (value: boolean) => void;
     setIsFirstTimeUser: (value: boolean) => void;
@@ -45,7 +46,7 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
         setProjects, setCustomers, setTeamMembers, setVendors, setLeads,
         setActivityLogs, setInventoryItems, setInventoryLocations,
         setPurchaseOrders, setAttendanceRecords, setPayrollRecords,
-        setApprovalRequests, setApprovalTemplates, setQuotations,
+        setApprovalRequests, setApprovalTemplates, setQuotations, setCalendarEvents,
         setInitialSyncDone, setIsInitializing, setIsFirstTimeUser,
         setUser, setCurrentDept, setViewingDeptId,
     } = deps;
@@ -253,6 +254,9 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
             const quotationsData = await storageService.getItem<Quotation[]>(`${prefix}bt_quotations`, []);
             setQuotations(quotationsData);
 
+            const calendarEventsData = await storageService.getItem<SystemCalendarEvent[]>(`${prefix}bt_calendar_events`, []);
+            setCalendarEvents(calendarEventsData);
+
             setInitialSyncDone(true);
             setIsInitializing(false);
             console.log('System initialized successfully');
@@ -275,7 +279,7 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
         setProjects, setCustomers, setTeamMembers, setVendors, setLeads,
         setActivityLogs, setInventoryItems, setInventoryLocations,
         setPurchaseOrders, setAttendanceRecords, setPayrollRecords,
-        setApprovalRequests, setApprovalTemplates, setQuotations,
+        setApprovalRequests, setApprovalTemplates, setQuotations, setCalendarEvents,
         setInitialSyncDone, setIsInitializing]);
 
     // Startup Effect — 只執行一次

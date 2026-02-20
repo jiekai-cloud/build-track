@@ -146,7 +146,7 @@ const ProjectReportModal: React.FC<ProjectReportModalProps> = ({
                                 </div>
                                 <div className="flex justify-between items-center text-xs font-bold text-stone-600">
                                     <span>進行中項目</span>
-                                    <span className="font-black text-blue-600">{project.phases?.filter(p => p.status === 'In Progress').length || 0} 項</span>
+                                    <span className="font-black text-blue-600">{project.phases?.filter(p => p.status === 'Current').length || 0} 項</span>
                                 </div>
                             </div>
                         </div>

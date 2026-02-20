@@ -61,7 +61,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projects }) => {
 
   // 4. 業務漏斗轉化 (依狀態分佈)
   const funnelData = useMemo(() => {
-    const getCount = (statuses: ProjectStatus[]) => projects.filter(p => statuses.includes(p.status)).length;
+    const getCount = (statuses: ProjectStatus[]) => projects.filter(p => statuses.includes(p.status as ProjectStatus)).length;
     const initial = projects.length; // 全部
     const siteVisit = getCount([ProjectStatus.QUOTING, ProjectStatus.QUOTED, ProjectStatus.WAITING_SIGN, ProjectStatus.SIGNED_WAITING_WORK, ProjectStatus.CONSTRUCTING, ProjectStatus.COMPLETED, ProjectStatus.CLOSED]);
     const quote = getCount([ProjectStatus.QUOTED, ProjectStatus.WAITING_SIGN, ProjectStatus.SIGNED_WAITING_WORK, ProjectStatus.CONSTRUCTING, ProjectStatus.COMPLETED, ProjectStatus.CLOSED]);

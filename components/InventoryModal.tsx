@@ -18,7 +18,7 @@ interface InventoryModalProps {
 const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, initialData, availableLocationNames, relatedPurchaseOrders = [], relatedTransferLogs = [] }) => {
     const [activeTab, setActiveTab] = useState<'info' | 'stock' | 'maintenance' | 'barcode' | 'history'>('info');
 
-    const [formData, setFormData] = useState<Partial<InventoryItem>>({
+    const [formData, setFormData] = useState<Partial<InventoryItem> & { locationsInput?: string, photoUrl?: string }>({
         name: '',
         simpleName: '', // 簡稱
         sku: '',
@@ -129,7 +129,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, ini
         if (initialData) {
             setFormData({
                 ...initialData,
-                locations: initialData.locations || (initialData.location ? [{ name: initialData.location, quantity: initialData.quantity }] : [])
+                locations: initialData.locations || ((initialData as any).location ? [{ name: (initialData as any).location, quantity: initialData.quantity }] : [])
             });
         }
     }, [initialData]);
@@ -732,10 +732,10 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ onClose, onConfirm, ini
                                             <div key={log.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-1.5 py-0.5 rounded">{new Date(log.timestamp).toLocaleDateString()}</span>
-                                                    <span className="text-[10px] font-bold text-slate-400">{log.performer}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400">{(log as any).performer || log.userName}</span>
                                                 </div>
                                                 <div className="text-sm font-bold text-slate-700 leading-snug">
-                                                    {log.details}
+                                                    {(log as any).details || log.action}
                                                 </div>
                                             </div>
                                         ))}

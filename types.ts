@@ -103,7 +103,7 @@ export interface ActivityLog {
   targetId: string;
   targetName: string;
   timestamp: string;
-  type: 'project' | 'customer' | 'team' | 'system';
+  type: 'project' | 'customer' | 'team' | 'system' | 'inventory' | 'vendor' | 'quotation' | 'payroll' | 'order' | 'attendance';
   isRead?: boolean;
 }
 
@@ -160,6 +160,7 @@ export interface ProjectFile {
   uploadedAt: string;
   uploadedBy: string;
   category?: string;
+  size?: number;
 }
 
 export interface PreConstructionPrep {
@@ -181,12 +182,13 @@ export interface Project {
   departmentId: string;
   name: string;
   category: ProjectCategory;
+  coverImage?: string;
   source: ProjectSource;
   client: string;
   contactPerson?: string;
   referrer: string;
-  quotationManager: string; // 報價負責人
-  engineeringManager: string; // 工程負責人
+  quotationManager?: string; // 報價負責人
+  engineeringManager?: string; // 工程負責人
   introducer?: string; // 介紹人
   introducerFeeRequired?: boolean; // 是否需要介紹費
   introducerFeeType?: 'percentage' | 'fixed'; // 介紹費計算方式：百分比或固定金額
@@ -651,7 +653,7 @@ export interface Quotation {
   terms?: QuotationTerms;
 
   // 狀態管理
-  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'converted';
+  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'converted' | 'signed';
   validUntil?: string;         // 有效期限 (YYYY-MM-DD)
 
   // 審計資訊

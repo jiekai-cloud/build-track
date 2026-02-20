@@ -183,7 +183,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
           result = { text: intentResult.response || "沒問題，正在為您開啟新增案件視窗並帶入資料。" };
         } else if (intentResult.intent === 'QUERY_PROJECT') {
           const keyword = intentResult.data?.keywords;
-          const target = projects.find(p => p.name.includes(keyword) || p.clientName?.includes(keyword));
+          const target = projects.find(p => p.name.includes(keyword) || p.client?.includes(keyword));
 
           if (target && onProjectClick) {
             onProjectClick(target.id);

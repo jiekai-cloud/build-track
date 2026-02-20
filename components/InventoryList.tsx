@@ -33,7 +33,7 @@ const InventoryList: React.FC<InventoryListProps> = ({ items, locations, user, o
                 (item.simpleName && item.simpleName.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (item.locations?.some(l => l.name.toLowerCase().includes(searchTerm.toLowerCase())) || item.location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (item.locations?.some(l => l.name.toLowerCase().includes(searchTerm.toLowerCase())) || (item as any).location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 (item.supplier && item.supplier.toLowerCase().includes(searchTerm.toLowerCase()));
 
             const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
@@ -273,10 +273,10 @@ const InventoryList: React.FC<InventoryListProps> = ({ items, locations, user, o
                                                 <span className="text-[10px] font-bold text-slate-400 pl-4">+ {item.locations.length - 2} 更多地點</span>
                                             )}
                                         </div>
-                                    ) : item.location ? (
+                                    ) : (item as any).location ? (
                                         <div className="flex items-center gap-1.5 text-slate-500">
                                             <MapPin size={12} className="shrink-0" />
-                                            <span className="text-xs font-bold">{item.location}</span>
+                                            <span className="text-xs font-bold">{(item as any).location}</span>
                                         </div>
                                     ) : (
                                         <span className="text-[10px] text-slate-300 font-bold italic">未指定儲位</span>

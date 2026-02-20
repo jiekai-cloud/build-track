@@ -41,7 +41,7 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
         cost: 0
     });
 
-    const [newPaymentInput, setNewPaymentInput] = useState<{ amount: number, date: string, method: string, note: string }>({
+    const [newPaymentInput, setNewPaymentInput] = useState<{ amount: number, date: string, method: OrderPayment['method'], note: string }>({
         amount: 0,
         date: new Date().toISOString().split('T')[0],
         method: 'Transfer',
@@ -634,7 +634,7 @@ const OrderManagerModal: React.FC<OrderManagerModalProps> = ({
                                                 <select
                                                     className="w-[100px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
                                                     value={newPaymentInput.method}
-                                                    onChange={e => setNewPaymentInput({ ...newPaymentInput, method: e.target.value })}
+                                                    onChange={e => setNewPaymentInput({ ...newPaymentInput, method: e.target.value as OrderPayment['method'] })}
                                                 >
                                                     <option value="Cash">現金</option>
                                                     <option value="Transfer">轉帳</option>

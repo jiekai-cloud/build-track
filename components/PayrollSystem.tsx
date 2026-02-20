@@ -1542,12 +1542,6 @@ const PayrollSystem: React.FC<PayrollSystemProps> = ({ records = [], teamMembers
                     </div>
                 </div>
             )}
-            {viewingLocation && (
-                <LocationModal
-                    record={viewingLocation}
-                    onClose={() => setViewingLocation(null)}
-                />
-            )}
 
             {correctionTarget && (
                 <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center p-4">

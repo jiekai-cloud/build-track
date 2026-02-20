@@ -63,7 +63,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     let team = [];
     try {
       // 根據部門決定 Storage Key 前綴
-      const prefix = selectedDept === 'ThirdDept' ? 'dept3_' : selectedDept === 'FourthDept' ? 'dept4_' : '';
+      const prefix = (selectedDept as string) === 'ThirdDept' ? 'dept3_' : (selectedDept as string) === 'FourthDept' ? 'dept4_' : '';
       const teamKey = `${prefix}bt_team`;
 
       team = await storageService.getItem<any[]>(teamKey, []);
@@ -133,7 +133,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
               // Match by Email or Name (DisplayName)
               const match = team.find((m: any) =>
-                (m.email && profile.email && m.email.toLowerCase() === profile.email.toLowerCase()) ||
+                (m.email && (profile as any).email && m.email.toLowerCase() === (profile as any).email.toLowerCase()) ||
                 (m.name === profile.displayName) ||
                 (profile.displayName && m.name && profile.displayName.includes(m.name)) ||
                 (profile.displayName && m.name && m.name.includes(profile.displayName))

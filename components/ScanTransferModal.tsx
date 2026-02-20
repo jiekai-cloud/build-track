@@ -96,6 +96,16 @@ const ScanTransferModal: React.FC<ScanTransferModalProps> = ({ inventoryItems, l
                 return;
             }
 
+            // Dynamic QR Box Config for better mobile support
+            const config = {
+                fps: 10,
+                qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    const dim = Math.floor(minEdge * 0.7);
+                    return { width: dim, height: dim };
+                }
+                // No aspectRatio enforced
+            };
             try {
                 // Clear any existing instance just in case
                 if (html5QrCode) {
@@ -104,17 +114,6 @@ const ScanTransferModal: React.FC<ScanTransferModalProps> = ({ inventoryItems, l
                 }
 
                 html5QrCode = new Html5Qrcode(elementId);
-
-                // Dynamic QR Box Config for better mobile support
-                const config = {
-                    fps: 10,
-                    qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                        const dim = Math.floor(minEdge * 0.7);
-                        return { width: dim, height: dim };
-                    }
-                    // No aspectRatio enforced
-                };
 
                 // Try strictly environment first
                 await html5QrCode.start(

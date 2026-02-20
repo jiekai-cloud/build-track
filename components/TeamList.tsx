@@ -14,7 +14,6 @@ interface TeamListProps {
   onEditClick: (member: TeamMember) => void;
   onDeleteClick: (id: string) => void;
   departments: Department[];
-  departments: Department[];
   projects: Project[];
   currentUserRole?: string;
 }

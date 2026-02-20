@@ -1,7 +1,6 @@
 
 import React, { useState, useRef } from 'react';
 import { ExternalLink, Sparkles, Loader2, Wrench, Lock, ClipboardList, FileImage, Upload, FileText, X, Construction } from 'lucide-react';
-import { ProjectPreConstruction } from '../../types';
 import { generatePreConstructionPrep } from '../../services/geminiService';
 import { cloudFileService } from '../../services/cloudFileService';
 import { useProject } from '../../contexts/ProjectContext';
@@ -198,7 +197,7 @@ const ProjectPrep: React.FC = () => {
                                                 src={url}
                                                 alt={`施工範圍圖-${index + 1}`}
                                                 className="w-full h-full object-cover cursor-pointer"
-                                                onClick={() => onImageClick?.({ url, category: '施工範圍圖' })}
+                                                onClick={() => onImageClick?.({ url, category: '施工範圍圖' } as any)}
                                             />
                                         )}
                                         {!isReadOnly && (

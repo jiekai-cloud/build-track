@@ -25,7 +25,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'basic' | 'hr' | 'pro' | 'payroll'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'hr' | 'pro' | 'payroll' | 'perm'>('basic');
   const [specialtyInput, setSpecialtyInput] = useState('');
   const [certInput, setCertInput] = useState('');
   const [nicknameInput, setNicknameInput] = useState('');

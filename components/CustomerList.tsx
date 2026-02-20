@@ -3,7 +3,7 @@ import {
   Search, Plus, User, Phone, Mail, MapPin,
   MoreHorizontal, Pencil, Trash2, Building2,
   ShieldAlert, Tag, Share2, MessageSquare,
-  Smartphone, Filter, Hash, ExternalLink, Printer, UserCheck
+  Smartphone, Filter, Hash, ExternalLink, Printer, UserCheck, Heart
 } from 'lucide-react';
 import { Customer, User as UserType } from '../types';
 

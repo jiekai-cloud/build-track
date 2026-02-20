@@ -22,7 +22,7 @@ import InventoryList from './components/InventoryList';
 import LocationManagerModal from './components/LocationManagerModal';
 import TransferModal from './components/TransferModal';
 import ScanTransferModal from './components/ScanTransferModal';
-import LeadToProjectModal from './components/LeadToProjectModal';
+
 import Login from './components/Login';
 import OrderManagerModal from './components/OrderManagerModal';
 import AttendanceSystem from './components/AttendanceSystem';
@@ -77,6 +77,7 @@ const App: React.FC = () => {
     approvalRequests, setApprovalRequests,
     approvalTemplates, setApprovalTemplates,
     quotations, setQuotations,
+    calendarEvents, setCalendarEvents,
     mergeData, normalizeProjects, updateStateWithMerge,
     addActivityLog: _addActivityLog,
     clearAllData, saveToIndexedDB, dataRef,
@@ -336,7 +337,7 @@ const App: React.FC = () => {
     setProjects, setCustomers, setTeamMembers, setVendors, setLeads,
     setActivityLogs, setInventoryItems, setInventoryLocations,
     setPurchaseOrders, setAttendanceRecords, setPayrollRecords,
-    setApprovalRequests, setApprovalTemplates, setQuotations,
+    setApprovalRequests, setApprovalTemplates, setQuotations, setCalendarEvents,
     setInitialSyncDone, setIsInitializing, setIsFirstTimeUser,
     setUser, setCurrentDept, setViewingDeptId,
   });
@@ -538,8 +539,8 @@ const App: React.FC = () => {
               onUpdatePreConstruction={(prep) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, preConstruction: prep, updatedAt: new Date().toISOString() } : p))}
               onUpdateContractUrl={(url) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, contractUrl: url, updatedAt: new Date().toISOString() } : p))}
               onUpdateDefectRecords={(records) => setProjects(prev => prev.map(p => p.id === selectedProjectId ? { ...p, defectRecords: records, updatedAt: new Date().toISOString() } : p))}
-
               onLossClick={() => handleUpdateStatus(selectedProjectId!, ProjectStatus.LOST)}
+
               quotations={quotations}
               onNavigateToQuotation={(projectId, quotationId) => {
                 setSelectedProjectId(null); // Exit project detail
@@ -645,8 +646,7 @@ const App: React.FC = () => {
                   approvalRequests={approvalRequests}
                   teamMembers={teamMembers}
                   leads={leads}
-                  calendarEvents={calendarEvents}
-                  setCalendarEvents={setCalendarEvents}
+
                   user={user}
                   isCloudConnected={isCloudConnected}
                 />
@@ -655,7 +655,7 @@ const App: React.FC = () => {
                 projects={filteredData.projects}
                 user={user}
                 onAddClick={() => { setEditingProject(null); setIsModalOpen(true); }}
-                onAddTestClick={handleAddTestProject}
+
                 onEditClick={(p) => { setEditingProject(p); setIsModalOpen(true); }}
                 onDeleteClick={(id) => {
                   if (confirm('刪除操作將移動至回收桶，確定嗎？')) {
@@ -682,7 +682,7 @@ const App: React.FC = () => {
                   }
                 }}
                 onDetailClick={(p) => setSelectedProjectId(p.id)}
-                onLossClick={() => { }}
+
                 showDeleted={showDeleted}
                 onToggleDeleted={setShowDeleted}
                 teamMembers={teamMembers}

@@ -253,9 +253,7 @@ const ProjectFinancials: React.FC = () => {
                                                                         e.stopPropagation();
                                                                         if (confirm('確定刪除此筆支出？')) {
                                                                             const newExpenses = (project.expenses || []).filter(e => e.id !== exp.id);
-                                                                            const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
-                                                                            const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
-                                                                            onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
+                                                                            onUpdateExpenses(newExpenses);
                                                                         }
                                                                     }}
                                                                     className="hover:text-rose-500"
@@ -481,7 +479,7 @@ const ProjectFinancials: React.FC = () => {
                                                                 id: `EXP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                                                                 date: new Date().toISOString().split('T')[0],
                                                                 category: item.category || '機具材料',
-                                                                status: '尚未請款',
+                                                                status: '待審核' as const,
                                                                 name: item.name,
                                                                 amount: 0, // Explicitly 0 as requested
                                                                 supplier: item.supplier || '',
@@ -640,10 +638,7 @@ const ProjectFinancials: React.FC = () => {
                                             ...expenseFormData as Expense
                                         };
                                         const newExpenses = [newExp, ...(project.expenses || [])];
-                                        // Calculate new total spent: sum(expenses) + sum(labor assignments)
-                                        const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
-                                        const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
-                                        onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
+                                        onUpdateExpenses(newExpenses);
 
                                         setIsAddingExpense(false);
                                         setExpenseFormData({
@@ -698,9 +693,7 @@ const ProjectFinancials: React.FC = () => {
                                                     onClick={() => {
                                                         if (confirm('確定刪除此筆支出？')) {
                                                             const newExpenses = (project.expenses || []).filter(e => e.id !== exp.id);
-                                                            const newExpTotal = newExpenses.reduce((sum, e) => sum + e.amount, 0);
-                                                            const currentLabor = (project.workAssignments || []).reduce((acc, curr) => acc + curr.totalCost, 0);
-                                                            onUpdateExpenses(newExpenses, newExpTotal + currentLabor);
+                                                            onUpdateExpenses(newExpenses);
                                                         }
                                                     }}
                                                     className="text-stone-300 hover:text-rose-500 transition-colors"

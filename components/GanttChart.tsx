@@ -106,7 +106,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ phases }) => {
                             return date.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }) || '';
                         }}
                         tick={{ fontSize: 10, fontWeight: 700, fill: '#9ca3af' }}
-                        position="top"
+                        orientation="top"
                         axisLine={false}
                         tickLine={false}
                     />

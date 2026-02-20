@@ -186,6 +186,14 @@ async function callAIWithFallback(payload: any, context: string) {
 }
 
 /**
+ * 輔助函式：統一的 AI 錯誤處理
+ */
+const handleAIError = (error: any, context: string) => {
+  console.error(`[${context}] Error:`, error);
+  return { text: `AI 暫時無法回應 (${context})，請稍後再試。` };
+};
+
+/**
  * 輔助函式：清理 AI 回傳的 JSON 字串 (移除 Markdown 區塊標記)
  */
 const cleanJsonString = (str: string) => {

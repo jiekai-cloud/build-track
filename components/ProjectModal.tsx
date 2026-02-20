@@ -46,7 +46,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ onClose, onConfirm, initial
         name: initialData.name,
         category: initialData.category,
         source: initialData.source,
-        status: initialData.status,
+        status: (initialData.status as ProjectStatus) || ProjectStatus.NEGOTIATING,
         client: initialData.client,
         referrer: initialData.referrer,
         quotationManager: initialData.quotationManager || initialData.manager || '',

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Calendar as BigCalendar, dateFnsLocalizer, Event as RBCEvent, Views } from 'react-big-calendar';
+import { Calendar as BigCalendar, dateFnsLocalizer, Views, Event as RBCEvent, View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Filter, Clock, User, HardHat, CheckCircle2, MapPin, Plus, Loader2, RefreshCw } from 'lucide-react';
@@ -38,7 +38,7 @@ interface CustomEvent extends RBCEvent {
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRequests, teamMembers, leads = [], calendarEvents = [], setCalendarEvents, user, isCloudConnected }) => {
-    const [view, setView] = useState(Views.MONTH);
+    const [view, setView] = useState<View>(Views.MONTH);
     const [date, setDate] = useState(new Date());
 
     const [filter, setFilter] = useState({
@@ -79,8 +79,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                 end.setHours(23, 59, 59);
 
                 _events.push({
-                    id: `p-${p.id}`,
-                    title: `[專案🚧] ${p.name}`,
+                    id: `p - ${p.id} `,
+                    title: `[專案🚧] ${p.name} `,
                     start: start,
                     end: end,
                     allDay: true,
@@ -100,7 +100,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                     p.payments.filter(pm => pm.date).forEach(pm => {
                         const d = new Date(pm.date);
                         _events.push({
-                            id: `pm-${pm.id}`,
+                            id: `pm - ${pm.id} `,
                             title: `💰請款: ${p.name} (${pm.label})`,
                             start: d,
                             end: d,
@@ -123,8 +123,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
 
                         const d = new Date(wa.date);
                         _events.push({
-                            id: `wa-${wa.id}-${d.getTime()}`,
-                            title: `👷派工: ${wa.memberName} - ${p.name}`,
+                            id: `wa - ${wa.id} -${d.getTime()} `,
+                            title: `👷派工: ${wa.memberName} - ${p.name} `,
                             start: d,
                             end: d,
                             allDay: true,
@@ -151,8 +151,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                     const name = member ? member.name : req.requesterName;
 
                     _events.push({
-                        id: `leave-${req.id}`,
-                        title: `🏖️${content.type || '請假'}: ${name}`,
+                        id: `leave - ${req.id} `,
+                        title: `🏖️${content.type || '請假'}: ${name} `,
                         start: new Date(content.startDate),
                         end: new Date(content.endDate),
                         allDay: true,
@@ -173,8 +173,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                 // Leaves are generally unassigned until converted, but could filter by creator if tracked
 
                 _events.push({
-                    id: `lead-${lead.id}`,
-                    title: `📍會勘: ${lead.customerName}`,
+                    id: `lead - ${lead.id} `,
+                    title: `📍會勘: ${lead.customerName} `,
                     start: d,
                     end: new Date(d.getTime() + 60 * 60 * 1000), // 1 hour duration
                     allDay: false,
@@ -191,8 +191,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                 if (onlyMyEvents && cev.createdBy !== user.id) return;
 
                 _events.push({
-                    id: `custom-${cev.id}`,
-                    title: `📅 ${cev.title}`,
+                    id: `custom - ${cev.id} `,
+                    title: `📅 ${cev.title} `,
                     start: new Date(cev.startDate),
                     end: new Date(cev.endDate),
                     allDay: false, // Could be true based on duration or explicit flag
@@ -214,11 +214,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
         // If selecting all day, default to current time for datetime-local
         if (slotInfo.start.getHours() === 0 && slotInfo.end.getHours() === 0) {
             const now = new Date();
-            formattedStr = `${formattedStr}T${now.toTimeString().substring(0, 5)}`;
-            formattedEndStr = `${formattedEndStr}T${now.toTimeString().substring(0, 5)}`;
+            formattedStr = `${formattedStr}T${now.toTimeString().substring(0, 5)} `;
+            formattedEndStr = `${formattedEndStr}T${now.toTimeString().substring(0, 5)} `;
         } else {
-            formattedStr = `${formattedStr}T${slotInfo.start.toTimeString().substring(0, 5)}`;
-            formattedEndStr = `${formattedEndStr}T${slotInfo.end.toTimeString().substring(0, 5)}`;
+            formattedStr = `${formattedStr}T${slotInfo.start.toTimeString().substring(0, 5)} `;
+            formattedEndStr = `${formattedEndStr}T${slotInfo.end.toTimeString().substring(0, 5)} `;
         }
 
         setNewEvent({ ...newEvent, title: '', startDate: formattedStr, endDate: formattedEndStr });
@@ -237,7 +237,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
 
         try {
             const ev: SystemCalendarEvent = {
-                id: `evt-${Date.now()}`,
+                id: `evt - ${Date.now()} `,
                 title: newEvent.title,
                 startDate: new Date(newEvent.startDate as string).toISOString(),
                 endDate: new Date(newEvent.endDate as string || newEvent.startDate as string).toISOString(),
@@ -256,7 +256,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
             }
 
             if (setCalendarEvents) {
-                setCalendarEvents(prev => [...prev, ev]);
+                setCalendarEvents((prev: SystemCalendarEvent[]) => [...prev, ev]);
             }
 
             setIsModalOpen(false);
@@ -277,7 +277,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                 await googleCalendarService.deleteEventFromGoogle(googleEventId);
             }
             if (setCalendarEvents) {
-                setCalendarEvents(prev => prev.filter(e => e.id !== id));
+                setCalendarEvents((prev: SystemCalendarEvent[]) => prev.filter(e => e.id !== id));
             }
             setIsModalOpen(false);
         } catch (e) {
@@ -350,7 +350,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
 
                     <button
                         onClick={() => setOnlyMyEvents(!onlyMyEvents)}
-                        className={`px-4 py-2 rounded-xl font-bold text-xs lg:text-sm border transition-all flex-1 lg:flex-none justify-center flex items-center gap-2 ${onlyMyEvents ? 'bg-stone-900 border-stone-800 text-white shadow-xl' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                        className={`px - 4 py - 2 rounded - xl font - bold text - xs lg: text - sm border transition - all flex - 1 lg: flex - none justify - center flex items - center gap - 2 ${onlyMyEvents ? 'bg-stone-900 border-stone-800 text-white shadow-xl' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'} `}
                     >
                         <User size={16} /> 只看我
                     </button>
@@ -393,11 +393,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
             </div>
 
             {/* Calendar Main Grid */}
-            <div className="flex-1 bg-white rounded-3xl shadow-xl shadow-stone-200/50 p-4 border border-stone-100 overflow-hidden"
+            <div className="flex-1 bg-white rounded-3xl shadow-xl shadow-stone-200/50 p-4 border border-stone-100 overflow-hidden min-h-[600px] flex flex-col"
                 style={{
                     // Inline override for react-big-calendar to blend in seamlessly
-                    '--rbc-font': 'inherit'
+                    '--rbc-font': 'inherit',
                 } as any}>
+                <style>{`
+                  .rbc-calendar { height: 100% !important; min-height: 500px; }
+                  .rbc-month-view { flex: 1 1 0%; }
+                `}</style>
                 <BigCalendar
                     localizer={localizer}
                     events={events}
@@ -408,8 +412,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                     onSelectSlot={handleSelectSlot}
                     onSelectEvent={handleSelectEvent}
                     eventPropGetter={eventStyleGetter}
+                    view={view}
+                    onView={(newView) => setView(newView)}
+                    date={date}
+                    onNavigate={(newDate) => setDate(newDate)}
                     views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-                    defaultView={Views.MONTH}
                     messages={{
                         next: "下一個",
                         previous: "上一個",
@@ -433,7 +440,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                         {selectedEvent && selectedEvent.type !== 'custom' ? (
                             // View Only Mode (for non-custom events)
                             <div className="flex flex-col">
-                                <div className={`p-6 ${selectedEvent.color.replace('bg-', 'bg-').replace('-500', '-600')} text-white`}>
+                                <div className={`p - 6 ${selectedEvent.color.replace('bg-', 'bg-').replace('-500', '-600')} text - white`}>
                                     <h3 className="text-xl font-black">{selectedEvent.title}</h3>
                                     <p className="opacity-90 text-sm mt-1">{selectedEvent.start.toLocaleString()} - {selectedEvent.end.toLocaleString()}</p>
                                 </div>
