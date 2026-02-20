@@ -551,7 +551,7 @@ const App: React.FC = () => {
               {activeTab === 'payroll' && (
                 <PayrollSystem
                   records={attendanceRecords}
-                  teamMembers={teamMembers}
+                  teamMembers={filteredData.teamMembers}
                   currentUser={user}
                   approvalRequests={approvalRequests}
                   onCreateApproval={handleSaveApprovalRequest}
@@ -563,7 +563,7 @@ const App: React.FC = () => {
                 <ApprovalSystem
                   requests={approvalRequests}
                   templates={approvalTemplates}
-                  teamMembers={teamMembers}
+                  teamMembers={filteredData.teamMembers}
                   currentUser={{ ...user, accessibleModules: currentUserPermissions } as any}
                   onSaveRequest={handleSaveApprovalRequest}
                   onSaveTemplate={handleSaveApprovalTemplate}
