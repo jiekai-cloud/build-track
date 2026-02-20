@@ -103,7 +103,9 @@ const App: React.FC = () => {
 
     // If we found a member and they have specific modules configured (even empty array), use it
     if (member && Array.isArray(member.accessibleModules)) {
-      return member.accessibleModules;
+      // 確保所有核心模組 (含 Dashboard, Calendar, Settings) 必定能被存取
+      const coreModuleIds = ALL_MODULES.filter(m => m.isCore).map(m => m.id);
+      return Array.from(new Set([...member.accessibleModules, ...coreModuleIds]));
     }
 
     // Default Fallback
