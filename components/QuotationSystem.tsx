@@ -283,11 +283,11 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full whitespace-nowrap">
                             <thead className="bg-stone-50 border-b-2 border-stone-200">
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-black text-stone-600 uppercase tracking-wider">報價單號</th>
-                                    <th className="px-6 py-4 text-left text-xs font-black text-stone-600 uppercase tracking-wider">工程名稱</th>
+                                    <th className="px-6 py-4 text-left text-xs font-black text-stone-600 uppercase tracking-wider min-w-[200px]">工程名稱</th>
                                     <th className="px-6 py-4 text-left text-xs font-black text-stone-600 uppercase tracking-wider">客戶</th>
                                     <th className="px-6 py-4 text-right text-xs font-black text-stone-600 uppercase tracking-wider">報價金額</th>
                                     <th className="px-6 py-4 text-center text-xs font-black text-stone-600 uppercase tracking-wider">狀態</th>
