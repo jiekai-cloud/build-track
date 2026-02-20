@@ -160,7 +160,9 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
                             expenses: combineSubArrays(l.expenses, r.expenses),
                             payments: combineSubArrays(l.payments, r.payments),
                             checklist: combineSubArrays(l.checklist, r.checklist),
-                            workAssignments: combineSubArrays(l.workAssignments, r.workAssignments)
+                            workAssignments: combineSubArrays(l.workAssignments, r.workAssignments),
+                            defectRecords: combineSubArrays(l.defectRecords, r.defectRecords),
+                            phases: combineSubArrays(l.phases, r.phases)
                         };
                     } else if ('workflowLogs' in localItem) {
                         mergedItem = {
@@ -197,6 +199,8 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
             if (!updatedProject.expenses) updatedProject.expenses = [];
             if (!updatedProject.checklist) updatedProject.checklist = [];
             if (!updatedProject.payments) updatedProject.payments = [];
+            if (!updatedProject.defectRecords) updatedProject.defectRecords = [];
+            if (!updatedProject.departmentId) updatedProject.departmentId = 'DEPT-4';
             return updatedProject;
         });
 
@@ -215,8 +219,14 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
 
         const cleanCloudProjects = normalizeProjects(cloudData.projects || []);
 
+        // Ensure customers have a valid departmentId
+        const cleanCustomers = (cloudData.customers || []).map((c: any) => ({
+            ...c,
+            departmentId: c.departmentId || 'DEPT-4'
+        }));
+
         setProjects(prev => mergeData(prev, cleanCloudProjects));
-        setCustomers(prev => mergeData(prev, cloudData.customers || []));
+        setCustomers(prev => mergeData(prev, cleanCustomers));
         setTeamMembers(prev => mergeData(prev, cloudData.teamMembers || []));
         setVendors(prev => mergeData(prev, cloudData.vendors || []));
         if (cloudData.inventory) setInventoryItems(prev => mergeData(prev, cloudData.inventory || []));

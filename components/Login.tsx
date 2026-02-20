@@ -89,7 +89,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
           // 存回 Storage
           await storageService.setItem(teamKey, normalizedCloudTeam);
-          member = normalizedCloudTeam.find((m: any) => m && m.employeeId && m.employeeId.toUpperCase() === cleanId.toUpperCase());
+
+          // 找出沒有被刪除的，且更新時間最新的該員工
+          const activeMembers = normalizedCloudTeam.filter((m: any) => m && m.employeeId && m.employeeId.toUpperCase() === cleanId.toUpperCase() && !m.deletedAt && !m.isPurged);
+          activeMembers.sort((a: any, b: any) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+          member = activeMembers[0];
         }
       } catch (err) {
         console.error('[Login] Auto-fetch from Supabase failed', err);

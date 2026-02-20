@@ -158,21 +158,23 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                 setQuotations(cloudData.quotations || []);
                 setLastCloudSync(new Date().toLocaleTimeString());
 
+                const prefix = user?.department === 'ThirdDept' ? 'dept3_' : (user?.department === 'FourthDept' ? 'dept4_' : '');
+
                 await Promise.all([
-                    storageService.setItem('bt_projects', cloudData.projects || []),
-                    storageService.setItem('bt_team', teamData),
-                    storageService.setItem('bt_customers', cloudData.customers || []),
-                    storageService.setItem('bt_vendors', cloudData.vendors || []),
-                    storageService.setItem('bt_leads', cloudData.leads || []),
-                    storageService.setItem('bt_inventory', cloudData.inventory || []),
-                    storageService.setItem('bt_locations', cloudData.locations || []),
-                    storageService.setItem('bt_orders', cloudData.purchaseOrders || []),
-                    storageService.setItem('bt_attendance', cloudData.attendance || []),
-                    storageService.setItem('bt_payroll', cloudData.payroll || []),
-                    storageService.setItem('bt_approval_requests', cloudData.approvalRequests || []),
-                    storageService.setItem('bt_approval_templates', cloudData.approvalTemplates || []),
-                    storageService.setItem('bt_logs', cloudData.activityLogs || []),
-                    storageService.setItem('bt_quotations', cloudData.quotations || [])
+                    storageService.setItem(`${prefix}bt_projects`, cloudData.projects || []),
+                    storageService.setItem(`${prefix}bt_team`, teamData),
+                    storageService.setItem(`${prefix}bt_customers`, cloudData.customers || []),
+                    storageService.setItem(`${prefix}bt_vendors`, cloudData.vendors || []),
+                    storageService.setItem(`${prefix}bt_leads`, cloudData.leads || []),
+                    storageService.setItem(`${prefix}bt_inventory`, cloudData.inventory || []),
+                    storageService.setItem(`${prefix}bt_locations`, cloudData.locations || []),
+                    storageService.setItem(`${prefix}bt_orders`, cloudData.purchaseOrders || []),
+                    storageService.setItem(`${prefix}bt_attendance`, cloudData.attendance || []),
+                    storageService.setItem(`${prefix}bt_payroll`, cloudData.payroll || []),
+                    storageService.setItem(`${prefix}bt_approval_requests`, cloudData.approvalRequests || []),
+                    storageService.setItem(`${prefix}bt_approval_templates`, cloudData.approvalTemplates || []),
+                    storageService.setItem(`${prefix}bt_logs`, cloudData.activityLogs || []),
+                    storageService.setItem(`${prefix}bt_quotations`, cloudData.quotations || [])
                 ]);
 
                 if (user?.role === 'SyncOnly') {
