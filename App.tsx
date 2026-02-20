@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import SyncOnlyScreen from './components/SyncOnlyScreen';
 import LoadingScreen from './components/LoadingScreen';
 import Dashboard from './components/Dashboard';
 import ProjectList from './components/ProjectList';
@@ -440,21 +439,6 @@ const App: React.FC = () => {
     // Data loading happens in background but UI is blocked by isInitializing
     loadSystemData(d);
   }} />;
-
-  // 同步專用視角 (用於初始化新設備)
-  if (user.role === 'SyncOnly') {
-    return (
-      <SyncOnlyScreen
-        isCloudConnected={isCloudConnected}
-        isSyncing={isSyncing}
-        lastCloudSync={lastCloudSync}
-        cloudError={cloudError}
-        onConnectCloud={handleConnectCloud}
-        onSync={handleCloudSync}
-        onLogout={handleLogout}
-      />
-    );
-  }
 
   return (
     <div className="flex h-screen w-screen bg-[#fafaf9] overflow-hidden print:overflow-visible print:h-auto print:block">

@@ -111,7 +111,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setIsLoading(false);
       }
     } else {
-      setError(`找不到該員工編號 (新設備請先以 test 下載 ${selectedDept === 'FirstDept' ? '第一' : '第三'}工程部 團隊清單)`);
+      setError('找不到該員工編號');
       setIsLoading(false);
     }
   };
@@ -359,34 +359,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <Sparkles size={14} className="text-amber-500" />
                 訪客模式預覽 (唯讀)
               </button>
-
-              <div className="pt-6 relative">
-                <div className="absolute inset-x-0 top-0 flex items-center justify-center">
-                  <span className="bg-[#1c1917] px-4 text-[9px] font-black text-stone-600 uppercase tracking-[0.3em]">First Time Login</span>
-                </div>
-                <div className="pt-6">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // 直接登入為 SyncOnly 角色，觸發 App.tsx 的自動還原流程
-                      onLoginSuccess({
-                        id: 'SYNC-ONLY',
-                        name: "系統初始化員",
-                        email: "sync@lifequality.ai",
-                        picture: `https://ui-avatars.com/api/?name=Sync&background=0ea5e9&color=fff`,
-                        role: 'SyncOnly',
-                        department: selectedDept
-                      }, selectedDept);
-                    }}
-                    className="w-full py-6 bg-gradient-to-r from-stone-800 to-stone-900 hover:from-stone-700 hover:to-stone-800 border border-white/5 rounded-[2rem] flex flex-col items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Cloud size={20} className="text-stone-400 group-hover:text-white transition-colors" />
-                      <span className="text-sm font-black text-stone-300 group-hover:text-white tracking-widest uppercase">新設備同步初始化</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
             </div>
           </form>
         </div>
