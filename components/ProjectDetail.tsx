@@ -5,7 +5,7 @@ import {
   MessageSquare, Send, Receipt, X, ZoomIn, FileText, ImageIcon, Upload, MapPin,
   Navigation, ShoppingBag, Utensils, Building2, ExternalLink, CalendarDays, Loader2, Check, DownloadCloud, ShieldAlert,
   Layers, Camera, HardHat, CheckCircle, ShieldCheck, Edit2, Wrench, ClipboardList, Construction, FileImage, Zap, Lock, ChevronDown,
-  ChevronLeft, ChevronRight, Plus, Minus, ZoomOut, AlertTriangle, Wallet, Users
+  ChevronLeft, ChevronRight, Plus, Minus, ZoomOut, AlertTriangle, Wallet, Users, Calendar
 } from 'lucide-react';
 import { Project, ProjectStatus, Task, ProjectComment, Expense, WorkAssignment, TeamMember, ProjectFile, ProjectPhase, User, ChecklistTask, PaymentStage, Quotation } from '../types';
 import DefectImprovement from './DefectImprovement';
@@ -18,6 +18,7 @@ import ProjectGallery from './project/ProjectGallery';
 import ProjectTasks from './project/ProjectTasks';
 import ProjectSchedule from './project/ProjectSchedule';
 import ProjectPrep from './project/ProjectPrep';
+import ProjectCalendar from './project/ProjectCalendar';
 import ProjectMap from './project/ProjectMap';
 import ImageLightbox from './ImageLightbox';
 import ProjectReportModal from './modals/ProjectReportModal';
@@ -71,7 +72,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
     onUpdateDefectRecords, onNavigateToQuotation, quotations, onDeleteQuotation
   } = props;
   const [newComment, setNewComment] = useState('');
-  const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep' | 'defects' | 'quotations'>('logs');
+  const [activeView, setActiveView] = useState<'tasks' | 'financials' | 'logs' | 'photos' | 'schedule' | 'map' | 'inspection' | 'prep' | 'defects' | 'quotations' | 'calendar'>('logs');
   const [selectedImage, setSelectedImage] = useState<ProjectFile | null>(null);
   const [isReportMode, setIsReportMode] = useState(false);
   const [isCompletionReportMode, setIsCompletionReportMode] = useState(false);
@@ -302,6 +303,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
               { id: 'quotations', label: '報價單', icon: Receipt },
               { id: 'prep', label: '施工前準備', icon: Construction },
               { id: 'schedule', label: '施工排程', icon: CalendarDays },
+              { id: 'calendar', label: '行事曆', icon: Calendar },
               { id: 'logs', label: '施工日誌', icon: ClipboardList },
               { id: 'tasks', label: '待辦任務', icon: CheckCircle2 },
               { id: 'photos', label: '照片庫', icon: FileImage },
@@ -337,7 +339,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
             </div>
           )}
 
-          {['financials', 'map', 'tasks', 'schedule', 'prep', 'photos'].includes(activeView) && (
+          {['financials', 'map', 'tasks', 'schedule', 'prep', 'photos', 'calendar'].includes(activeView) && (
             <div className="flex-1 lg:overflow-y-auto touch-scroll space-y-4 pr-1 no-scrollbar">
               {activeView === 'financials' && <ProjectFinancials />}
               {activeView === 'map' && <ProjectMap />}
@@ -345,6 +347,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
               {activeView === 'schedule' && <ProjectSchedule />}
               {activeView === 'prep' && <ProjectPrep />}
               {activeView === 'photos' && <ProjectGallery />}
+              {activeView === 'calendar' && <ProjectCalendar />}
             </div>
           )}
         </div >
