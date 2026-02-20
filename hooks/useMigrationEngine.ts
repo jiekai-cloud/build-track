@@ -14,7 +14,7 @@ export const useMigrationEngine = ({ user, appData }: MigrationEngineDeps) => {
     const [error, setError] = useState<string | null>(null);
 
     const performMigration = useCallback(async () => {
-        if (!user || user.role !== 'Admin') {
+        if (!user || (user.role !== 'Admin' && user.role !== 'SuperAdmin')) {
             setError('權限不足，僅系統管理員可執行資料庫升級作業。');
             return;
         }
