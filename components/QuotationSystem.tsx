@@ -8,6 +8,7 @@ import { generateQuotationNumber } from '../utils/quotationIdGenerator';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { STAMP_BASE64, SEAL_LEFT_BASE64, SEAL_RIGHT_BASE64 } from '../services/stampImage';
+import { generateQuotationPDF } from '../services/quotationPdfService';
 
 interface QuotationSystemProps {
     quotations: Quotation[];
@@ -56,40 +57,14 @@ const QuotationSystem: React.FC<QuotationSystemProps> = ({
     const [showOptionNameInPdf, setShowOptionNameInPdf] = useState(true); // Assuming this state exists for a checkbox
 
     const handleDownloadPDF = async (quotation: Quotation) => {
-        // Set the quotation to be printed and trigger the print effect
-        setPrintingQuotation(quotation);
-        setIsPrinting(true);
-    };
-
-    // Effect to trigger browser print dialog
-    useEffect(() => {
-        if (isPrinting && printingQuotation) {
-            // 設定 PDF 檔案名稱 (瀏覽器會使用網頁標題作為預設檔名)
-            // 若用戶已取消勾選「頁首頁尾」，此標題不會出現在列印紙張上
-            const originalTitle = document.title;
-            document.title = `${printingQuotation.quotationNumber} ${printingQuotation.header.projectName}`;
-
-            const timer = setTimeout(() => {
-                // 提示用戶關閉瀏覽器的頁首頁尾
-                alert('【列印設定提醒】\n\n為確保報價單格式正確且無多餘資訊（如日期、網址）：\n請在列印視窗的設定中，取消勾選「頁首與頁尾 (Headers and footers)」。\n\n(提示：現在的預設檔名已設為報價單編號)');
-                window.print();
-            }, 500); // Wait for React to render the print template
-
-            const handleAfterPrint = () => {
-                setIsPrinting(false);
-                setPrintingQuotation(null);
-                document.title = originalTitle; // Restore title
-            };
-
-            window.addEventListener('afterprint', handleAfterPrint);
-
-            return () => {
-                clearTimeout(timer);
-                window.removeEventListener('afterprint', handleAfterPrint);
-                document.title = originalTitle;
-            };
+        try {
+            alert('正在產生 PDF，請稍候...');
+            await generateQuotationPDF(quotation);
+        } catch (error: any) {
+            console.error('PDF generation failed:', error);
+            alert(error.message || '生成 PDF 時發生錯誤，請檢查報價資料是否完整');
         }
-    }, [isPrinting, printingQuotation]);
+    };
 
 
 
