@@ -139,7 +139,7 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
             setIsCloudConnected(true);
             const cloudData = await supabaseSyncService.loadFromCloud();
 
-            const shouldRestore = cloudData && cloudData.projects && confirm('Supabase 中發現現有數據，是否要切換為雲端版本？');
+            const shouldRestore = (user?.role === 'SyncOnly') || (cloudData && cloudData.projects && confirm('Supabase 中發現現有數據，是否要切換為雲端版本？'));
 
             if (shouldRestore && cloudData) {
                 const teamData = cloudData.teamMembers || [];
@@ -175,7 +175,14 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                     storageService.setItem('bt_quotations', cloudData.quotations || [])
                 ]);
 
-                alert('✅ 已成功切換為 Supabase 雲端版本數據。');
+                if (user?.role === 'SyncOnly') {
+                    setTimeout(() => {
+                        alert('✅ 數據同步完成！請使用您的「員工編號」正式登入。');
+                        handleLogout(true);
+                    }, 800);
+                } else {
+                    alert('✅ 已成功切換為 Supabase 雲端版本數據。');
+                }
             }
         } catch (err: any) {
             setCloudError('驗證失敗');

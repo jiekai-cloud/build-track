@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { HardHat, ShieldCheck, Sparkles, User, Lock, ArrowRight, Layers, Check, AlertCircle, Hash, Info, UserCheck, Cloud, Building2 } from 'lucide-react';
 import { MOCK_DEPARTMENTS } from '../constants';
 import { storageService } from '../services/storageService';
+import { supabaseDb } from '../services/supabaseDb';
 import { SystemContext } from '../types';
 
 interface LoginProps {
@@ -73,7 +74,22 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       team = [];
     }
 
-    const member = team.find((m: any) => m && m.employeeId === cleanId.toUpperCase());
+    let member = team.find((m: any) => m && m.employeeId === cleanId.toUpperCase());
+
+    // 🚀 如果本機找不到這名員工，這可能是一台新設備，我們自動去 Supabase 撈最新的名單
+    if (!member) {
+      try {
+        console.log('[Login] Local member not found, fetching team from Supabase...');
+        const cloudTeam = await supabaseDb.getCollection<any>('teamMembers');
+        if (cloudTeam && cloudTeam.length > 0) {
+          // 存回對應部門的 Storage 以供後續系統加速使用
+          await storageService.setItem(teamKey, cloudTeam);
+          member = cloudTeam.find((m: any) => m && m.employeeId === cleanId.toUpperCase());
+        }
+      } catch (err) {
+        console.error('[Login] Auto-fetch from Supabase failed', err);
+      }
+    }
 
     if (member) {
       const expectedPassword = member.password || '1234';
