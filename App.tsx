@@ -824,7 +824,7 @@ const App: React.FC = () => {
                 <div className="p-4 lg:p-8 space-y-6">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-black text-stone-900 tracking-tight">廠商與工班管理</h2>
-                    {['SuperAdmin', 'Admin', 'DeptAdmin', 'AdminStaff', 'Manager'].includes(user?.role || '') && (
+                    {user?.role !== 'Guest' && (
                       <button
                         onClick={() => {
                           setEditingVendor(null);
@@ -841,7 +841,7 @@ const App: React.FC = () => {
                       <div key={v.id} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm hover:shadow-md transition-all group">
                         <div className="flex justify-between items-start mb-4">
                           <div className="bg-stone-100 px-2 py-0.5 rounded text-[8px] font-black text-stone-500 uppercase">{v.id}</div>
-                          {['SuperAdmin', 'Admin', 'DeptAdmin', 'AdminStaff', 'Manager'].includes(user?.role || '') && (
+                          {user?.role !== 'Guest' && (
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                               <button
                                 onClick={() => {
