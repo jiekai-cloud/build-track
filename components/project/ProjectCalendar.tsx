@@ -229,26 +229,29 @@ const ProjectCalendar: React.FC = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider">開始日期</label>
+                                    <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider">開始時間</label>
                                     <input
-                                        type="date"
-                                        value={editingEvent?.start ? new Date(editingEvent.start).toISOString().split('T')[0] : ''}
+                                        type="datetime-local"
+                                        step="1800"
+                                        value={editingEvent?.start ? new Date(new Date(editingEvent.start).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
                                         onChange={e => {
+                                            if (!e.target.value) return;
                                             const d = new Date(e.target.value);
-                                            setEditingEvent(prev => prev ? { ...prev, start: d.toISOString() } : null);
+                                            setEditingEvent(prev => prev ? { ...prev, start: d.toISOString(), allDay: false } : null);
                                         }}
                                         className="w-full border-2 border-stone-200 rounded-xl px-4 py-2 text-sm font-bold focus:border-indigo-500 focus:outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider">結束日期</label>
+                                    <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider">結束時間</label>
                                     <input
-                                        type="date"
-                                        value={editingEvent?.end ? new Date(editingEvent.end).toISOString().split('T')[0] : ''}
+                                        type="datetime-local"
+                                        step="1800"
+                                        value={editingEvent?.end ? new Date(new Date(editingEvent.end).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
                                         onChange={e => {
+                                            if (!e.target.value) return;
                                             const d = new Date(e.target.value);
-                                            d.setHours(23, 59, 59); // Set to end of day conceptually
-                                            setEditingEvent(prev => prev ? { ...prev, end: d.toISOString() } : null);
+                                            setEditingEvent(prev => prev ? { ...prev, end: d.toISOString(), allDay: false } : null);
                                         }}
                                         className="w-full border-2 border-stone-200 rounded-xl px-4 py-2 text-sm font-bold focus:border-indigo-500 focus:outline-none"
                                     />
