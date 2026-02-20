@@ -526,17 +526,23 @@ const ProjectList: React.FC<ProjectListProps> = ({
         });
       }
 
-      const finalLaborCost = Math.max(attLaborCost, project.actualLaborCost || 0);
-      const materialCost = project.actualMaterialCost || 0;
+      // 派工單 (Work Assignments) 成本
+      const assignmentLaborCost = (project.workAssignments || []).reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
 
-      // 計算帳務管理的支出總額
+      // 取出人工成本 (派工單最準，其次是打卡，最後是手動輸入)
+      let finalLaborCost = assignmentLaborCost > 0 ? assignmentLaborCost : Math.max(attLaborCost, project.actualLaborCost || 0);
+
+      // 支出紀錄 (Expenses)
       const expensesTotal = (project.expenses || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
+
+      // Legacy 材料成本 (如果沒有 expenses，才使用舊的 actualMaterialCost)
+      const materialCost = project.expenses?.length ? 0 : (project.actualMaterialCost || 0);
 
       // 介紹費計入成本
       const introducerFee = (project.introducerFeeRequired && project.introducerFeeAmount) ? project.introducerFeeAmount : 0;
 
-      // 總成本 = 人工 + 材料 + 帳務支出 + 介紹費
-      const totalCost = finalLaborCost + materialCost + expensesTotal + introducerFee;
+      // 總成本 = 人工 + 支出紀錄 (含機具/材料/委外等) + 歷史材料 + 介紹費
+      const totalCost = finalLaborCost + expensesTotal + materialCost + introducerFee;
       const budget = project.budget || 0;
       const contract = project.contractAmount || 0;
       const revenue = contract > 0 ? contract : budget;
