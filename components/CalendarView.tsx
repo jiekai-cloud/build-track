@@ -86,7 +86,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
 
                 _events.push({
                     id: `p - ${p.id} `,
-                    title: `[專案🚧] ${p.name} `,
+                    title: `[專案🚧] ${p.id} ${p.name}`,
                     start: start,
                     end: end,
                     allDay: true,
