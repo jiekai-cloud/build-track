@@ -163,7 +163,7 @@ const YearFilter = forwardRef((props: IFilterParams, ref) => {
 });
 
 // Sub-component: Ag-Grid Table View (Replaced)
-const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick }: any) => {
+const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick, showDeleted, onRestoreClick, onHardDeleteClick }: any) => {
   // Removed external sort clearing logic as sortOrder prop is gone
 
   const columnDefs: ColDef<ProjectWithFinancials>[] = [
@@ -270,16 +270,36 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick }: any)
       headerName: "操作",
       sortable: false,
       filter: false,
-      width: 120,
-      cellRenderer: (params: any) => (
-        <div className="flex items-center justify-center gap-1 h-full">
-          <button onClick={(e) => { e.stopPropagation(); onEditClick(params.data); }} className="p-2 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-blue-600 transition-colors"><Pencil size={14} /></button>
-          <button onClick={(e) => { e.stopPropagation(); onDeleteClick(params.data.id); }} className="p-2 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-rose-600 transition-colors"><Trash2 size={14} /></button>
-          <button className="p-2 hover:bg-stone-100 rounded-lg text-stone-300 hover:text-stone-900 transition-colors"><ArrowUpRight size={14} /></button>
-        </div>
-      )
+      width: 140,
+      cellRenderer: (params: any) => {
+        if (showDeleted) {
+          return (
+            <div className="flex items-center justify-center gap-2 h-full">
+              <button onClick={(e) => { e.stopPropagation(); onRestoreClick(params.data.id); }} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 rounded text-emerald-600 font-bold text-[10px] flex items-center gap-1 transition-colors"><RotateCcw size={12} /> 復原</button>
+              <button onClick={(e) => { e.stopPropagation(); onHardDeleteClick(params.data.id); }} className="px-2 py-1 bg-rose-50 hover:bg-rose-100 rounded text-rose-600 font-bold text-[10px] flex items-center gap-1 transition-colors"><XCircle size={12} /> 刪除</button>
+            </div>
+          );
+        }
+        return (
+          <div className="flex items-center justify-center gap-1 h-full">
+            <button onClick={(e) => { e.stopPropagation(); onEditClick(params.data); }} className="p-2 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-blue-600 transition-colors"><Pencil size={14} /></button>
+            <button onClick={(e) => { e.stopPropagation(); onDeleteClick(params.data.id); }} className="p-2 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-rose-600 transition-colors"><Trash2 size={14} /></button>
+            <button className="p-2 hover:bg-stone-100 rounded-lg text-stone-300 hover:text-stone-900 transition-colors"><ArrowUpRight size={14} /></button>
+          </div>
+        )
+      }
     }
   ];
+
+  if (showDeleted) {
+    columnDefs.splice(4, 0, {
+      headerName: "刪除時間",
+      field: "deletedAt",
+      width: 160,
+      valueFormatter: (params: any) => params.value ? new Date(params.value).toLocaleString() : '-',
+      cellClass: "font-mono font-bold text-rose-600 text-[10px] flex items-center justify-center"
+    });
+  }
 
   const defaultColDef = useMemo(() => ({
     sortable: true,
@@ -687,7 +707,15 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
         <div className="flex-1 min-h-0 overflow-hidden relative">
           {viewMode === 'card' && <CardView projects={projectsWithFinancials} isReadOnly={isReadOnly} onDetailClick={onDetailClick} onEditClick={onEditClick} onDeleteClick={onDeleteClick} onRestoreClick={onRestoreClick} onHardDeleteClick={onHardDeleteClick} setSearchTerm={setSearchTerm} setStatusFilter={setStatusFilter} />}
-          {viewMode === 'table' && <TableView projects={projectsWithFinancials} onDetailClick={onDetailClick} onEditClick={onEditClick} onDeleteClick={onDeleteClick} />}
+          {viewMode === 'table' && <TableView
+            projects={projectsWithFinancials}
+            onDetailClick={onDetailClick}
+            onEditClick={onEditClick}
+            onDeleteClick={onDeleteClick}
+            showDeleted={showDeleted}
+            onRestoreClick={onRestoreClick}
+            onHardDeleteClick={onHardDeleteClick}
+          />}
           {viewMode === 'kanban' && <KanbanView projectsByStatus={projectsByStatus} onDetailClick={onDetailClick} onEditClick={onEditClick} onDeleteClick={onDeleteClick} getStatusColor={getStatusColor} />}
         </div>
       </div>
