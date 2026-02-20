@@ -62,11 +62,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
     // 2. 檢查團隊成員 (根據部門載入不同的清單)
     let team = [];
-    try {
-      // 根據部門決定 Storage Key 前綴
-      const prefix = (selectedDept as string) === 'ThirdDept' ? 'dept3_' : (selectedDept as string) === 'FourthDept' ? 'dept4_' : '';
-      const teamKey = `${prefix}bt_team`;
+    const prefix = (selectedDept as string) === 'ThirdDept' ? 'dept3_' : (selectedDept as string) === 'FourthDept' ? 'dept4_' : '';
+    const teamKey = `${prefix}bt_team`;
 
+    try {
       team = await storageService.getItem<any[]>(teamKey, []);
       if (!Array.isArray(team)) team = [];
     } catch (e) {
