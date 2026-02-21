@@ -158,7 +158,7 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                 setQuotations(cloudData.quotations || []);
                 setLastCloudSync(new Date().toLocaleTimeString());
 
-                const prefix = user?.department === 'ThirdDept' ? 'dept3_' : (user?.department === 'FourthDept' ? 'dept4_' : '');
+                const prefix = user?.department === 'ThirdDept' ? 'dept3_' : '';
 
                 await Promise.all([
                     storageService.setItem(`${prefix}bt_projects`, cloudData.projects || []),

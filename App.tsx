@@ -28,6 +28,7 @@ import AttendanceSystem from './components/AttendanceSystem';
 import PayrollSystem from './components/PayrollSystem';
 import ApprovalSystem from './components/ApprovalSystem';
 import QuotationSystem from './components/QuotationSystem';
+import CompanyManagement from './components/CompanyManagement';
 import ModuleManager from './components/ModuleManager';
 import OnboardingTour from './components/OnboardingTour';
 import { CalendarView } from './components/CalendarView';
@@ -371,7 +372,7 @@ const App: React.FC = () => {
 
   // Auto-sync when local data changes
   useEffect(() => {
-    if (lastSaved > 0 && !isInitializing) {
+    if (lastSaved !== '' && !isInitializing) {
       scheduleSyncIfNeeded(isMasterTab);
     }
   }, [lastSaved, isInitializing, isMasterTab, scheduleSyncIfNeeded]);
@@ -694,7 +695,6 @@ const App: React.FC = () => {
                   vendors={vendors} inventory={inventoryItems} locations={inventoryLocations}
                   purchaseOrders={purchaseOrders} attendance={attendanceRecords} payroll={payrollRecords}
                   quotations={quotations} leads={leads} approvalRequests={approvalRequests} approvalTemplates={approvalTemplates}
-                  onResetData={() => { if (confirm('注意：這將清除所有數據，確定嗎？')) { localStorage.clear(); window.location.reload(); } }}
                   onImportData={(data, mode = 'overwrite') => {
                     try {
                       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
@@ -756,24 +756,6 @@ const App: React.FC = () => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                   }}
-                  onRestoreLocalBackup={async () => {
-                    try {
-                      const backupData = await storageService.getItem<Project[]>('bt_projects_backup', []);
-                      if (backupData && backupData.length > 0) {
-                        if (confirm(`找到備份 ${backupData.length} 個專案。\n確定要還原嗎？\n(這將覆蓋當前顯示的專案)`)) {
-                          setProjects(backupData);
-                          await storageService.setItem('bt_projects', backupData);
-                          alert('✅ 已從無限量空間還原備份！\n頁面即將重新整理。');
-                          window.location.reload();
-                        }
-                      } else {
-                        alert('找不到可用的本地備份。');
-                      }
-                    } catch (e) {
-                      console.error('Backup recovery failed', e);
-                      alert('還原失敗：備份內容可能已損毀');
-                    }
-                  }}
                   onDisconnectCloud={() => { setIsCloudConnected(false); localStorage.removeItem('bt_cloud_connected'); }}
                   lastSyncTime={lastCloudSync}
                 />
@@ -808,6 +790,9 @@ const App: React.FC = () => {
               />}
               {activeTab === 'dispatch' && moduleService.isModuleEnabled(ModuleId.DISPATCH) && <DispatchManager projects={filteredData.projects} teamMembers={filteredData.teamMembers} onProjectsUpdate={setProjects} onAddDispatch={(pid, ass) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: [ass, ...(p.workAssignments || [])], updatedAt: new Date().toISOString() } : p))} onDeleteDispatch={(pid, aid) => setProjects(prev => prev.map(p => p.id === pid ? { ...p, workAssignments: (p.workAssignments || []).filter(a => a.id !== aid), updatedAt: new Date().toISOString() } : p))} />}
               {activeTab === 'analytics' && moduleService.isModuleEnabled(ModuleId.ANALYTICS) && <Analytics projects={filteredData.projects} />}
+              {activeTab === 'company_mgmt' && moduleService.isModuleEnabled(ModuleId.COMPANY_MGMT) && (
+                <CompanyManagement projects={filteredData.projects} />
+              )}
 
               {activeTab === 'inventory' && moduleService.isModuleEnabled(ModuleId.INVENTORY) && <InventoryList
                 items={inventoryItems}

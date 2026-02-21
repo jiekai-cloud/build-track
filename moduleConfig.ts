@@ -4,7 +4,7 @@
  * 此檔案定義系統中所有可用的功能模組及其配置
  */
 
-import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet, FileCheck, FileText } from 'lucide-react';
+import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet, FileCheck, FileText, Building } from 'lucide-react';
 
 // ... (omitted enum and interface changes which are already correct) ...
 
@@ -34,7 +34,8 @@ export enum ModuleId {
     PAYROLL = 'payroll',               // 薪資管理
     APPROVALS = 'approvals',          // 簽核系統
     QUOTATIONS = 'quotations',        // 報價系統
-    CALENDAR = 'calendar'             // 行事曆系統
+    CALENDAR = 'calendar',             // 行事曆系統
+    COMPANY_MGMT = 'company_mgmt'     // 公司管理
 }
 
 /**
@@ -241,6 +242,16 @@ export const ALL_MODULES: ModuleConfig[] = [
         dependencies: [ModuleId.CUSTOMERS, ModuleId.PROJECTS],
         enabled: true,  // ✅ 已啟用
         category: 'management'
+    },
+    {
+        id: ModuleId.COMPANY_MGMT,
+        name: '公司管理',
+        description: '公司營運成本管理與攤提計算',
+        icon: Building,
+        isCore: false,
+        dependencies: [],
+        enabled: true,
+        category: 'management'
     }
 ];
 
@@ -268,7 +279,8 @@ export const MODULE_PRESETS = {
             ModuleId.CUSTOMERS,
             ModuleId.TEAM,
             ModuleId.CLOUD_SYNC,
-            ModuleId.INVENTORY
+            ModuleId.INVENTORY,
+            ModuleId.COMPANY_MGMT
         ]
     },
 
@@ -298,7 +310,8 @@ export const MODULE_PRESETS = {
             ModuleId.TEAM,
             ModuleId.ANALYTICS,
             ModuleId.CLOUD_SYNC,
-            ModuleId.INVENTORY
+            ModuleId.INVENTORY,
+            ModuleId.COMPANY_MGMT
         ]
     }
 };

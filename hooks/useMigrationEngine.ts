@@ -50,7 +50,7 @@ export const useMigrationEngine = ({ user, appData }: MigrationEngineDeps) => {
                 count++;
                 setProgress({ current: count, total: steps.length, task: `上傳 ${step.name}... (${step.data?.length || 0} 筆)` });
                 if (step.data && Array.isArray(step.data) && step.data.length > 0) {
-                    const success = await supabaseDb.setCollection(step.collection, step.data);
+                    const success = await supabaseDb.setCollection(step.collection, step.data as any[]);
                     if (!success) throw new Error(`${step.name} 寫入失敗`);
                 }
             }

@@ -725,3 +725,19 @@ export interface SystemCalendarEvent {
   createdBy: string;
   updatedAt: string;
 }
+
+export interface CompanyCostItem {
+  id: string;
+  name: string;        // 細項名稱 e.g. "辦公室租金", "倉庫租金"
+  amount: number;      // 金額
+}
+
+export interface CompanyCost {
+  rent: CompanyCostItem[];        // 房屋租金
+  phone: CompanyCostItem[];       // 電話費
+  insurance: CompanyCostItem[];   // 保險費
+  laborHealth: CompanyCostItem[]; // 勞健保費
+  carRent: CompanyCostItem[];     // 車輛租金
+  loan: CompanyCostItem[];        // 貸款
+  other: CompanyCostItem[];       // 其他
+}

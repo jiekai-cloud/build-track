@@ -9,7 +9,6 @@ import {
   Vendor, InventoryItem, AttendanceRecord, PayrollRecord,
   Quotation, Lead, PurchaseOrder, ApprovalRequest, ApprovalTemplate, InventoryLocation
 } from '../types';
-import { useMigrationEngine } from '../hooks/useMigrationEngine';
 
 interface SettingsProps {
   appData: any;
@@ -27,25 +26,22 @@ interface SettingsProps {
   leads: Lead[];
   approvalRequests: ApprovalRequest[];
   approvalTemplates: ApprovalTemplate[];
-  onResetData: () => void;
   onImportData: (data: any, mode?: 'overwrite' | 'merge') => void;
   isCloudConnected: boolean;
   onConnectCloud: () => void;
   onDisconnectCloud: () => void;
   lastSyncTime: string | null;
   onDownloadBackup?: () => void;
-  onRestoreLocalBackup?: () => void;
 }
 
 const Settings: FC<SettingsProps> = ({
   user, projects, customers, teamMembers,
   vendors, inventory, locations, purchaseOrders, attendance, payroll,
   quotations, leads, approvalRequests, approvalTemplates,
-  onResetData, onImportData,
+  onImportData,
   isCloudConnected, onConnectCloud, onDisconnectCloud, lastSyncTime,
-  onDownloadBackup, onRestoreLocalBackup, appData
+  onDownloadBackup, appData
 }) => {
-  const { performMigration, isMigrating, progress, error: migrationError } = useMigrationEngine({ user, appData });
   const [activeSection, setActiveSection] = useState('cloud');
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -78,13 +74,6 @@ const Settings: FC<SettingsProps> = ({
 
   const [importMode, setImportMode] = useState<'overwrite' | 'merge'>('merge');
   const isReadOnly = user.role === 'Guest';
-  const currentUrl = window.location.origin + window.location.pathname;
-
-  const handleCopyUrl = () => {
-    navigator.clipboard.writeText(currentUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleManualExport = () => {
     setIsExporting(true);
@@ -122,17 +111,12 @@ const Settings: FC<SettingsProps> = ({
     { id: 'profile', label: '個人帳戶', icon: User },
     { id: 'ai', label: 'AI 設定', icon: Sparkles },
     { id: 'cloud', label: '雲端同步', icon: Cloud },
-    { id: 'deploy', label: '部署助手', icon: Github },
     { id: 'data', label: '資料安全', icon: ShieldCheck },
   ];
 
   // Add modules section for SuperAdmin
   if (user.role === 'SuperAdmin') {
     sections.push({ id: 'modules', label: '功能模組', icon: LayoutDashboard });
-  }
-
-  if (user.role === 'Admin' || user.role === 'SuperAdmin') {
-    sections.push({ id: 'database', label: '資料庫遷移 (Beta)', icon: Server });
   }
 
   return (
@@ -217,46 +201,6 @@ const Settings: FC<SettingsProps> = ({
               </div>
             )}
 
-            {activeSection === 'deploy' && (
-              <div className="space-y-8 animate-in slide-in-from-right-4">
-                <div className="flex items-center gap-5">
-                  <div className="p-5 rounded-[2rem] bg-stone-900 text-white shadow-lg">
-                    <Github size={32} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-stone-900 uppercase tracking-tight">GitHub Pages 部署助手</h3>
-                    <p className="text-sm text-stone-500 font-medium">協助您完成雲端授權與發佈設定。</p>
-                  </div>
-                </div>
-
-                <div className="bg-orange-50 border border-orange-100 p-8 rounded-[2rem] space-y-4">
-                  <div className="flex items-start gap-3">
-                    <Info className="text-orange-600 mt-1" size={18} />
-                    <div className="space-y-2">
-                      <p className="text-sm font-black text-orange-900">為什麼需要設定授權來源？</p>
-                      <p className="text-xs text-orange-700 leading-relaxed font-bold">
-                        為了防止他人惡意存取您的 Google Drive，Google 要求必須在後台手動核准您的網站網址。
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 space-y-3">
-                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">您的系統網址</p>
-                    <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-orange-200 shadow-inner">
-                      <Globe size={14} className="text-stone-400" />
-                      <code className="text-xs font-black text-stone-900 flex-1 truncate">{currentUrl}</code>
-                      <button
-                        onClick={handleCopyUrl}
-                        className="p-2 hover:bg-stone-50 rounded-lg text-orange-600 transition-all active:scale-90"
-                      >
-                        {copied ? <Check size={16} /> : <Copy size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activeSection === 'cloud' && (
               <div className="space-y-8 animate-in slide-in-from-right-4">
                 <div className="flex items-center gap-5">
@@ -316,51 +260,6 @@ const Settings: FC<SettingsProps> = ({
                     )}
                   </>
                 )}
-              </div>
-            )}
-
-            {activeSection === 'database' && (
-              <div className="space-y-8 animate-in slide-in-from-right-4">
-                <div className="flex items-center gap-5">
-                  <div className="p-5 rounded-[2rem] bg-rose-50 text-rose-600 shadow-lg">
-                    <Server size={32} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-rose-900 uppercase tracking-tight">Supabase 企業級資料庫升級</h3>
-                    <p className="text-sm text-stone-500 font-medium">將現有本機/雲端資料強力推播至最新的 NoSQL 資料庫架構中。</p>
-                  </div>
-                </div>
-
-                <div className="bg-stone-50 p-10 rounded-[2.5rem] border border-stone-200 text-center space-y-6">
-                  <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                    <Database size={32} className="text-rose-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-black text-stone-900 uppercase">執行資料庫搬遷</h4>
-                    <p className="text-sm text-stone-500 max-w-sm mx-auto mt-2">點擊下方按鈕，系統將接管您的資料並分批上傳至 Supabase。<br />請確保網路連線穩定。</p>
-                  </div>
-
-                  {migrationError && (
-                    <div className="p-4 bg-rose-100 text-rose-700 rounded-xl text-xs font-bold text-left">
-                      {migrationError}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={performMigration}
-                    disabled={isMigrating}
-                    className="w-full max-w-xs mx-auto bg-rose-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-rose-100 hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                  >
-                    {isMigrating ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
-                    {isMigrating ? `搬遷中 (${progress.current}/${progress.total})` : '開始執行搬遷'}
-                  </button>
-
-                  {isMigrating && (
-                    <div className="text-xs font-black text-stone-500 animate-pulse mt-4">
-                      當前進度：{progress.task}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 
@@ -850,35 +749,6 @@ const Settings: FC<SettingsProps> = ({
                   )}
                 </div>
 
-
-                <div className="bg-stone-50 border border-stone-200 p-6 rounded-[2rem] shadow-sm space-y-3">
-                  <div className="flex items-center gap-3">
-                    <RotateCcw size={20} className="text-stone-600" />
-                    <h4 className="text-sm font-black text-stone-900">本機自動備份還原</h4>
-                  </div>
-                  <p className="text-[11px] text-stone-500 leading-relaxed font-bold">
-                    如果雲端同步發生錯誤，您可以嘗試還原到上一次啟動時的自動備份。
-                  </p>
-                  <button
-                    onClick={onRestoreLocalBackup}
-                    className="w-full bg-white border border-stone-300 hover:bg-stone-100 text-stone-700 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
-                  >
-                    <RefreshCw size={14} />
-                    立即還原上次備份
-                  </button>
-                </div>
-
-                {!isReadOnly && (
-                  <div className="pt-4 flex justify-end">
-                    <button
-                      onClick={onResetData}
-                      className="flex items-center gap-2 text-rose-600 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-4 py-2 rounded-xl transition-all"
-                    >
-                      <AlertTriangle size={14} />
-                      清除所有本地快取
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
