@@ -45,24 +45,36 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
 
     const autoConnectCloud = useCallback(async () => {
         try {
-            // 自動連線至 Supabase
+            console.log('[Sync] Initializing auto-connect and force fetch...');
             setIsCloudConnected(true);
             setCloudError(null);
 
-            const modifiedTime = await supabaseSyncService.getLatestModifiedTime();
-            if (modifiedTime) {
-                lastRemoteModifiedTime.current = modifiedTime;
-                const cloudData = await supabaseSyncService.loadFromCloud();
-                if (cloudData) {
-                    updateStateWithMerge(cloudData);
-                    setLastCloudSync(new Date().toLocaleTimeString());
-                }
+            // 啟動時強制抓取雲端數據，確保跨電腦同步
+            const cloudData = await supabaseSyncService.loadFromCloud();
+            if (cloudData) {
+                console.log('[Sync] Force fetch on startup success.');
+                updateStateWithMerge(cloudData);
+                const modifiedTime = await supabaseSyncService.getLatestModifiedTime();
+                if (modifiedTime) lastRemoteModifiedTime.current = modifiedTime;
+                setLastCloudSync(new Date().toLocaleTimeString());
             }
         } catch (e) {
             console.error(e);
             setCloudError('Supabase 連線失敗');
         }
     }, [updateStateWithMerge]);
+
+    // 定期輪詢 (Polling): 每分鐘檢查一次雲端是否有更新
+    React.useEffect(() => {
+        if (!isCloudConnected || user?.role === 'Guest') return;
+
+        console.log('[Sync] Active. Polling interval established.');
+        const interval = setInterval(() => {
+            scheduleSyncIfNeeded();
+        }, 60000); // 60 seconds
+
+        return () => clearInterval(interval);
+    }, [isCloudConnected, user, scheduleSyncIfNeeded]);
 
     const handleCloudSync = useCallback(async () => {
         if (!isCloudConnected || isSyncingRef.current || user?.role === 'Guest') return;

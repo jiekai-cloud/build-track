@@ -132,25 +132,25 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
                 if (item.timestamp) return new Date(item.timestamp).getTime();
                 return 0;
             };
-            const localTime = getTime(localItem);
-            const remoteTime = getTime(remoteItem);
+            const localTime = new Date(localItem.updatedAt || 0).getTime();
+            const remoteTime = new Date(remoteItem.updatedAt || 0).getTime();
 
             if (remoteTime > localTime) {
-                // Remote 比較新，執行深度合併 (針對特殊欄位)
-                if ('dailyLogs' in localItem || 'workflowLogs' in localItem) {
+                // 雲端較新，進行合併
+                if (localItem && typeof localItem === 'object' && ('dailyLogs' in localItem || 'workflowLogs' in localItem)) {
+                    // 針對複雜物件 (Project/Approval) 進行子項目級合併
                     const l = localItem as any;
                     const r = remoteItem as any;
 
-                    // 輔助函式：合併子陣列 (如 logs, comments)
-                    const combineSubArrays = (arr1: any[] = [], arr2: any[] = []) => {
+                    const combineSubArrays = (localArr: any[], remoteArr: any[]) => {
                         const subMap = new Map();
-                        // 優先保留時間較新的項目，或 ID 相同的項目
-                        [...arr1, ...arr2].forEach(x => {
-                            const key = x.id || (x.timestamp ? x.timestamp + (x.step || '') : JSON.stringify(x));
-                            subMap.set(key, x);
-                        });
+                        // 順序很重要：先加本地，再加遠端 (遠端蓋本地)
+                        (localArr || []).forEach(x => subMap.set(x.id || JSON.stringify(x), x));
+                        (remoteArr || []).forEach(x => subMap.set(x.id || JSON.stringify(x), x));
+
                         return Array.from(subMap.values()).sort((a, b) =>
-                            new Date(b.timestamp || b.date || b.createdAt || 0).getTime() - new Date(a.timestamp || a.date || a.createdAt || 0).getTime()
+                            new Date(b.timestamp || b.date || b.createdAt || b.updatedAt || 0).getTime() -
+                            new Date(a.timestamp || a.date || a.createdAt || a.updatedAt || 0).getTime()
                         );
                     };
 
@@ -177,11 +177,13 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
                     }
                     itemMap.set(remoteItem.id, mergedItem as T);
                 } else {
-                    // 一般物件，直接使用較新的 Remote
+                    // 一般物件，雲端較新，直接使用
                     itemMap.set(remoteItem.id, remoteItem);
                 }
+            } else {
+                // 本地較新，保留本地
+                itemMap.set(remoteItem.id, localItem);
             }
-            // 如果 localTime >= remoteTime，保留本地版本 (無需動作)
         });
 
         return Array.from(itemMap.values());

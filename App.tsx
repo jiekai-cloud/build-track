@@ -357,23 +357,45 @@ const App: React.FC = () => {
     }
   }, [user, isInitializing, currentUserPermissions]);
 
-  // Sync / Restore 事件 Listeners
+  // Sync / Restore 事件 Listeners & Proactive Sync
   useEffect(() => {
     const onManualSync = () => handleCloudSync();
     const onManualRestore = () => handleCloudRestore();
+
+    // Proactive sync when user returns to tab
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Sync] Tab visible, checking for remote changes...');
+        scheduleSyncIfNeeded(isMasterTab);
+      }
+    };
+
     window.addEventListener('TRIGGER_CLOUD_SYNC', onManualSync);
     window.addEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onVisibilityChange);
 
     return () => {
       window.removeEventListener('TRIGGER_CLOUD_SYNC', onManualSync);
       window.removeEventListener('TRIGGER_CLOUD_RESTORE', onManualRestore);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onVisibilityChange);
     };
-  }, [handleCloudSync, handleCloudRestore]);
+  }, [handleCloudSync, handleCloudRestore, isMasterTab, scheduleSyncIfNeeded]);
 
-  // Auto-sync when local data changes
+  // Auto-sync when local data changes OR heartbeat (Frequent Sync)
   useEffect(() => {
     if (lastSaved !== '' && !isInitializing) {
       scheduleSyncIfNeeded(isMasterTab);
+    }
+
+    // 定時強制檢查雲端 (每 2 分鐘，如果沒存檔也會檢查)
+    if (isMasterTab && !isInitializing) {
+      const timer = setInterval(() => {
+        console.log('[Sync] Master rotation check...');
+        scheduleSyncIfNeeded(true);
+      }, 120000);
+      return () => clearInterval(timer);
     }
   }, [lastSaved, isInitializing, isMasterTab, scheduleSyncIfNeeded]);
 
