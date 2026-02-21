@@ -50,8 +50,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
         const initGoogle = async () => {
             const clientId = import.meta.env.VITE_GOOGLE_CALENDAR_CLIENT_ID || localStorage.getItem('GOOGLE_CAL_CLIENT_ID');
             if (clientId) {
-                await googleCalendarService.initService(clientId);
-                setIsGoogleAuthorized(googleCalendarService.isAuthorized());
+                try {
+                    await googleCalendarService.initService(clientId);
+                    const isAuthorized = googleCalendarService.isAuthorized();
+                    setIsGoogleAuthorized(isAuthorized);
+
+                    // If we have a token but gapi isn't loaded with it, the service handles it
+                    console.log('[Calendar] Google Auto-Init status:', isAuthorized);
+                } catch (e) {
+                    console.error('[Calendar] Auto-init failed', e);
+                }
             }
         };
         initGoogle();
@@ -60,20 +68,25 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
     const handleGoogleConnect = async () => {
         const clientId = import.meta.env.VITE_GOOGLE_CALENDAR_CLIENT_ID || localStorage.getItem('GOOGLE_CAL_CLIENT_ID');
         if (!clientId) {
-            const inputId = prompt('請輸入您的 Google OAuth Client ID:');
-            if (inputId) {
-                localStorage.setItem('GOOGLE_CAL_CLIENT_ID', inputId);
-                await googleCalendarService.initService(inputId);
-                await googleCalendarService.authorize();
-                setIsGoogleAuthorized(googleCalendarService.isAuthorized());
-            }
+            alert('請先在設定中配置 Google OAuth Client ID');
             return;
         }
-        await googleCalendarService.authorize();
-        // Wait a bit for the callback to set the token
-        setTimeout(() => {
-            setIsGoogleAuthorized(googleCalendarService.isAuthorized());
-        }, 3000);
+
+        try {
+            await googleCalendarService.authorize();
+            // Google OAuth finishes in a popup; we poll or wait for the token
+            let checks = 0;
+            const checkInterval = setInterval(() => {
+                const authorized = googleCalendarService.isAuthorized();
+                if (authorized) {
+                    setIsGoogleAuthorized(true);
+                    clearInterval(checkInterval);
+                }
+                if (checks++ > 10) clearInterval(checkInterval);
+            }, 1000);
+        } catch (err) {
+            console.error('Authorization failed', err);
+        }
     };
 
     const holidays = useTaiwanHolidays(date.getFullYear());
