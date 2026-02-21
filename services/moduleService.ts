@@ -34,6 +34,15 @@ class ModuleService {
                     loadedSet.add(m.id);
                 });
 
+                // Auto-add any NEW modules that are default-enabled but not yet in saved config
+                // This ensures newly added modules appear without resetting user config
+                DEFAULT_ENABLED_MODULES.forEach(moduleId => {
+                    if (!loadedSet.has(moduleId) && !parsed.includes(moduleId)) {
+                        // This is a new module not seen before — auto-enable it
+                        loadedSet.add(moduleId);
+                    }
+                });
+
                 return loadedSet;
             }
         } catch (e) {
