@@ -126,12 +126,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
                 return;
             }
 
-            // 如果本地有，比較 updatedAt（fallback 到 timestamp，適用於 AttendanceRecord 等）
-            const getTime = (item: T) => {
-                if (item.updatedAt) return new Date(item.updatedAt).getTime();
-                if (item.timestamp) return new Date(item.timestamp).getTime();
-                return 0;
-            };
+            // 如果本地有，比較 updatedAt
             const localTime = new Date(localItem.updatedAt || 0).getTime();
             const remoteTime = new Date(remoteItem.updatedAt || 0).getTime();
 
