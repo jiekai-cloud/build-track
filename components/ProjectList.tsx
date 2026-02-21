@@ -22,6 +22,7 @@ interface ProjectListProps {
   onDetailClick: (project: Project) => void;
   showDeleted: boolean;
   onToggleDeleted: (val: boolean) => void;
+  onUpdateStatus?: (id: string, status: ProjectStatus) => void;
   teamMembers: TeamMember[];
   attendanceRecords: AttendanceRecord[];
 }
@@ -232,7 +233,7 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick, showDe
           case '已部分付款(尚有保留款未付)': colorClass = 'bg-rose-50 text-rose-600 border-rose-200'; break;
           case '已完工': colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-200'; break;
           case '結案': colorClass = 'bg-green-50 text-green-700 border-green-200 bg-opacity-70 text-opacity-80'; break;
-          case '撤案': colorClass = 'bg-gray-50 text-gray-500 border-gray-200 line-through opacity-70'; break;
+          case '撤案': colorClass = 'bg-stone-700 text-stone-100 border-stone-800 line-through opacity-80'; break;
           case '未成交': colorClass = 'bg-red-50 text-red-600 border-red-200 bg-opacity-70 text-opacity-80'; break;
           // Legacy mapping
           case 'Active': colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-100'; break;
@@ -409,22 +410,50 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick, showDe
 };
 
 // Sub-component: Kanban View
-const KanbanView = ({ projectsByStatus, onDetailClick, onEditClick, onDeleteClick, getStatusColor }: any) => {
+const KanbanView = ({ projectsByStatus, onDetailClick, onEditClick, onDeleteClick, getStatusColor, onUpdateStatus }: any) => {
   return (
     <div className="h-full overflow-x-auto overflow-y-hidden">
       <div className="flex gap-4 h-full min-w-max px-2 pb-4">
         {Object.values(ProjectStatus).filter(s => projectsByStatus[s]?.length > 0 || ['Planning', 'Active', 'Completed'].includes(s)).map(status => (
-          <div key={status} className="w-[340px] flex flex-col h-full bg-stone-100/50 rounded-2xl border border-stone-200/50 flex-shrink-0">
+          <div
+            key={status}
+            className="w-[340px] flex flex-col h-full bg-stone-100/50 rounded-2xl border border-stone-200/50 flex-shrink-0 transition-colors duration-200"
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.add('bg-stone-200/50', 'border-blue-400');
+            }}
+            onDragLeave={(e) => {
+              e.currentTarget.classList.remove('bg-stone-200/50', 'border-blue-400');
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove('bg-stone-200/50', 'border-blue-400');
+              const projectId = e.dataTransfer.getData('projectId');
+              if (projectId && onUpdateStatus) {
+                // If the drag happened between different statuses
+                const targetStatus = status;
+                onUpdateStatus(projectId, targetStatus);
+              }
+            }}
+          >
             <div className={`p-4 flex justify-between items-center rounded-t-2xl border-b z-10 sticky top-0 bg-white shadow-sm ${getStatusColor(status)}`}>
               <div className="font-bold text-sm truncate max-w-[200px]" title={status}>{status}</div>
               <span className="text-xs font-black bg-white/50 px-2 py-0.5 rounded-full">{projectsByStatus[status]?.length || 0}</span>
             </div>
             <div className="p-3 space-y-3 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-stone-200">
               {projectsByStatus[status]?.map((p: ProjectWithFinancials) => (
-                <div key={p.id} onClick={() => onDetailClick(p)} className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm hover:shadow-lg hover:translate-y-[-2px] hover:border-orange-200 transition-all cursor-pointer group flex flex-col gap-3 relative">
+                <div
+                  key={p.id}
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('projectId', p.id);
+                  }}
+                  onClick={() => onDetailClick(p)}
+                  className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm hover:shadow-lg hover:border-orange-400 transition-all cursor-grab active:cursor-grabbing group flex flex-col gap-3 relative transform hover:-translate-y-1"
+                >
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black text-stone-400 bg-stone-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{p.id}</span>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] font-black text-stone-400 bg-stone-50 px-2 py-0.5 rounded uppercase tracking-wider cursor-text" onClick={(e) => e.stopPropagation()}>{p.id}</span>
+                    <div className="flex gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={(e) => { e.stopPropagation(); onEditClick(p); }} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-blue-600"><Pencil size={12} /></button>
                       <button onClick={(e) => { e.stopPropagation(); onDeleteClick(p.id); }} className="p-1 hover:bg-stone-100 rounded text-stone-400 hover:text-rose-600"><Trash2 size={12} /></button>
                     </div>
@@ -477,6 +506,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
   onDetailClick,
   showDeleted,
   onToggleDeleted,
+  onUpdateStatus,
   teamMembers = [],
   attendanceRecords = []
 }) => {
@@ -640,7 +670,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
       case '已部分付款(尚有保留款未付)': return 'bg-rose-50 text-rose-700 border-rose-200';
       case '已完工': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case '結案': return 'bg-green-50 text-green-800 border-green-200 bg-opacity-70 opacity-80';
-      case '撤案': return 'bg-gray-50 text-gray-600 border-gray-200 opacity-70';
+      case '撤案': return 'bg-stone-700 text-stone-100 border-stone-800 opacity-90';
       case '未成交': return 'bg-red-50 text-red-700 border-red-200 bg-opacity-70 opacity-80';
       // Legacy mapping
       case 'Active': return 'bg-orange-50 text-orange-700 border-orange-200';
@@ -758,7 +788,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
             onRestoreClick={onRestoreClick}
             onHardDeleteClick={onHardDeleteClick}
           />}
-          {viewMode === 'kanban' && <KanbanView projectsByStatus={projectsByStatus} onDetailClick={onDetailClick} onEditClick={onEditClick} onDeleteClick={onDeleteClick} getStatusColor={getStatusColor} />}
+          {viewMode === 'kanban' && <KanbanView projectsByStatus={projectsByStatus} onDetailClick={onDetailClick} onEditClick={onEditClick} onDeleteClick={onDeleteClick} getStatusColor={getStatusColor} onUpdateStatus={onUpdateStatus} />}
         </div>
       </div>
 

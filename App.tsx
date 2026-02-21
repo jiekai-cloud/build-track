@@ -369,6 +369,13 @@ const App: React.FC = () => {
     };
   }, [handleCloudSync, handleCloudRestore]);
 
+  // Auto-sync when local data changes
+  useEffect(() => {
+    if (lastSaved > 0 && !isInitializing) {
+      scheduleSyncIfNeeded(isMasterTab);
+    }
+  }, [lastSaved, isInitializing, isMasterTab, scheduleSyncIfNeeded]);
+
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   const [showDeleted, setShowDeleted] = useState(false);
@@ -646,6 +653,7 @@ const App: React.FC = () => {
                 projects={filteredData.projects}
                 user={user}
                 onAddClick={() => { setEditingProject(null); setIsModalOpen(true); }}
+                onUpdateStatus={handleUpdateStatus}
 
                 onEditClick={(p) => { setEditingProject(p); setIsModalOpen(true); }}
                 onDeleteClick={(id) => {
