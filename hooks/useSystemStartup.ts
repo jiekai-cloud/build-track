@@ -258,6 +258,20 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
             try {
                 console.log('[System] Fetching latest cloud data before unlocking UI...');
                 await autoConnectCloud();
+
+                // Success Notification
+                const syncMsg = document.createElement('div');
+                syncMsg.className = 'fixed top-6 left-1/2 -translate-x-1/2 bg-stone-900 border border-stone-800 text-white px-6 py-3 rounded-2xl shadow-2xl z-[300] animate-in slide-in-from-top duration-500 flex items-center gap-3';
+                syncMsg.innerHTML = `
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span class="text-xs font-black tracking-widest">✨ 雲端資料同步完成 (數據版本已更新)</span>
+                `;
+                document.body.appendChild(syncMsg);
+                setTimeout(() => {
+                    syncMsg.classList.add('animate-out', 'fade-out', 'duration-500');
+                    setTimeout(() => syncMsg.remove(), 500);
+                }, 4000);
+
             } catch (e) {
                 console.warn('Supabase 連線/同步失敗', e);
             }
@@ -268,6 +282,7 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
 
         } catch (err) {
             console.error('Initialization failed', err);
+            // Even if it fails, we must unlock the UI
             setIsInitializing(false);
         }
     }, [normalizeProjects, autoConnectCloud,
@@ -286,13 +301,22 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
         let safetyTimeout: any;
 
         const startup = async () => {
+            console.log('[System] Startup sequence initiated...');
+
+            // 5s Safety Lock: Ensure the loading screen disappears no matter what happens
             safetyTimeout = setTimeout(() => {
                 setIsInitializing(false);
-                console.warn('啟動超時：進入自動跳過模式');
-            }, 5000);
+                console.warn('[System] Startup timeout: Force unlocking UI.');
+            }, 6000);
 
             try {
-                const savedUser = localStorage.getItem('bt_user');
+                let savedUser: string | null = null;
+                try {
+                    savedUser = localStorage.getItem('bt_user');
+                } catch (userGetErr) {
+                    console.error('[System] Could not read user session from storage:', userGetErr);
+                }
+
                 if (savedUser) {
                     try {
                         const parsedUser = JSON.parse(savedUser);
@@ -301,23 +325,32 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
                         setCurrentDept(dept);
                         const fallbackDeptId = dept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4';
                         setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || fallbackDeptId));
-                        loadSystemData(dept);
+
+                        // Begin loading, but catch errors to prevent hanging
+                        loadSystemData(dept).catch(err => {
+                            console.error('[System] loadSystemData background crash:', err);
+                            setIsInitializing(false);
+                        });
                     } catch (e) {
                         console.error('Saved user parse error', e);
                         localStorage.removeItem('bt_user');
                         setIsInitializing(false);
                     }
                 } else {
+                    console.log('[System] No session found, showing login.');
                     setIsInitializing(false);
                 }
             } catch (e) {
+                console.error('[System] Fatal startup error:', e);
                 setIsInitializing(false);
             }
         };
         startup();
 
-        return () => clearTimeout(safetyTimeout);
-    }, [loadSystemData, setUser, setCurrentDept, setViewingDeptId, setIsInitializing]);
+        return () => {
+            if (safetyTimeout) clearTimeout(safetyTimeout);
+        };
+    }, [loadSystemData, setUser, setCurrentDept, setViewingDeptId, setIsInitializing, setIsFirstTimeUser]);
 
     return { loadSystemData };
 };

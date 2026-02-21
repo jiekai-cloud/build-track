@@ -463,9 +463,20 @@ const App: React.FC = () => {
     setUser(fullUser);
     setCurrentDept(d);
     // 修正部門 ID 對應：第一工程部(DEPT-4), 第三工程部(DEPT-8)
-    const deptId = d === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4';
-    setViewingDeptId(u.role === 'SuperAdmin' ? 'all' : (u.departmentId || deptId));
-    localStorage.setItem('bt_user', JSON.stringify(fullUser));
+    const dId = u.role === 'SuperAdmin' ? 'all' : (u.departmentId || (d === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4'));
+    setViewingDeptId(dId);
+
+    try {
+      localStorage.setItem('bt_user', JSON.stringify(fullUser));
+    } catch (e) {
+      console.warn('[System] LocalStorage is full, user session not persisted.', e);
+      // If full, try to clear some non-critical logs to make space
+      try {
+        localStorage.removeItem('bt_logs');
+        localStorage.removeItem('dept3_bt_logs');
+      } catch (innerE) { }
+    }
+
     // Data loading happens in background but UI is blocked by isInitializing
     loadSystemData(d);
   }} />;
