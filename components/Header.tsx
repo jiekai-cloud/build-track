@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu, LogOut, Layers, CloudOff, RefreshCw, AlertCircle, CheckCircle, Bell, Sparkles } from 'lucide-react';
 import { User } from '../types';
-import { MOCK_DEPARTMENTS } from '../constants';
+import { MOCK_DEPARTMENTS, SYSTEM_VERSION } from '../constants';
 
 interface HeaderProps {
     user: User;
