@@ -2,7 +2,7 @@
 import React, { useState, useMemo, FC } from 'react';
 import {
   User, ChevronRight, Download, ShieldCheck,
-  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Sparkles, Server
+  Cloud, CloudOff, RefreshCw, Database, HardDrive, FileJson, UploadCloud, RotateCcw, Zap, Info, AlertTriangle, Github, Globe, Copy, Check, ShieldAlert, LayoutDashboard, Sparkles, Server, ExternalLink
 } from 'lucide-react';
 import {
   Project, Customer, TeamMember, User as UserType,
