@@ -6,7 +6,7 @@ import { useProject } from '../../contexts/ProjectContext';
 import { CalendarDays, Plus, Trash2, X } from 'lucide-react';
 import { ProjectEvent } from '../../types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-
+import { useTaiwanHolidays } from '../../hooks/useTaiwanHolidays';
 const locales = {
     'zh-TW': zhTW,
 };
@@ -23,6 +23,8 @@ const ProjectCalendar: React.FC = () => {
     const { project, onUpdateEvents, isReadOnly } = useProject();
     const [view, setView] = useState<View>(Views.MONTH);
     const [date, setDate] = useState(new Date(project.startDate || new Date()));
+
+    const holidays = useTaiwanHolidays(date.getFullYear());
 
     const [isEventModalOpen, setIsEventModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<Partial<ProjectEvent> | null>(null);
@@ -146,6 +148,27 @@ const ProjectCalendar: React.FC = () => {
         return { style: { backgroundColor, borderRadius: '6px', opacity: 0.9, border: '0', color: 'white' } };
     };
 
+    const customComponents = useMemo(() => ({
+        month: {
+            dateHeader: ({ date: d, label }: any) => {
+                const dateStr = format(d, 'yyyyMMdd');
+                const holidayInfo = holidays[dateStr];
+                const isHoliday = holidayInfo?.isHoliday;
+
+                return (
+                    <span
+                        title={holidayInfo?.description || ''}
+                        className={`cursor-default font-bold ${isHoliday ? 'text-red-500' : 'text-stone-700'}`}
+                        style={{ padding: '2px 4px' }}
+                    >
+                        {isHoliday && holidayInfo?.description ? <span className="text-[10px] mr-1 opacity-80">{holidayInfo.description}</span> : null}
+                        {label}
+                    </span>
+                );
+            }
+        }
+    }), [holidays]);
+
     return (
         <div className="space-y-6 animate-in fade-in h-full flex flex-col">
             <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex-1 flex flex-col min-h-[600px]">
@@ -180,6 +203,7 @@ const ProjectCalendar: React.FC = () => {
                         endAccessor="end"
                         style={{ height: '100%', fontFamily: 'inherit' }}
                         eventPropGetter={eventStyleGetter}
+                        components={customComponents}
                         view={view}
                         onView={(v) => setView(v)}
                         date={date}

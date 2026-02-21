@@ -6,7 +6,7 @@ import { Calendar as CalendarIcon, Filter, Clock, User, HardHat, CheckCircle2, M
 import { Project, ApprovalRequest, TeamMember, Lead, SystemCalendarEvent, User as UserType } from '../types';
 import { googleCalendarService } from '../services/googleCalendarService';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-
+import { useTaiwanHolidays } from '../hooks/useTaiwanHolidays';
 const locales = {
     'zh-TW': zhTW,
 };
@@ -43,6 +43,8 @@ interface CustomEvent extends RBCEvent {
 export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRequests, teamMembers, leads = [], calendarEvents = [], setCalendarEvents, user, isCloudConnected, onUpdateProject, onDeleteProject, onEditProjectClick }) => {
     const [view, setView] = useState<View>(Views.MONTH);
     const [date, setDate] = useState(new Date());
+
+    const holidays = useTaiwanHolidays(date.getFullYear());
 
     const [filter, setFilter] = useState({
         projects: true,
@@ -323,6 +325,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
         };
     };
 
+    const customComponents = useMemo(() => ({
+        month: {
+            dateHeader: ({ date: d, label }: any) => {
+                const dateStr = format(d, 'yyyyMMdd');
+                const holidayInfo = holidays[dateStr];
+                const isHoliday = holidayInfo?.isHoliday;
+
+                return (
+                    <span
+                        title={holidayInfo?.description || ''}
+                        className={`cursor-default font-bold ${isHoliday ? 'text-red-500' : 'text-stone-700'}`}
+                        style={{ padding: '2px 4px' }}
+                    >
+                        {isHoliday && holidayInfo?.description ? <span className="text-[10px] mr-1 opacity-80">{holidayInfo.description}</span> : null}
+                        {label}
+                    </span>
+                );
+            }
+        }
+    }), [holidays]);
+
     return (
         <div className="h-full flex flex-col gap-4 p-4 lg:p-6 bg-[#fafaf9] overflow-hidden">
             {/* Header & Controls */}
@@ -425,6 +448,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                     onSelectSlot={handleSelectSlot}
                     onSelectEvent={handleSelectEvent}
                     eventPropGetter={eventStyleGetter}
+                    components={customComponents}
                     view={view}
                     onView={(newView) => setView(newView)}
                     date={date}

@@ -254,16 +254,17 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
             const calendarEventsData = await storageService.getItem<SystemCalendarEvent[]>(`${prefix}bt_calendar_events`, []);
             setCalendarEvents(calendarEventsData);
 
+            // Auto Connect - Wait for cloud sync BEFORE hiding loading screen
+            try {
+                console.log('[System] Fetching latest cloud data before unlocking UI...');
+                await autoConnectCloud();
+            } catch (e) {
+                console.warn('Supabase 連線/同步失敗', e);
+            }
+
             setInitialSyncDone(true);
             setIsInitializing(false);
             console.log('System initialized successfully');
-
-            // Auto Connect
-            try {
-                await autoConnectCloud();
-            } catch (e) {
-                console.warn('Supabase 連線失敗', e);
-            }
 
         } catch (err) {
             console.error('Initialization failed', err);
