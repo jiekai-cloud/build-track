@@ -95,17 +95,65 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                 return;
             }
 
-            // 防護：如果打卡紀錄突然變空但雲端有資料，不要覆蓋
-            if (localData.attendanceRecords && localData.attendanceRecords.length === 0) {
+            // ===== 資料完整性防護：防止空/不完整的本地資料覆蓋雲端 =====
+            let cloudDataCache: any = null;
+            const getCloudData = async () => {
+                if (!cloudDataCache) cloudDataCache = await supabaseSyncService.loadFromCloud();
+                return cloudDataCache;
+            };
+
+            // 防護 1：打卡紀錄
+            if (!localData.attendanceRecords || localData.attendanceRecords.length === 0) {
                 try {
-                    const cloudAttendance = await supabaseSyncService.loadFromCloud();
-                    if (cloudAttendance?.attendance && cloudAttendance.attendance.length > 0) {
-                        console.warn(`[Sync] Local attendance empty but cloud has ${cloudAttendance.attendance.length} records. Restoring from cloud.`);
-                        deps.setAttendanceRecords(cloudAttendance.attendance);
-                        localData.attendanceRecords = cloudAttendance.attendance;
+                    const cloud = await getCloudData();
+                    if (cloud?.attendance && cloud.attendance.length > 0) {
+                        console.warn(`[Sync] Local attendance empty but cloud has ${cloud.attendance.length} records. Restoring.`);
+                        deps.setAttendanceRecords(cloud.attendance);
+                        localData.attendanceRecords = cloud.attendance;
                     }
                 } catch (e) {
                     console.warn('[Sync] Could not verify cloud attendance.', e);
+                }
+            }
+
+            // 防護 2：報價單 — 本地空但雲端有
+            if (!localData.quotations || localData.quotations.length === 0) {
+                try {
+                    const cloud = await getCloudData();
+                    if (cloud?.quotations && cloud.quotations.length > 0) {
+                        console.warn(`[Sync] Local quotations empty but cloud has ${cloud.quotations.length}. Restoring.`);
+                        deps.setQuotations(cloud.quotations);
+                        localData.quotations = cloud.quotations;
+                    }
+                } catch (e) {
+                    console.warn('[Sync] Could not verify cloud quotations.', e);
+                }
+            }
+
+            // 防護 3：報價單內容完整性 — 不允許把沒有 sections 的報價單覆蓋有 sections 的版本
+            if (localData.quotations && localData.quotations.length > 0) {
+                try {
+                    const cloud = await getCloudData();
+                    if (cloud?.quotations && cloud.quotations.length > 0) {
+                        const cloudMap = new Map(cloud.quotations.map((q: any) => [q.id, q]));
+                        localData.quotations = localData.quotations.map((localQ: any) => {
+                            const cloudQ = cloudMap.get(localQ.id) as any;
+                            if (cloudQ) {
+                                const localSections = localQ.sections || [];
+                                const cloudSections = cloudQ.sections || [];
+                                const localItemCount = localSections.reduce((s: number, sec: any) => s + (sec.items?.length || 0), 0);
+                                const cloudItemCount = cloudSections.reduce((s: number, sec: any) => s + (sec.items?.length || 0), 0);
+                                // 如果雲端有內容但本地沒有，保留雲端版本
+                                if (cloudItemCount > 0 && localItemCount === 0) {
+                                    console.warn(`[Sync] Quotation ${localQ.id}: Local has 0 items but cloud has ${cloudItemCount}. Keeping cloud version.`);
+                                    return cloudQ;
+                                }
+                            }
+                            return localQ;
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[Sync] Could not verify quotation integrity.', e);
                 }
             }
 
