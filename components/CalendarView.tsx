@@ -118,6 +118,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
             projects.forEach(p => {
                 if (!p.startDate) return;
 
+                // 排除未簽約/未成交的初期狀態，不顯示在行事曆上 (只顯示「已簽約待施工」及之後的狀態)
+                const earlyStatuses = ['洽談中', '報價中', '已報價', '待簽約', '撤案', '未成交'];
+                if (earlyStatuses.includes(p.status as string)) return;
+
                 // My view filter
                 if (onlyMyEvents && p.manager !== user.name && p.quotationManager !== user.name && p.engineeringManager !== user.name) {
                     return;
@@ -132,7 +136,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                 end.setHours(23, 59, 59);
 
                 _events.push({
-                    id: `p - ${p.id} `,
+                    id: `p-${p.id}`,
                     title: `[專案🚧] ${p.id} ${p.name}`,
                     start: start,
                     end: end,
