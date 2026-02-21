@@ -2,6 +2,23 @@ import { Project, ProjectStatus, Department, TeamMember } from './types';
 
 export const SYSTEM_VERSION = 'V3.5';
 
+/**
+ * 傑凱工程升遷與薪資管理辦法 (2026 實施)
+ * 支援管理職與技術職雙軌制
+ */
+export const JOB_LEVEL_RULES = [
+  { level: 1, title: '總經理', minPay: 150000, maxPay: 200000, bonus: '依績效', lunchBonus: 0, type: 'monthly' },
+  { level: 2, title: '副總、特助 / 工地的傳奇', minPay: 90000, maxPay: 150000, bonus: '300/日', lunchBonus: 300, type: 'monthly' },
+  { level: 3, title: '協理 / 工地的菁英', minPay: 80000, maxPay: 110000, bonus: '250/日', lunchBonus: 250, type: 'daily' },
+  { level: 4, title: '部經理 / 工地高級高階工人', minPay: 65000, maxPay: 90000, bonus: '200/日', lunchBonus: 200, type: 'daily' },
+  { level: 5, title: '副理 / 代理部經理 / 工地資深高階工人', minPay: 55000, maxPay: 75000, bonus: '150/日', lunchBonus: 150, type: 'daily' },
+  { level: 6, title: '工地現場工程師 / 工地高階工人', minPay: 45000, maxPay: 65000, bonus: '175/日', lunchBonus: 175, type: 'daily' },
+  { level: 7, title: '現場助理 / 行政助理 / 工地中高階工人', minPay: 35000, maxPay: 48000, bonus: '150/日', lunchBonus: 150, type: 'daily' },
+  { level: 8, title: '工地中階工人', minPay: 2000, maxPay: 2200, bonus: '150/日', lunchBonus: 150, type: 'daily' },
+  { level: 9, title: '工地初階工人', minPay: 1900, maxPay: 2000, bonus: '150/日', lunchBonus: 150, type: 'daily' },
+  { level: 10, title: '工地初心者', minPay: 1800, maxPay: 1900, bonus: '100/日', lunchBonus: 100, type: 'daily' },
+];
+
 export const MOCK_DEPARTMENTS: Department[] = [
   { id: 'DEPT-1', name: '戰略指揮部', color: '#6366f1', manager: '總經理' },
   { id: 'DEPT-2', name: '人事行政部', color: '#64748b', manager: '行政主管' },
