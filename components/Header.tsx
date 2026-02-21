@@ -43,8 +43,8 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="flex items-center gap-2 sm:gap-3">
                     <div className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-2xl shadow-lg ${user.role === 'Guest' ? 'bg-stone-900 text-orange-400' : 'bg-stone-900 text-white'}`}>
                         <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${user.role === 'Guest' ? 'bg-orange-500' : 'bg-emerald-400'}`}></div>
-                        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{user.role === 'Guest' ? '訪客唯讀' : 'V3.0 SYNC-SHIELD'}</span>
-                        <span className="text-[10px] font-black uppercase tracking-widest sm:hidden">V3.0</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{user.role === 'Guest' ? '訪客唯讀' : `${SYSTEM_VERSION} SYNC-GUARD`}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest sm:hidden">{SYSTEM_VERSION}</span>
                     </div>
 
                     {user.role !== 'Guest' && (

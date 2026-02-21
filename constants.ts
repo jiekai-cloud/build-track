@@ -1,5 +1,6 @@
-
 import { Project, ProjectStatus, Department, TeamMember } from './types';
+
+export const SYSTEM_VERSION = 'V3.5';
 
 export const MOCK_DEPARTMENTS: Department[] = [
   { id: 'DEPT-1', name: '戰略指揮部', color: '#6366f1', manager: '總經理' },

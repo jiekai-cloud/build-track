@@ -532,7 +532,7 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
           <div className="bg-white p-8 rounded-[2.5rem] border border-stone-200 shadow-sm flex flex-col h-full">
             <div className="flex justify-between items-center mb-6 shrink-0 flex-wrap gap-2">
               <h3 className="text-sm font-black text-stone-900 flex items-center gap-2 uppercase tracking-widest">
-                <Check size={20} className="text-emerald-600" /> 第二步：確認並匯入 <span className="text-emerald-500 text-[10px]">(已更新 V3.0)</span>
+                <Check size={20} className="text-emerald-600" /> 第二步：確認並匯入 <span className="text-emerald-500 text-[10px]">(已更新 V3.5)</span>
               </h3>
               <div className="flex items-center gap-2">
                 {pendingAssignments.length > 0 && (
