@@ -5,7 +5,7 @@ import { generateQuotationPDF } from '../services/quotationPdfService';
 import { STANDARD_QUOTATION_ITEMS, StandardItem } from '../data/standardItems';
 import { QUOTATION_PRESETS as STATIC_PRESETS, createQuotationFromPreset, QuotationPreset } from '../data/quotationPresets';
 import { useQuotationPresets } from '../hooks/useQuotationPresets';
-import { findQuotationItems } from '../services/geminiService';
+import { findQuotationItems, formatRawQuotationText } from '../services/geminiService';
 import { generateQuotationNumber } from '../utils/quotationIdGenerator';
 import { STANDARD_NOTES, getCategories } from '../data/standardNotes';
 
@@ -85,6 +85,11 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
     const [aiLoading, setAiLoading] = useState(false);
     const [aiResults, setAiResults] = useState<string[]>([]);
 
+    // AI Raw Import State
+    const [showRawImportModal, setShowRawImportModal] = useState(false);
+    const [rawImportText, setRawImportText] = useState('');
+    const [rawImportLoading, setRawImportLoading] = useState(false);
+
     // Voice Recognition State
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = React.useRef<any>(null);
@@ -153,6 +158,56 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
             setShowItemSelector(true); // Open the standard item selector with these items pre-selected
         } else {
             alert("沒有找到匹配的工項。");
+        }
+    };
+
+    const handleRawImport = async () => {
+        if (!rawImportText.trim() || !formData) return;
+        setRawImportLoading(true);
+        try {
+            const results = await formatRawQuotationText(rawImportText, STANDARD_QUOTATION_ITEMS);
+            if (results && results.length > 0) {
+                const newOptions = [...formData.options];
+                const currentOption = newOptions[activeOptionIndex];
+
+                let targetCatIndex = currentOption.categories.findIndex(c => c.name === 'AI 智慧匯入');
+                if (targetCatIndex === -1) {
+                    targetCatIndex = currentOption.categories.length;
+                    currentOption.categories.push({
+                        ...EmptyCategory,
+                        id: crypto.randomUUID(),
+                        code: ['壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖', '拾'][targetCatIndex] || 'N',
+                        name: 'AI 智慧匯入',
+                        items: []
+                    });
+                }
+
+                results.forEach((item: any) => {
+                    const newItem: QuotationItem = {
+                        id: crypto.randomUUID(),
+                        itemNumber: currentOption.categories[targetCatIndex].items.length + 1,
+                        name: item.name || '未命名項目',
+                        unit: item.unit || '式',
+                        quantity: Number(item.quantity) || 1,
+                        unitPrice: Number(item.unitPrice) || 0,
+                        amount: (Number(item.quantity) || 1) * (Number(item.unitPrice) || 0),
+                        notes: item.notes || ''
+                    };
+                    currentOption.categories[targetCatIndex].items.push(newItem);
+                });
+
+                setFormData({ ...formData, options: newOptions });
+                setShowRawImportModal(false);
+                setRawImportText('');
+                alert(`成功匯入 ${results.length} 個項目！`);
+            } else {
+                alert("未能找到任何報價項目，請確認格式。");
+            }
+        } catch (error) {
+            console.error("Raw Import Failed", error);
+            alert("AI 分析失敗，請稍後再試。");
+        } finally {
+            setRawImportLoading(false);
         }
     };
 
@@ -688,6 +743,12 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                         </div>
                     </div>
                     <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowRawImportModal(true)}
+                            className="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white hover:from-teal-600 hover:to-emerald-700 rounded-lg font-bold transition-all text-sm flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                        >
+                            <Bot size={16} className="animate-pulse" /> 匯入舊報價
+                        </button>
                         <button
                             onClick={() => setShowAISelector(true)}
                             className="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 rounded-lg font-bold transition-all text-sm flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
@@ -1853,6 +1914,58 @@ const QuotationEditor: React.FC<QuotationEditorProps> = ({
                                     className="px-6 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
                                 >
                                     完成
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* AI 舊報價匯入 Modal */}
+            {
+                showRawImportModal && (
+                    <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                            <div className="p-6 border-b border-teal-100 flex justify-between items-center bg-gradient-to-r from-emerald-50 to-teal-50">
+                                <h3 className="text-xl font-black text-teal-900 flex items-center gap-2">
+                                    <Bot className="text-teal-600" />
+                                    AI 智慧匯入：貼上舊報價
+                                </h3>
+                                <button onClick={() => setShowRawImportModal(false)} className="p-2 hover:bg-white/50 rounded-full transition-colors">
+                                    <X size={20} className="text-teal-600" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 flex-1 bg-stone-50 overflow-y-auto space-y-4">
+                                <p className="text-sm text-stone-600">
+                                    請將客戶傳來的 LINE 文字、或是 Excel 複製出來的舊報價內容直接貼在下方。<br />
+                                    AI 將自動辨識項目、數量、單位與單價，並匯入至報價單中。
+                                </p>
+                                <textarea
+                                    value={rawImportText}
+                                    onChange={(e) => setRawImportText(e.target.value)}
+                                    placeholder="例如：\n拆除工程 1式 15000\n全室油漆 30坪 一坪 1200\n廢棄物清運 2車 一車3000..."
+                                    className="w-full h-64 p-4 border border-stone-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none text-stone-700 text-sm font-mono shadow-inner resize-none bg-white"
+                                />
+                            </div>
+
+                            <div className="p-6 border-t border-stone-200 bg-white flex justify-end gap-3 items-center">
+                                <button
+                                    onClick={() => setShowRawImportModal(false)}
+                                    className="px-6 py-2.5 rounded-xl font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleRawImport}
+                                    disabled={rawImportLoading || !rawImportText.trim()}
+                                    className="px-6 py-2.5 rounded-xl font-bold text-white bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 transition-colors shadow-lg flex items-center justify-center min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {rawImportLoading ? (
+                                        <><Loader2 className="animate-spin mr-2" size={18} /> 分析中...</>
+                                    ) : (
+                                        <><Sparkles size={18} className="mr-2" /> 開始解析匯入</>
+                                    )}
                                 </button>
                             </div>
                         </div>

@@ -11,7 +11,7 @@ test.describe('Application Health Checks', () => {
         await expect(page.locator('text=Quality of Life')).toBeVisible();
 
         // Click Guest Mode
-        const guestBtn = page.locator('button', { hasText: '體驗模式免登入預覽' }).or(page.locator('button', { hasText: '體驗帳戶' }).first());
+        const guestBtn = page.locator('button', { hasText: '訪客模式預覽' }).first();
 
         // Some logic to handle modal or directly click
         // First, let's see if there's a guest mode button.
@@ -37,7 +37,7 @@ test.describe('Application Health Checks', () => {
         await page.goto('/');
 
         // Login as guest
-        const guestBtn = page.locator('button', { hasText: '體驗帳戶' }).first();
+        const guestBtn = page.locator('button', { hasText: '訪客模式預覽' }).first();
         if (await guestBtn.isVisible()) await guestBtn.click();
 
         const startTourBtn = page.locator('button', { hasText: '開始使用' });
@@ -55,7 +55,7 @@ test.describe('Application Health Checks', () => {
     test('should navigate to Project Management successfully', async ({ page }) => {
         await page.goto('/');
 
-        const guestBtn = page.locator('button', { hasText: '體驗帳戶' }).first();
+        const guestBtn = page.locator('button', { hasText: '訪客模式預覽' }).first();
         if (await guestBtn.isVisible()) await guestBtn.click();
 
         const startTourBtn = page.locator('button', { hasText: '開始使用' });

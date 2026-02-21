@@ -857,3 +857,64 @@ ${serializedItems}
     return [];
   }
 };
+
+/**
+ * AI 智慧匯入 - 將亂雜的報價文字轉換為標準化報價項目
+ */
+export const formatRawQuotationText = async (rawText: string, availableItems: any[]): Promise<any[]> => {
+  try {
+    let flatItems: any[] = [];
+    if (availableItems.length > 0 && availableItems[0].items) {
+      availableItems.forEach(cat => {
+        cat.items.forEach((item: any) => flatItems.push(item));
+      });
+    } else {
+      flatItems = availableItems;
+    }
+
+    const dict = flatItems.map((item: any) =>
+      `名稱: ${item.name} | 單位: ${item.unit} | 參考單價: ${item.price}`
+    ).join('\n');
+
+    const prompt = `妳是專業的營造業估價助理。請將以下「雜亂無章的客戶/工班舊報價文字」，轉換為標準結構的 JSON 陣列。
+    
+處理邏輯：
+1. 請盡可能從「系統標準字典」中挑最接近的名稱與單位，如果找不到也可以自己定義名稱。
+2. 嘗試提取每項的「數量 (quantity)」與「單價 (unitPrice)」以及「項目名稱 (name)」。如果原始文字沒寫數量跟單價，預設數量=1，單價=0。
+3. 自動計算「總金額 (amount)」= 數量 * 單價。
+4. 如果有特別的說明，可以填入備註 (notes)。
+5. 請不要包含大項的分類名稱(如：拆除工程)，僅提取實際有價錢或單位的明細項。
+6. 請勿省略任何有金額的項目。
+
+系統標準字典參考：
+${dict}
+
+原始亂七八糟的報價文字：
+"""
+${rawText}
+"""
+
+請僅回傳 JSON 陣列，不包含 Markdown 標記或 \`\`\`json 等字樣。
+陣列中每個物件包含以下欄位：
+- name: 項目名稱 
+- unit: 單位 (盡量與字典對齊，如: 式, 坪, M, M2 等)
+- quantity: 數量 (數字)
+- unitPrice: 單價 (數字)
+- amount: 總金額 (數字)
+- notes: 備註 (選填)`;
+
+    const response = await callAIWithFallback({
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    }, "報價單文字智慧匯入");
+
+    const jsonStr = cleanJsonString(response.text || "[]");
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error("報價單文字智慧匯入失敗:", error);
+    return [];
+  }
+};
