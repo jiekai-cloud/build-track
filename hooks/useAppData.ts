@@ -108,7 +108,7 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
     }, []);
 
     // ============ 合併邏輯 (Map-based Optimization O(N)) ============
-    const mergeData = useCallback(<T extends { id: string, updatedAt?: string, deletedAt?: string }>(local: T[], remote: T[]): T[] => {
+    const mergeData = useCallback(<T extends { id: string, updatedAt?: string, deletedAt?: string, timestamp?: string }>(local: T[], remote: T[]): T[] => {
         if (!remote || remote.length === 0) return local;
         if (!local || local.length === 0) return remote;
 
@@ -126,9 +126,14 @@ export const useAppData = (currentDept: SystemContext = 'FirstDept', enableAutoS
                 return;
             }
 
-            // 如果本地有，比較 updatedAt
-            const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
-            const remoteTime = remoteItem.updatedAt ? new Date(remoteItem.updatedAt).getTime() : 0;
+            // 如果本地有，比較 updatedAt（fallback 到 timestamp，適用於 AttendanceRecord 等）
+            const getTime = (item: T) => {
+                if (item.updatedAt) return new Date(item.updatedAt).getTime();
+                if (item.timestamp) return new Date(item.timestamp).getTime();
+                return 0;
+            };
+            const localTime = getTime(localItem);
+            const remoteTime = getTime(remoteItem);
 
             if (remoteTime > localTime) {
                 // Remote 比較新，執行深度合併 (針對特殊欄位)

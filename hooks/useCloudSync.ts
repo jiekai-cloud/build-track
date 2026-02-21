@@ -95,6 +95,20 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                 return;
             }
 
+            // 防護：如果打卡紀錄突然變空但雲端有資料，不要覆蓋
+            if (localData.attendanceRecords && localData.attendanceRecords.length === 0) {
+                try {
+                    const cloudAttendance = await supabaseSyncService.loadFromCloud();
+                    if (cloudAttendance?.attendance && cloudAttendance.attendance.length > 0) {
+                        console.warn(`[Sync] Local attendance empty but cloud has ${cloudAttendance.attendance.length} records. Restoring from cloud.`);
+                        deps.setAttendanceRecords(cloudAttendance.attendance);
+                        localData.attendanceRecords = cloudAttendance.attendance;
+                    }
+                } catch (e) {
+                    console.warn('[Sync] Could not verify cloud attendance.', e);
+                }
+            }
+
             const success = await supabaseSyncService.saveToCloud({
                 projects: localData.projects,
                 customers: localData.customers,
