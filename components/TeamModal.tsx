@@ -105,10 +105,11 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
     onConfirm(formData);
   };
 
-  const isSuperAdmin = currentUser.role === 'SuperAdmin';
-  const isDeptAdmin = currentUser.role === 'DeptAdmin';
-  const isHRAdmin = currentUser.role === 'HRAdmin';
-  const isFinance = currentUser.roleName === '財務部經理';
+  // 核心權限判定：檢查系統級別 (systemRole) 或角色標籤 (role)
+  const isSuperAdmin = currentUser.systemRole === 'SuperAdmin' || currentUser.role === 'SuperAdmin';
+  const isDeptAdmin = currentUser.systemRole === 'DeptAdmin' || currentUser.role === 'DeptAdmin';
+  const isHRAdmin = currentUser.systemRole === 'HRAdmin' || currentUser.role === 'HRAdmin';
+  const isFinance = currentUser.roleName === '財務部經理' || currentUser.role === '財務部經理';
 
   // 真實權限判定
   const canViewAllTabs = isSuperAdmin || isDeptAdmin || isFinance || isHRAdmin;
