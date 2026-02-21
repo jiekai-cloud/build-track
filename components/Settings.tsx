@@ -246,7 +246,7 @@ const Settings: FC<SettingsProps> = ({
                             <ShieldCheck size={28} className="text-emerald-500" />
                             <div>
                               <p className="text-sm font-black text-emerald-900">連線穩定</p>
-                              <div className="text-xs text-gray-500 mt-1">檔案已儲存至：<span className="font-mono text-gray-700 bg-gray-100 px-1 rounded truncate w-32 inline-block align-bottom">{`life_quality_system_data.json`}</span></div>
+                              <div className="text-xs text-stone-500 mt-1">核心資料庫 (Supabase)：已建立加密通道</div>
                             </div>
                           </div>
                           <button
@@ -255,6 +255,44 @@ const Settings: FC<SettingsProps> = ({
                           >
                             中斷連線
                           </button>
+                        </div>
+
+                        {/* Google Calendar Configuration */}
+                        <div className="bg-white border border-stone-200 p-8 rounded-[2rem] space-y-6 shadow-sm">
+                          <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-8 h-8" />
+                            <div>
+                              <h4 className="text-sm font-black text-stone-900 uppercase">Google 日曆雙向同步 (方案 B)</h4>
+                              <p className="text-[10px] text-stone-400 font-bold">同步您的專業行程、派工與會勘至個人手機。</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black text-stone-500 uppercase flex items-center gap-2">
+                                Google OAuth Client ID
+                                <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline inline-flex items-center gap-1">
+                                  <ExternalLink size={10} /> 獲取憑證
+                                </a>
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="貼上您的 .apps.googleusercontent.com 金鑰"
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-stone-300 focus:ring-2 focus:ring-orange-500/20 outline-none text-stone-700"
+                                defaultValue={localStorage.getItem('GOOGLE_CAL_CLIENT_ID') || ''}
+                                onBlur={(e) => {
+                                  localStorage.setItem('GOOGLE_CAL_CLIENT_ID', e.target.value);
+                                }}
+                              />
+                            </div>
+
+                            <div className="bg-stone-50 p-4 rounded-2xl">
+                              <p className="text-[10px] text-stone-500 leading-relaxed font-bold">
+                                <span className="text-orange-600">⚠ 注意：</span> 請確保您的 Google Cloud 專案已授權來源網域：<br />
+                                <code className="bg-stone-200 px-1 rounded">https://jiekai-cloud.github.io</code>
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

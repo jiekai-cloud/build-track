@@ -43,6 +43,38 @@ interface CustomEvent extends RBCEvent {
 export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRequests, teamMembers, leads = [], calendarEvents = [], setCalendarEvents, user, isCloudConnected, onUpdateProject, onDeleteProject, onEditProjectClick }) => {
     const [view, setView] = useState<View>(Views.MONTH);
     const [date, setDate] = useState(new Date());
+    const [isGoogleAuthorized, setIsGoogleAuthorized] = useState(false);
+
+    // Initialize Google API on mount
+    useEffect(() => {
+        const initGoogle = async () => {
+            const clientId = import.meta.env.VITE_GOOGLE_CALENDAR_CLIENT_ID || localStorage.getItem('GOOGLE_CAL_CLIENT_ID');
+            if (clientId) {
+                await googleCalendarService.initService(clientId);
+                setIsGoogleAuthorized(googleCalendarService.isAuthorized());
+            }
+        };
+        initGoogle();
+    }, []);
+
+    const handleGoogleConnect = async () => {
+        const clientId = import.meta.env.VITE_GOOGLE_CALENDAR_CLIENT_ID || localStorage.getItem('GOOGLE_CAL_CLIENT_ID');
+        if (!clientId) {
+            const inputId = prompt('請輸入您的 Google OAuth Client ID:');
+            if (inputId) {
+                localStorage.setItem('GOOGLE_CAL_CLIENT_ID', inputId);
+                await googleCalendarService.initService(inputId);
+                await googleCalendarService.authorize();
+                setIsGoogleAuthorized(googleCalendarService.isAuthorized());
+            }
+            return;
+        }
+        await googleCalendarService.authorize();
+        // Wait a bit for the callback to set the token
+        setTimeout(() => {
+            setIsGoogleAuthorized(googleCalendarService.isAuthorized());
+        }, 3000);
+    };
 
     const holidays = useTaiwanHolidays(date.getFullYear());
 
@@ -258,7 +290,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
             };
 
             // Attempt Google Calendar Sync
-            if (isCloudConnected) {
+            if (isGoogleAuthorized) {
                 const gId = await googleCalendarService.syncEventToGoogle(ev);
                 if (gId) ev.googleEventId = gId;
             }
@@ -281,7 +313,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
         if (!confirm('確定要刪除此自訂行程？')) return;
         setIsSaving(true);
         try {
-            if (googleEventId && isCloudConnected) {
+            if (googleEventId && isGoogleAuthorized) {
                 await googleCalendarService.deleteEventFromGoogle(googleEventId);
             }
             if (setCalendarEvents) {
@@ -354,10 +386,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                     <h1 className="text-2xl lg:text-3xl font-black text-stone-800 flex items-center gap-3">
                         <CalendarIcon className="text-orange-500" size={32} />
                         行事曆
-                        {isCloudConnected && (
+                        {isGoogleAuthorized ? (
                             <span className="flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full border border-emerald-200 ml-2 shadow-sm">
-                                <RefreshCw size={10} /> Google日曆同步中
+                                <RefreshCw size={10} /> Google日曆已連線
                             </span>
+                        ) : (
+                            <button
+                                onClick={handleGoogleConnect}
+                                className="flex items-center gap-1 text-[10px] bg-stone-100 text-stone-600 px-2 py-1 rounded-full border border-stone-200 ml-2 hover:bg-stone-200 transition-all shadow-sm"
+                            >
+                                <RefreshCw size={10} /> 連結 Google 日曆
+                            </button>
                         )}
                     </h1>
                     <p className="text-stone-500 mt-1 text-sm">管理專案行程、人力派工與個人日程</p>
