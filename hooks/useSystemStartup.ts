@@ -171,19 +171,39 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
             // Migration Logic: Strong Cleanup & Fixes
             let processedTeamData = [...initialTeamData];
 
-            // 1. Purge Virtual Members (Force cleanup for ALL departments)
-            const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬'];
-            const PURGE_PREFIXES = ['T-', 'CEO'];
+            // 1. Purge Virtual/Fictional Members
+            const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬', '李小龍', '王四天', 'Test User', '測試人員'];
+            const PURGE_PREFIXES = ['T-', 'CEO', 'MOCK-'];
 
             const originalCount = processedTeamData.length;
             processedTeamData = processedTeamData.filter((m: any) => {
                 const isPurgeName = PURGE_NAMES.includes(m.name);
-                const isPurgeId = typeof m.id === 'string' && PURGE_PREFIXES.some(prefix => m.id.startsWith(prefix) && m.id.length < 8);
-                return !isPurgeName && !isPurgeId;
+                const isPurgeId = typeof m.id === 'string' && PURGE_PREFIXES.some(prefix => m.id.startsWith(prefix));
+                const isPlaceholder = m.name?.includes('測試') || m.email?.includes('example.com') && m.name !== '陳信寬'; // 除非是保留的種子帳號
+                return !isPurgeName && !isPurgeId && !isPlaceholder;
             });
 
+            // 1b. De-duplication (By Name and EmployeeId)
+            const uniqueMembers = new Map();
+            processedTeamData.forEach(m => {
+                // Priority: Use employeeId as key, or name if ID is missing/temporary
+                const key = m.employeeId || m.name;
+                if (!uniqueMembers.has(key)) {
+                    uniqueMembers.set(key, m);
+                } else {
+                    // If duplicate, pick the one with more data or later updatedAt
+                    const existing = uniqueMembers.get(key);
+                    const existingTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+                    const newTime = m.updatedAt ? new Date(m.updatedAt).getTime() : 0;
+                    if (newTime > existingTime) {
+                        uniqueMembers.set(key, m);
+                    }
+                }
+            });
+            processedTeamData = Array.from(uniqueMembers.values());
+
             if (processedTeamData.length < originalCount) {
-                console.log(`[Migration] Purged ${originalCount - processedTeamData.length} virtual members. FORCE SAVING...`);
+                console.log(`[Migration] Purged/Deduplicated ${originalCount - processedTeamData.length} member records. FORCE SAVING...`);
                 const storageKey = dept === 'FirstDept' ? 'bt_team' : (dept === 'ThirdDept' ? 'dept3_bt_team' : 'bt_team');
                 storageService.setItem(storageKey, processedTeamData);
             }
