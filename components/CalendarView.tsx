@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar as BigCalendar, dateFnsLocalizer, Views, Event as RBCEvent, View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Filter, Clock, User, HardHat, CheckCircle2, MapPin, Plus, Loader2, RefreshCw } from 'lucide-react';
+import { Calendar as CalendarIcon, Filter, Clock, User, HardHat, CheckCircle2, MapPin, Plus, Loader2, RefreshCw, Layers, Database, Pencil, Trash2 } from 'lucide-react';
 import { Project, ApprovalRequest, TeamMember, Lead, SystemCalendarEvent, User as UserType } from '../types';
 import { googleCalendarService } from '../services/googleCalendarService';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -529,22 +529,61 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                         {selectedEvent && selectedEvent.type !== 'custom' ? (
                             // View Only Mode (for non-custom events)
                             <div className="flex flex-col">
-                                <div className={`p - 6 ${selectedEvent.color.replace('bg-', 'bg-').replace('-500', '-600')} text - white`}>
-                                    <h3 className="text-xl font-black">{selectedEvent.title}</h3>
-                                    <p className="opacity-90 text-sm mt-1">{selectedEvent.start.toLocaleString()} - {selectedEvent.end.toLocaleString()}</p>
+                                <div className={`relative p-8 ${selectedEvent.color.replace('bg-', 'bg-').replace('-500', '-600')} text-white`}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                                            <Layers size={10} /> {selectedEvent.type === 'project' ? '專案行程詳情' : '行程詳情'}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-2xl font-black leading-tight">{selectedEvent.title}</h3>
+                                    <div className="mt-4 flex items-center gap-4 text-white/80 text-xs font-bold">
+                                        <div className="flex items-center gap-1.5">
+                                            <CalendarIcon size={14} />
+                                            {selectedEvent.start.toLocaleDateString()}
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <RefreshCw size={14} className="animate-spin-slow" />
+                                            同步中
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="p-6 overflow-y-auto space-y-4">
-                                    <div className="p-4 bg-stone-50 rounded-xl space-y-2 text-sm text-stone-700 font-medium">
-                                        <p><strong>類型類別：</strong> {selectedEvent.type.toUpperCase()}</p>
-                                        <p><strong>資料識別碼：</strong> {selectedEvent.id}</p>
+
+                                <div className="p-8 space-y-6">
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {/* Info Card 1: ID & Type */}
+                                        <div className="bg-stone-50 p-4 rounded-2xl flex items-center gap-4 border border-stone-100">
+                                            <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-stone-400">
+                                                <Database size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">資料識別碼 / 類型</p>
+                                                <p className="text-sm font-bold text-stone-700">{selectedEvent.id} · <span className="text-indigo-600">工程專案</span></p>
+                                            </div>
+                                        </div>
+
+                                        {/* Info Card 2: Client */}
                                         {selectedEvent.type === 'project' && selectedEvent.raw?.client && (
-                                            <p><strong>業主客戶：</strong> {selectedEvent.raw.client}</p>
+                                            <div className="bg-stone-50 p-4 rounded-2xl flex items-center gap-4 border border-stone-100">
+                                                <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-stone-400">
+                                                    <User size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">業主客戶</p>
+                                                    <p className="text-sm font-bold text-stone-700">{selectedEvent.raw.client}</p>
+                                                </div>
+                                            </div>
                                         )}
+
+                                        {/* Description */}
                                         {selectedEvent.raw?.description && (
-                                            <p className="pt-2 border-t border-stone-200">{selectedEvent.raw.description}</p>
+                                            <div className="p-4 bg-orange-50/30 rounded-2xl border border-orange-100/50">
+                                                <p className="text-[10px] font-black text-orange-600 mb-1 uppercase tracking-widest">行程備註</p>
+                                                <p className="text-xs font-bold text-stone-600 leading-relaxed">{selectedEvent.raw.description}</p>
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="flex justify-between items-center pt-4 border-t border-stone-200">
+
+                                    <div className="flex flex-col gap-3 pt-6 border-t border-stone-100">
                                         <div className="flex gap-2">
                                             {selectedEvent.type === 'project' && onUpdateProject && (
                                                 <button
@@ -553,9 +592,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                                                         onUpdateProject(p.id, { hideInCalendar: !p.hideInCalendar });
                                                         setIsModalOpen(false);
                                                     }}
-                                                    className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${selectedEvent.raw?.hideInCalendar ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+                                                    className={`flex-1 py-3 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 ${selectedEvent.raw?.hideInCalendar ? 'bg-indigo-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
                                                 >
-                                                    {selectedEvent.raw?.hideInCalendar ? '取消隱藏' : '從行事曆隱藏'}
+                                                    <RefreshCw size={14} />
+                                                    {selectedEvent.raw?.hideInCalendar ? '恢復顯示' : '隱藏此行程'}
                                                 </button>
                                             )}
                                             {selectedEvent.type === 'project' && onEditProjectClick && (
@@ -564,24 +604,36 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                                                         onEditProjectClick(selectedEvent.raw as Project);
                                                         setIsModalOpen(false);
                                                     }}
-                                                    className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold rounded-xl transition-all"
+                                                    className="flex-1 py-3 bg-blue-600 text-white hover:bg-blue-700 text-xs font-black rounded-xl transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-2"
                                                 >
+                                                    <Pencil size={14} />
                                                     編輯專案
                                                 </button>
                                             )}
+                                        </div>
+
+                                        <div className="flex gap-2">
                                             {selectedEvent.type === 'project' && onDeleteProject && (
                                                 <button
                                                     onClick={() => {
-                                                        onDeleteProject(selectedEvent.raw.id);
-                                                        setIsModalOpen(false);
+                                                        if (confirm('確定要刪除此專案嗎？這將會影響所有模組。')) {
+                                                            onDeleteProject(selectedEvent.raw.id);
+                                                            setIsModalOpen(false);
+                                                        }
                                                     }}
-                                                    className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-bold rounded-xl transition-all"
+                                                    className="flex-1 py-3 bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2"
                                                 >
+                                                    <Trash2 size={14} />
                                                     刪除專案
                                                 </button>
                                             )}
+                                            <button
+                                                onClick={() => setIsModalOpen(false)}
+                                                className="flex-1 py-3 bg-stone-900 text-white hover:bg-stone-800 font-black rounded-xl transition-all text-xs flex items-center justify-center gap-2"
+                                            >
+                                                關閉視窗
+                                            </button>
                                         </div>
-                                        <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl transition-all">關閉</button>
                                     </div>
                                 </div>
                             </div>
