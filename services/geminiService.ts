@@ -2,13 +2,20 @@ import { Project } from "../types";
 
 // 根據最新 API Key 權限更新的模型列表
 const FALLBACK_MODELS = [
-  'gemini-2.5-flash',       // 最新旗艦：高效能版本
-  'gemini-2.5-pro',         // 最新旗艦：高智商版本
-  'gemini-1.5-flash',       // 備援：穩定版本
-  'gemini-1.5-pro'          // 備援：高智商版本
+  'gemini-2.0-flash',         // 穩定快速版本
+  'gemini-2.5-flash',         // 最新旗艦：高效能版本
+  'gemini-2.5-pro',           // 最新旗艦：高智商版本
 ];
 
 let cachedValidModel: string | null = null;
+
+// Clear stale cache if it references deprecated models
+if (typeof window !== 'undefined') {
+  const cached = localStorage.getItem('_gemini_cached_model');
+  if (cached && !FALLBACK_MODELS.includes(cached)) {
+    localStorage.removeItem('_gemini_cached_model');
+  }
+}
 
 const getApiKey = () => {
   const savedKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
