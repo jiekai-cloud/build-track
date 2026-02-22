@@ -46,13 +46,15 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
     const syncTimeoutRef = useRef<any>(null);
 
     // 1. Core Sync Logic (handleCloudSync)
-    const handleCloudSync = useCallback(async () => {
+    const handleCloudSync = useCallback(async (isManual = false) => {
         if (!isCloudConnected || isSyncingRef.current || user?.role === 'Guest' || !dataRef.current) return;
 
         isSyncingRef.current = true;
-        setIsSyncing(true);
-        setSyncProgress(0);
-        setSyncMessage('開始檢查雲端版本...');
+        if (isManual) {
+            setIsSyncing(true);
+            setSyncProgress(0);
+            setSyncMessage('開始檢查雲端版本...');
+        }
 
         try {
             const modifiedTime = await supabaseSyncService.getLatestModifiedTime();
@@ -61,8 +63,10 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
             if (modifiedTime && lastRemoteModifiedTime.current && modifiedTime !== lastRemoteModifiedTime.current) {
                 console.log('[Sync] Detected newer Supabase version...');
                 const cloudData = await supabaseSyncService.loadFromCloud((msg, curr, total) => {
-                    setSyncMessage(msg);
-                    setSyncProgress(Math.round((curr / total) * 100));
+                    if (isManual) {
+                        setSyncMessage(msg);
+                        setSyncProgress(Math.round((curr / total) * 100));
+                    }
                 });
 
                 if (cloudData) {
@@ -72,7 +76,7 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                     setCloudError(null);
                     // Skip uploading if we just downloaded
                     isSyncingRef.current = false;
-                    setIsSyncing(false);
+                    if (isManual) setIsSyncing(false);
                     return;
                 }
             }
@@ -125,8 +129,10 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                 quotations: localData.quotations,
                 calendarEvents: localData.calendarEvents,
             }, false, (msg, curr, total) => {
-                setSyncMessage(msg);
-                setSyncProgress(Math.round((curr / total) * 100));
+                if (isManual) {
+                    setSyncMessage(msg);
+                    setSyncProgress(Math.round((curr / total) * 100));
+                }
             });
 
             if (success) {
@@ -142,7 +148,7 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
             setCloudError('同步發生錯誤');
         } finally {
             isSyncingRef.current = false;
-            setIsSyncing(false);
+            if (isManual) setIsSyncing(false);
         }
     }, [isCloudConnected, user, updateStateWithMerge, setAttendanceRecords, setQuotations, dataRef]);
 
@@ -152,7 +158,7 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
             if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
             console.log('[Supabase] Sync scheduled in 10s...');
             syncTimeoutRef.current = setTimeout(() => {
-                handleCloudSync();
+                handleCloudSync(false);
             }, 10000);
         }
     }, [isCloudConnected, cloudError, user?.role, handleCloudSync]);

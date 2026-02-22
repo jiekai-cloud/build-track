@@ -377,7 +377,7 @@ const App: React.FC = () => {
 
   // Sync / Restore 事件 Listeners & Proactive Sync
   useEffect(() => {
-    const onManualSync = () => handleCloudSync();
+    const onManualSync = () => handleCloudSync(true);
     const onManualRestore = () => handleCloudRestore();
 
     // Proactive sync when user returns to tab
@@ -707,7 +707,7 @@ const App: React.FC = () => {
                 cloudError={cloudError}
                 lastCloudSync={lastCloudSync}
                 isMasterTab={isMasterTab}
-                onRetrySync={handleCloudSync}
+                onRetrySync={() => handleCloudSync(true)}
                 onConvertLead={handleConvertLead}
                 onProjectClick={(id) => { setSelectedProjectId(id); setActiveTab('projects'); }}
                 onStartTour={() => setIsOnboardingOpen(true)}
