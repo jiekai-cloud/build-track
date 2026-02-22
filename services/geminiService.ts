@@ -1,20 +1,73 @@
 import { Project } from "../types";
 
-// 根據最新 API Key 權限更新的模型列表
-const FALLBACK_MODELS = [
-  'gemini-2.0-flash',         // 穩定快速版本
-  'gemini-2.5-flash',         // 最新旗艦：高效能版本
-  'gemini-2.5-pro',           // 最新旗艦：高智商版本
-];
-
+// 動態模型探索：不再寫死模型名稱，讓系統自動偵測最新可用模型
 let cachedValidModel: string | null = null;
+let cachedAvailableModels: string[] | null = null;
 
-// Clear stale cache if it references deprecated models
-if (typeof window !== 'undefined') {
-  const cached = localStorage.getItem('_gemini_cached_model');
-  if (cached && !FALLBACK_MODELS.includes(cached)) {
-    localStorage.removeItem('_gemini_cached_model');
+/**
+ * 動態取得可用的 Gemini 模型列表
+ * 自動從 API 探索，優先選最新 flash 版本
+ */
+async function discoverAvailableModels(apiKey: string): Promise<string[]> {
+  if (cachedAvailableModels && cachedAvailableModels.length > 0) {
+    return cachedAvailableModels;
   }
+
+  // 嘗試從 localStorage 快取讀取（24 小時有效）
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('_gemini_models_cache');
+      if (stored) {
+        const { models, timestamp } = JSON.parse(stored);
+        const ageHours = (Date.now() - timestamp) / (1000 * 60 * 60);
+        if (ageHours < 24 && models?.length > 0) {
+          console.log(`[AI] 使用快取模型列表 (${models.length} 個, ${ageHours.toFixed(1)}h 前)`);
+          cachedAvailableModels = models;
+          return models;
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  try {
+    console.log('[AI] 動態探索可用 Gemini 模型...');
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+    );
+    if (!response.ok) throw new Error(`Models API: ${response.status}`);
+
+    const data = await response.json();
+    const models = (data.models || [])
+      .filter((m: any) =>
+        m.supportedGenerationMethods?.includes('generateContent') &&
+        m.name?.includes('gemini')
+      )
+      .map((m: any) => m.name.replace('models/', ''))
+      .sort((a: string, b: string) => {
+        // flash 優先（快速便宜）
+        const aFlash = a.includes('flash') ? 1 : 0;
+        const bFlash = b.includes('flash') ? 1 : 0;
+        if (aFlash !== bFlash) return bFlash - aFlash;
+        // 版本號大的排前面
+        return b.localeCompare(a);
+      });
+
+    if (models.length > 0) {
+      console.log(`[AI] 發現 ${models.length} 個可用模型:`, models.slice(0, 5));
+      cachedAvailableModels = models;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('_gemini_models_cache', JSON.stringify({ models, timestamp: Date.now() }));
+      }
+      return models;
+    }
+  } catch (e) {
+    console.warn('[AI] 模型探索失敗，使用預設:', e);
+  }
+
+  // 探索失敗時的最後防線
+  const fallback = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+  cachedAvailableModels = fallback;
+  return fallback;
 }
 
 const getApiKey = () => {
@@ -162,12 +215,15 @@ async function callAIWithFallback(payload: any, context: string) {
 
   const apiKey = getApiKey();
 
-  // --- 診斷代碼已移除 (效能優化) ---
+  // 動態取得可用模型
+  const availableModels = await discoverAvailableModels(apiKey);
 
   let lastError: any = null;
 
-  // 優先嘗試快取模型
-  const targetModels = cachedValidModel ? [cachedValidModel, ...FALLBACK_MODELS] : FALLBACK_MODELS;
+  // 優先嘗試快取的成功模型
+  const targetModels = cachedValidModel
+    ? [cachedValidModel, ...availableModels.filter(m => m !== cachedValidModel)]
+    : availableModels;
 
   // 移除重複項
   const uniqueModels = Array.from(new Set(targetModels));
