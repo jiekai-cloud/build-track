@@ -141,11 +141,11 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                 setLastCloudSync(new Date().toLocaleTimeString());
                 setCloudError(null);
             } else {
-                setCloudError(`寫入失敗`);
+                if (isManual) setCloudError(`寫入失敗`);
             }
         } catch (e: any) {
             console.error('Supabase sync failed:', e);
-            setCloudError('同步發生錯誤');
+            if (isManual) setCloudError('同步發生錯誤');
         } finally {
             isSyncingRef.current = false;
             if (isManual) setIsSyncing(false);
