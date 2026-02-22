@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { HardHat, ShieldCheck, Sparkles, User, Lock, ArrowRight, Layers, Check, AlertCircle, Hash, Info, UserCheck, Cloud, Building2 } from 'lucide-react';
 import { MOCK_DEPARTMENTS } from '../constants';
 import { storageService } from '../services/storageService';
-import { supabaseDb } from '../services/supabaseDb';
+import { firestoreDb } from '../services/firestoreDb';
 import { SystemContext } from '../types';
 
 interface LoginProps {
@@ -100,7 +100,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     if (!member) {
       try {
         console.log('[Login Trace] Local member not found, fetching team from Supabase...');
-        const cloudTeam = await supabaseDb.getCollection<any>('teamMembers');
+        const cloudTeam = await firestoreDb.getCollection<any>('teamMembers');
         console.log('[Login Trace] Supabase returning cloudTeam length:', cloudTeam?.length);
         if (cloudTeam && cloudTeam.length > 0) {
           const normalizedCloudTeam = cloudTeam.map(m => ({

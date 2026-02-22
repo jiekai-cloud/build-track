@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { supabaseDb } from '../services/supabaseDb';
+import { firestoreDb } from '../services/firestoreDb';
 import { Project, Customer, TeamMember, Vendor, Lead, InventoryItem, InventoryLocation, PurchaseOrder, AttendanceRecord, PayrollRecord, ApprovalRequest, ApprovalTemplate, ActivityLog, Quotation, User, SystemCalendarEvent } from '../types';
 import { useAppData } from './useAppData';
 
@@ -50,7 +50,7 @@ export const useMigrationEngine = ({ user, appData }: MigrationEngineDeps) => {
                 count++;
                 setProgress({ current: count, total: steps.length, task: `上傳 ${step.name}... (${step.data?.length || 0} 筆)` });
                 if (step.data && Array.isArray(step.data) && step.data.length > 0) {
-                    const success = await supabaseDb.setCollection(step.collection, step.data as any[]);
+                    const success = await firestoreDb.setCollection(step.collection, step.data as any[]);
                     if (!success) throw new Error(`${step.name} 寫入失敗`);
                 }
             }

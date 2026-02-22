@@ -4,8 +4,7 @@ import { Quotation } from '../types';
 import QuotationPrintTemplate from '../components/QuotationPrintTemplate';
 import SignaturePad from '../components/SignaturePad';
 import { storageService } from '../services/storageService';
-import { supabase } from '../services/supabaseClient';
-import { supabaseDb } from '../services/supabaseDb';
+import { firestoreDb } from '../services/firestoreDb';
 import { CheckCircle } from 'lucide-react';
 
 const ContractSigningPage: React.FC = () => {
@@ -107,23 +106,17 @@ const ContractSigningPage: React.FC = () => {
                     }
                 }
 
-                // Strategy 3: Try Supabase Cloud (Crucial for external clients!)
+                // Strategy 3: Try Firebase Cloud (Crucial for external clients!)
                 if (!target && id) {
                     try {
-                        console.log('[Contract Signing] Trying Supabase Cloud...');
-                        const { data, error } = await supabase
-                            .from('app_data')
-                            .select('data')
-                            .eq('collection', 'quotations')
-                            .eq('item_id', id)
-                            .single();
-
-                        if (data && !error) {
-                            console.log('[Contract Signing] Found in Supabase Cloud');
-                            target = data.data as Quotation;
+                        console.log('[Contract Signing] Trying Firebase Cloud...');
+                        const cloudQuotations = await firestoreDb.getCollection<Quotation>('quotations');
+                        if (cloudQuotations && cloudQuotations.length > 0) {
+                            target = cloudQuotations.find(q => q.id === id) || null;
+                            if (target) console.log('[Contract Signing] Found in Firebase Cloud');
                         }
                     } catch (cloudError) {
-                        console.error('[Contract Signing] Error fetching from Supabase:', cloudError);
+                        console.error('[Contract Signing] Error fetching from Firebase:', cloudError);
                     }
                 }
 
@@ -176,21 +169,18 @@ const ContractSigningPage: React.FC = () => {
                 await storageService.setItem(key, newQuotes);
             }
 
-            // Strategy: Force update to Supabase!
+            // Strategy: Force update to Firebase!
             // Crucial so that the signed contract is immediately pushed to the cloud backend.
             try {
-                const { error } = await supabase
-                    .from('app_data')
-                    .upsert({ collection: 'quotations', item_id: quotation.id, data: updatedQuotation }, { onConflict: 'collection,item_id' });
-
-                if (error) {
-                    console.error('[Contract Signing] Failed to push signature to Supabase:', error);
+                const success = await firestoreDb.setCollection('quotations', [updatedQuotation]);
+                if (!success) {
+                    console.error('[Contract Signing] Failed to push signature to Firebase');
                     alert('注意：雲端同步失敗，請聯絡管理員確認簽署狀態。');
                 } else {
-                    console.log('[Contract Signing] Successfully pushed signature to Supabase');
+                    console.log('[Contract Signing] Successfully pushed signature to Firebase');
                 }
             } catch (cloudErr) {
-                console.error('[Contract Signing] Exception pushing to Supabase:', cloudErr);
+                console.error('[Contract Signing] Exception pushing to Firebase:', cloudErr);
             }
 
         } catch (e) {
