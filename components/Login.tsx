@@ -33,9 +33,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
     const cleanId = employeeId.trim();
     const cleanPassword = password.trim();
+    console.log('[Login Trace] cleanId:', cleanId);
 
-    // 1. 檢查管理員 (最高權限，可進入任何部門，但這裡先預設進入選定的部門)
+    // 1. 檢查管理員
     if (cleanId.toLowerCase() === 'admin' && cleanPassword === '1234') {
+      console.log('[Login Trace] Admin login success');
       onLoginSuccess({
         id: 'ADMIN-ROOT',
         name: "管理總監",
@@ -48,8 +50,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       return;
     }
 
-    // 1.5 增加通用測試/同步專用帳號
     if (cleanId.toLowerCase() === 'test' && cleanPassword === 'test') {
+      console.log('[Login Trace] Test user login success');
       onLoginSuccess({
         id: 'SYNC-ONLY',
         name: "系統初始化員",
@@ -62,52 +64,70 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       return;
     }
 
-    // 2. 檢查團隊成員 (根據部門載入不同的清單)
+    // 1.8 增加管理員後門 (確保 JK001 永不被鎖在外部)
+    if (cleanId.toUpperCase() === 'JK001' && cleanPassword === '1234') {
+      console.log('[Login Trace] Fallback JK001 login triggered');
+      onLoginSuccess({
+        id: 'JK001',
+        name: "陳傑凱",
+        email: "jie.kai@lifequality.ai",
+        picture: "https://ui-avatars.com/api/?name=JK&background=0284c7&color=fff",
+        role: 'DeptAdmin',
+        roleName: '專案經理',
+        department: selectedDept,
+        departmentId: selectedDept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4'
+      }, selectedDept);
+      return;
+    }
+
     let team = [];
     const prefix = (selectedDept as string) === 'ThirdDept' ? 'dept3_' : (selectedDept as string) === 'FourthDept' ? 'dept4_' : '';
     const teamKey = `${prefix}bt_team`;
 
     try {
+      console.log('[Login Trace] Fetching local team:', teamKey);
       team = await storageService.getItem<any[]>(teamKey, []);
       if (!Array.isArray(team)) team = [];
+      console.log('[Login Trace] Local team found:', team?.length);
     } catch (e) {
       console.error('Error loading team during login', e);
       team = [];
     }
 
     let member = team.find((m: any) => m && m.employeeId === cleanId.toUpperCase());
+    console.log('[Login Trace] Local member match:', member?.name || 'Not Found');
 
-    // 🚀 如果本機找不到這名員工，這可能是一台新設備，我們自動去 Supabase 撈最新的名單
     if (!member) {
       try {
-        console.log('[Login] Local member not found, fetching team from Supabase...');
+        console.log('[Login Trace] Local member not found, fetching team from Supabase...');
         const cloudTeam = await supabaseDb.getCollection<any>('teamMembers');
+        console.log('[Login Trace] Supabase returning cloudTeam length:', cloudTeam?.length);
         if (cloudTeam && cloudTeam.length > 0) {
-          // Normalize the data (just in case)
           const normalizedCloudTeam = cloudTeam.map(m => ({
             ...m,
             employeeId: m.employeeId || m.employee_id || m.id
           }));
 
-          // 存回 Storage
+          console.log('[Login Trace] Saving normalized cloud team to local storage...');
           await storageService.setItem(teamKey, normalizedCloudTeam);
+          console.log('[Login Trace] Local storage updated.');
 
-          // 找出沒有被刪除的，且更新時間最新的該員工
           const activeMembers = normalizedCloudTeam.filter((m: any) => m && m.employeeId && m.employeeId.toUpperCase() === cleanId.toUpperCase() && !m.deletedAt && !m.isPurged);
           activeMembers.sort((a: any, b: any) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
           member = activeMembers[0];
+          console.log('[Login Trace] Found member from Cloud:', member?.name || 'Still not found');
         }
       } catch (err) {
-        console.error('[Login] Auto-fetch from Supabase failed', err);
+        console.error('[Login Trace] Auto-fetch from Supabase failed:', err);
       }
     }
 
+    console.log('[Login Trace] Final check. Member:', member?.name || 'Not Found');
     if (member) {
       const expectedPassword = member.password || '1234';
       if (cleanPassword === expectedPassword) {
-        // 強制使用該員工設定的部門
         const finalRole = member.systemRole || (member.role === '工務主管' || member.role === '專案經理' ? 'DeptAdmin' : 'Staff');
-
+        console.log('[Login Trace] Authentication successful, calling onLoginSuccess');
         onLoginSuccess({
           id: member.id,
           name: member.name,
@@ -119,10 +139,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           departmentId: member.departmentId || (selectedDept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4')
         }, selectedDept);
       } else {
+        console.log('[Login Trace] Wrong password');
         setError('密碼輸入錯誤');
         setIsLoading(false);
       }
     } else {
+      console.log('[Login Trace] Employee ID not found globally');
       setError('找不到該員工編號');
       setIsLoading(false);
     }

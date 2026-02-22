@@ -10,17 +10,24 @@ export const supabaseDb = {
      */
     getCollection: async <T>(collection: string): Promise<T[]> => {
         try {
-            const { data, error } = await supabase
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Supabase request timeout')), 5000)
+            );
+
+            const supabasePromise = supabase
                 .from('app_data')
                 .select('data')
                 .eq('collection', collection);
 
-            if (error) {
-                console.error(`[Supabase] Error fetching ${collection}:`, error);
-                throw error;
+            // Add timeout wrapper to prevent hanging
+            const result = await Promise.race([supabasePromise, timeoutPromise]) as any;
+
+            if (result.error) {
+                console.error(`[Supabase] Error fetching ${collection}:`, result.error);
+                throw result.error;
             }
 
-            return (data || []).map(row => row.data as T);
+            return (result.data || []).map((row: any) => row.data as T);
         } catch (e) {
             console.error(`[Supabase] fallback triggered for ${collection}`, e);
             // 本機開發時尚未全上線或網路錯誤的備援 (退回讀取本地)
