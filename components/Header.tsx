@@ -1,7 +1,7 @@
 import React from 'react';
-import { Menu, LogOut, Layers, CloudOff, RefreshCw, AlertCircle, CheckCircle, Bell, Sparkles } from 'lucide-react';
+import { Menu, LogOut, CloudOff, RefreshCw, AlertCircle, CheckCircle, Bell, Sparkles } from 'lucide-react';
 import { User } from '../types';
-import { MOCK_DEPARTMENTS, SYSTEM_VERSION } from '../constants';
+import { SYSTEM_VERSION } from '../constants';
 
 interface HeaderProps {
     user: User;
@@ -14,8 +14,6 @@ interface HeaderProps {
     onNotificationClick: () => void;
     activityLogsLength: number;
     onAISettingsClick: () => void;
-    viewingDeptId: string;
-    onViewingDeptChange: (id: string) => void;
     onLogout: () => void;
 }
 
@@ -29,8 +27,6 @@ const Header: React.FC<HeaderProps> = ({
     onNotificationClick,
     activityLogsLength,
     onAISettingsClick,
-    viewingDeptId,
-    onViewingDeptChange,
     onLogout
 }) => {
     return (
@@ -95,14 +91,6 @@ const Header: React.FC<HeaderProps> = ({
                     </span>
                 </button>
 
-                <div className="hidden sm:flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
-                    <Layers size={14} className="text-stone-400" />
-                    <select className="bg-transparent text-[11px] font-black text-stone-900 outline-none" value={viewingDeptId} onChange={(e) => onViewingDeptChange(e.target.value)}>
-                        <option value="all">全公司視野</option>
-                        {MOCK_DEPARTMENTS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                </div>
-
                 <button onClick={onLogout} className="p-2 text-stone-400 hover:text-rose-600 transition-colors">
                     <LogOut size={20} />
                 </button>
@@ -112,3 +100,4 @@ const Header: React.FC<HeaderProps> = ({
 };
 
 export default Header;
+

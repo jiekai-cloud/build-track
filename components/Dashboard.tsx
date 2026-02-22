@@ -306,23 +306,31 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
   return (
     <div className="p-4 lg:p-8 space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-3">
             <h1 className="text-xl lg:text-2xl font-black text-stone-900 tracking-tight">
               {currentDept === 'ThirdDept' ? '傑凱工程' : '生活品質'} • 智慧指揮中心
             </h1>
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-900 text-white rounded-full">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-stone-900 to-stone-700 text-white rounded-full shadow-lg shadow-stone-300">
               <Sparkles size={12} className="text-orange-400" />
               <span className="text-[10px] font-black uppercase tracking-widest">Scale Optimized</span>
             </div>
           </div>
-          <p className="text-stone-500 text-xs font-medium">
-            雲端：{lastCloudSync || '未同步'} |
-            狀態：{isMasterTab ? '系統主控 (Master)' : '觀察模式 (Secondary)'}
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <p className="text-stone-500 text-xs font-medium">
+                雲端：{lastCloudSync || '未同步'} |
+                狀態：{isMasterTab ? '系統主控 (Master)' : '觀察模式 (Secondary)'}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-stone-200 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 bg-white/80 backdrop-blur-sm p-2 rounded-2xl border border-stone-200 shadow-sm">
           <div className="flex items-center gap-2 px-3 border-r border-stone-100">
             <CalendarDays size={14} className="text-stone-400" />
             <select className="bg-transparent text-xs font-bold outline-none cursor-pointer" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
@@ -340,7 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
           <button
             onClick={generatePortfolioAnalysis}
             disabled={isAnalyzing}
-            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-black transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
+            className="flex items-center gap-2 bg-gradient-to-r from-slate-900 to-slate-700 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:from-black hover:to-slate-800 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
           >
             {isAnalyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             AI 營運診斷
@@ -409,16 +417,20 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
         {statsCards.map((stat, i) => (
-          <div key={i} className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-100 shadow-sm hover:shadow-lg hover:border-stone-200 transition-all group">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className={`p-2.5 sm:p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
+          <div key={i} className="relative bg-white p-4 sm:p-5 rounded-[1.5rem] border border-stone-100 shadow-sm hover:shadow-2xl hover:shadow-stone-200/50 hover:-translate-y-1 hover:border-stone-200 transition-all duration-300 group overflow-hidden">
+            {/* Watermark Icon */}
+            <div className="absolute -right-3 -top-3 opacity-[0.04] group-hover:opacity-[0.08] transition-opacity duration-500">
+              <stat.icon size={80} />
+            </div>
+            <div className="relative flex items-center gap-3 sm:gap-4">
+              <div className={`p-2.5 sm:p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 group-hover:shadow-lg transition-all duration-300`}>
                 <stat.icon size={18} className="sm:w-5 sm:h-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest mb-0.5 sm:mb-1 truncate">{stat.label}</p>
                 <p className="text-lg sm:text-xl lg:text-2xl font-black text-stone-900 leading-tight">{stat.value}</p>
                 {(stat as any).subValue && (
-                  <p className="text-xs font-bold text-emerald-600 mt-1">{(stat as any).subValue}</p>
+                  <p className="text-xs font-bold text-emerald-600 mt-1 flex items-center gap-1"><ArrowUpRight size={10} />{(stat as any).subValue}</p>
                 )}
                 {(stat as any).trend !== undefined && (
                   <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${(stat as any).trend > 0 ? 'text-emerald-500' : (stat as any).trend < 0 ? 'text-rose-500' : 'text-stone-400'}`}>
@@ -434,55 +446,72 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
 
       {/* Today's Focus Section (#4) */}
       {(todayFocus.overdueQuotes.length > 0 || todayFocus.behindSchedule.length > 0 || todayFocus.recentProjects.length > 0) && (
-        <div className="bg-gradient-to-r from-stone-900 to-stone-800 rounded-[2rem] p-6 lg:p-8 text-white animate-in slide-in-from-bottom-2">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <ListTodo size={18} className="text-amber-400" /> 今日焦點
-            </h3>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
-              <History size={12} /> 本月新增 {monthlyTrend.newThisMonth} 案 · 完工 {monthlyTrend.completedThisMonth} 案
+        <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 rounded-[2rem] p-6 lg:p-8 text-white animate-in slide-in-from-bottom-2 relative overflow-hidden">
+          {/* Background decorative elements */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(251,191,36,0.08),transparent_50%)] pointer-events-none"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.06),transparent_50%)] pointer-events-none"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-400/20 flex items-center justify-center">
+                  <ListTodo size={16} className="text-amber-400" />
+                </div>
+                今日焦點
+              </h3>
+              <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                <History size={12} /> 本月新增 {monthlyTrend.newThisMonth} 案 · 完工 {monthlyTrend.completedThisMonth} 案
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {todayFocus.overdueQuotes.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-3">⚠️ 待跟進報價</p>
-                <div className="space-y-2">
-                  {todayFocus.overdueQuotes.map(p => (
-                    <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
-                      <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
-                      <span className="text-[9px] text-rose-400 font-black shrink-0 ml-2">逾期{p.riskValue}天</span>
-                    </div>
-                  ))}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {todayFocus.overdueQuotes.length > 0 && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] transition-colors duration-300 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span></span>
+                    <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest">待跟進報價</p>
+                  </div>
+                  <div className="space-y-2">
+                    {todayFocus.overdueQuotes.map(p => (
+                      <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
+                        <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
+                        <span className="text-[9px] text-rose-400 font-black shrink-0 ml-2 bg-rose-500/20 px-1.5 py-0.5 rounded">逾期{p.riskValue}天</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-            {todayFocus.behindSchedule.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest mb-3">🏗️ 進度滯後</p>
-                <div className="space-y-2">
-                  {todayFocus.behindSchedule.map(p => (
-                    <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
-                      <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
-                      <span className="text-[9px] text-amber-400 font-black shrink-0 ml-2">滯後{p.riskValue}%</span>
-                    </div>
-                  ))}
+              )}
+              {todayFocus.behindSchedule.length > 0 && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] transition-colors duration-300 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span></span>
+                    <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest">進度滯後</p>
+                  </div>
+                  <div className="space-y-2">
+                    {todayFocus.behindSchedule.map(p => (
+                      <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
+                        <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
+                        <span className="text-[9px] text-amber-400 font-black shrink-0 ml-2 bg-amber-500/20 px-1.5 py-0.5 rounded">滯後{p.riskValue}%</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-            {todayFocus.recentProjects.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-3">🆕 近期新增</p>
-                <div className="space-y-2">
-                  {todayFocus.recentProjects.map(p => (
-                    <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
-                      <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
-                      <span className="text-[9px] text-stone-500 font-bold shrink-0 ml-2">{p.status}</span>
-                    </div>
-                  ))}
+              )}
+              {todayFocus.recentProjects.length > 0 && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] transition-colors duration-300 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+                    <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">近期新增</p>
+                  </div>
+                  <div className="space-y-2">
+                    {todayFocus.recentProjects.map(p => (
+                      <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
+                        <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
+                        <span className="text-[9px] text-stone-500 font-bold shrink-0 ml-2">{p.status}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -540,8 +569,11 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Status Distribution Chart */}
-        <div className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm flex flex-col">
-          <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest mb-6 border-l-4 border-indigo-500 pl-3">案件狀態分佈</h3>
+        <div className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm flex flex-col hover:shadow-xl hover:shadow-stone-100/50 transition-all duration-300">
+          <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest mb-6 flex items-center gap-3">
+            <div className="w-1.5 h-6 bg-gradient-to-b from-indigo-500 to-indigo-300 rounded-full"></div>
+            案件狀態分佈
+          </h3>
           <div className="flex-1 w-full min-h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -559,7 +591,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.15)', fontSize: '12px', fontWeight: 'bold', padding: '12px 16px' }}
                 />
                 <Legend
                   layout="horizontal"
@@ -573,12 +605,15 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
         </div>
 
         {/* Financial Overview Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm flex flex-col">
-          <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest mb-6 border-l-4 border-emerald-500 pl-3">重點案件預算執行概況 (Top 5)</h3>
+        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm flex flex-col hover:shadow-xl hover:shadow-stone-100/50 transition-all duration-300">
+          <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest mb-6 flex items-center gap-3">
+            <div className="w-1.5 h-6 bg-gradient-to-b from-emerald-500 to-emerald-300 rounded-full"></div>
+            重點案件預算執行概況 (Top 5)
+          </h3>
           <div className="flex-1 w-full min-h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={financialChartData} barSize={20}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="name" fontSize={10} tick={{ fontWeight: 'bold', fill: '#78716c' }} axisLine={false} tickLine={false} />
                 <YAxis
                   fontSize={10}
@@ -588,8 +623,8 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                   tickFormatter={(val) => formatMoney(val)}
                 />
                 <Tooltip
-                  cursor={{ fill: '#fafaf9' }}
-                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  cursor={{ fill: 'rgba(250,250,249,0.6)' }}
+                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.15)', padding: '12px 16px' }}
                   labelStyle={{ fontSize: '12px', fontWeight: '900', color: '#1c1917', marginBottom: '8px' }}
                   formatter={(value: number, name: string, props: any) => {
                     const progress = props?.payload?.progress;
@@ -598,8 +633,8 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '20px' }} />
-                <Bar dataKey="budget" name="預算金額" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="spent" name="已支出" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="budget" name="預算金額" fill="#e2e8f0" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="spent" name="已支出" fill="#10b981" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -626,9 +661,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                 <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2">逾期案件清單</h4>
                 <div className="space-y-2">
                   {riskProjects.map(p => (
-                    <div key={`${p.id}-${p.riskType}`} className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-100 hover:bg-stone-100/50 transition-all group">
-                      <div className="space-y-1">
-                        <p className="text-xs font-black text-stone-900">{p.name}</p>
+                    <div key={`${p.id}-${p.riskType}`} className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-100 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 hover:border-stone-200 transition-all duration-300 group relative overflow-hidden">
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-full ${p.riskType === 'delay' ? 'bg-gradient-to-b from-rose-400 to-rose-600' : p.riskType === 'labor' ? 'bg-gradient-to-b from-orange-400 to-orange-600' : p.riskType === 'schedule' ? 'bg-gradient-to-b from-amber-400 to-amber-600' : 'bg-gradient-to-b from-rose-400 to-rose-600'}`}></div>
+                      <div className="space-y-1 pl-2">
+                        <p className="text-xs font-black text-stone-900 group-hover:text-stone-700">{p.name}</p>
                         <div className="flex items-center gap-3">
                           <span className="text-[9px] font-bold text-stone-400 uppercase">ID: {p.id}</span>
                           <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase flex items-center gap-1 ${p.riskType === 'delay' ? 'text-rose-500 bg-rose-50 border-rose-100' :
@@ -648,19 +684,19 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                           <p className="text-[9px] font-black text-stone-400 uppercase tracking-tighter mb-0.5">負責人</p>
                           <p className="text-[10px] font-black text-stone-700">{p.quotationManager || p.manager || '未指定'}</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               const msg = `【案件風險提醒】\n專案：${p.name}\n狀態：${p.riskType === 'delay' ? `報價已逾期 ${p.riskValue} 天尚未處理` : p.riskType === 'labor' ? `工資佔比已達 ${p.riskValue}% (超標)` : p.riskType === 'schedule' ? `進度時效已滯後 ${p.riskValue}%` : `預算執行已達 ${p.riskValue}% (即將超支)`}\n再請負責人協助登入系統查詢！`;
                               navigator.clipboard.writeText(msg).then(() => alert('已複製提醒文案，可直接貼上至 Line 通知負責人！'));
                             }}
-                            className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 hover:text-indigo-700 hover:bg-indigo-100 transition-all shadow-sm"
+                            className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 hover:text-indigo-700 hover:bg-indigo-100 hover:scale-110 transition-all shadow-sm"
                             title="一鍵複製提醒文案"
                           >
                             <Bell size={12} />
                           </button>
-                          <button onClick={() => onProjectClick(p.id)} className="w-8 h-8 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-900 hover:border-stone-400 transition-all shadow-sm">
+                          <button onClick={() => onProjectClick(p.id)} className="w-8 h-8 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-900 hover:border-stone-400 hover:scale-110 transition-all shadow-sm">
                             <ArrowRight size={14} />
                           </button>
                         </div>
@@ -699,15 +735,22 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
             </div>
           </div>
 
-          <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-[2rem] lg:rounded-[2.5rem] border border-stone-100 shadow-sm">
-            <h3 className="text-xs sm:text-sm font-black text-stone-900 mb-4 sm:mb-6 lg:mb-8 uppercase tracking-widest border-l-4 border-orange-500 pl-3 sm:pl-4">全案場狀態分佈矩陣</h3>
+          <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-[2rem] lg:rounded-[2.5rem] border border-stone-100 shadow-sm hover:shadow-xl hover:shadow-stone-100/50 transition-all duration-300">
+            <h3 className="text-xs sm:text-sm font-black text-stone-900 mb-4 sm:mb-6 lg:mb-8 uppercase tracking-widest flex items-center gap-3">
+              <div className="w-1.5 h-6 bg-gradient-to-b from-orange-500 to-orange-300 rounded-full"></div>
+              全案場狀態分佈矩陣
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
-              {Object.values(ProjectStatus).map((status) => (
-                <div key={status} className="bg-stone-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-stone-100 hover:border-orange-200 hover:bg-orange-50/30 transition-all flex flex-col items-center justify-center text-center min-h-[70px] sm:min-h-[80px]">
-                  <span className="text-base sm:text-lg lg:text-xl font-black text-stone-900">{stats.counts[status] || 0}</span>
-                  <span className="text-[8px] sm:text-[9px] font-black text-stone-400 uppercase tracking-tighter mt-1 leading-tight">{status}</span>
-                </div>
-              ))}
+              {Object.values(ProjectStatus).map((status) => {
+                const count = stats.counts[status] || 0;
+                const isActive = count > 0;
+                return (
+                  <div key={status} className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center text-center min-h-[70px] sm:min-h-[80px] cursor-default group ${isActive ? 'bg-stone-50 border-stone-100 hover:border-orange-300 hover:bg-orange-50/50 hover:-translate-y-0.5 hover:shadow-lg' : 'bg-stone-50/50 border-stone-50'}`}>
+                    <span className={`text-base sm:text-lg lg:text-xl font-black leading-tight ${isActive ? 'text-stone-900 group-hover:text-orange-600 transition-colors' : 'text-stone-300'}`}>{count}</span>
+                    <span className="text-[8px] sm:text-[9px] font-black text-stone-400 uppercase tracking-tighter mt-1 leading-tight">{status}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -830,20 +873,31 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
             </div>
           </div>
 
-          <div className="bg-stone-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl">
+          <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(249,115,22,0.1),transparent_50%)] pointer-events-none"></div>
             <div className="relative z-10 space-y-6">
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <ShieldAlert size={18} className="text-orange-500" /> 營運效能分析
+              <h3 className="text-lg font-bold flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <ShieldAlert size={20} className="text-orange-400" />
+                </div>
+                營運效能分析
               </h3>
               <div className="space-y-4">
-                <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
+                <div className="p-5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/[0.08] transition-colors duration-300">
                   <p className="text-[10px] font-black text-blue-400 uppercase mb-2">預算消化率</p>
-                  <p className="text-2xl font-black">{stats.totalBudget > 0 ? Math.round((stats.totalSpent / stats.totalBudget) * 100) : 0}%</p>
+                  <div className="flex items-end gap-2">
+                    <p className="text-3xl font-black">{stats.totalBudget > 0 ? Math.round((stats.totalSpent / stats.totalBudget) * 100) : 0}<span className="text-lg text-stone-500">%</span></p>
+                  </div>
+                  <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-1000" style={{ width: `${stats.totalBudget > 0 ? Math.min(Math.round((stats.totalSpent / stats.totalBudget) * 100), 100) : 0}%` }}></div>
+                  </div>
                   <p className="text-[10px] text-stone-400 mt-2 font-medium">當前選取範圍內總合約金額之執行狀況。</p>
                 </div>
-                <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
+                <div className="p-5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/[0.08] transition-colors duration-300">
                   <p className="text-[10px] font-black text-emerald-400 uppercase mb-2">管理負載度</p>
-                  <p className="text-2xl font-black">{Math.ceil(filteredProjects.length / 50)} 案/人</p>
+                  <div className="flex items-end gap-2">
+                    <p className="text-3xl font-black">{Math.ceil(filteredProjects.length / 50)}<span className="text-lg text-stone-500"> 案/人</span></p>
+                  </div>
                   <p className="text-[10px] text-stone-400 mt-2 font-medium">基於五十人團隊之平均分配量。</p>
                 </div>
               </div>

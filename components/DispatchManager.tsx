@@ -15,6 +15,7 @@ interface DispatchManagerProps {
   onAddDispatch: (projectId: string, assignment: WorkAssignment) => void;
   onDeleteDispatch: (projectId: string, assignmentId: string) => void;
   onProjectsUpdate: (projects: Project[]) => void;
+  onBatchAddDispatch?: (assignments: { projectId: string; assignment: WorkAssignment }[]) => void;
 }
 
 interface PendingAssignment {
@@ -40,6 +41,14 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<string>>(new Set());
 
   const [filterProject, setFilterProject] = useState('all');
+  const [dateRangeFilter, setDateRangeFilter] = useState<'all' | 'this_week' | 'this_month' | 'custom'>('this_month');
+  const [customStartDate, setCustomStartDate] = useState(() => {
+    const today = new Date();
+    today.setDate(today.getDate() - 30);
+    return today.toISOString().split('T')[0];
+  });
+  const [customEndDate, setCustomEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+
   const [formData, setFormData] = useState({
     projectId: '',
     memberId: '',
@@ -457,9 +466,87 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
   }, [projects]);
 
   const filteredAssignments = useMemo(() => {
-    if (filterProject === 'all') return allAssignments;
-    return allAssignments.filter(a => a.projectId === filterProject);
-  }, [allAssignments, filterProject]);
+    let result = allAssignments;
+
+    if (filterProject !== 'all') {
+      result = result.filter(a => a.projectId === filterProject);
+    }
+
+    if (dateRangeFilter !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let startDate = new Date(0);
+      let endDate = new Date('2100-01-01');
+
+      if (dateRangeFilter === 'this_week') {
+        const day = today.getDay() || 7;
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - day + 1);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+      } else if (dateRangeFilter === 'this_month') {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      } else if (dateRangeFilter === 'custom') {
+        startDate = new Date(customStartDate);
+        endDate = new Date(customEndDate);
+        endDate.setHours(23, 59, 59, 999);
+      }
+
+      result = result.filter(a => {
+        const aDate = new Date(a.date);
+        return aDate >= startDate && aDate <= endDate;
+      });
+    }
+
+    return result;
+  }, [allAssignments, filterProject, dateRangeFilter, customStartDate, customEndDate]);
+
+  // Handle Copy Yesterday Feature
+  const handleCopyYesterday = () => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
+
+    const yesterdayAssignments = allAssignments.filter(a => a.date === yesterdayStr);
+
+    if (yesterdayAssignments.length === 0) {
+      alert('昨天沒有任何派工紀錄！');
+      return;
+    }
+
+    if (window.confirm(`找到昨天共有 ${yesterdayAssignments.length} 筆派工紀錄，確定要全部複製到今天 (${todayStr}) 嗎？\n\n注意：這將會直接匯入這些紀錄。`)) {
+      if (typeof props.onBatchAddDispatch === 'function') {
+        const newAssignments = yesterdayAssignments.map(item => ({
+          projectId: item.projectId,
+          assignment: {
+            ...item,
+            id: `WA-COPY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            date: todayStr
+          } as WorkAssignment
+        }));
+        props.onBatchAddDispatch(newAssignments);
+      } else {
+        // Fallback for older interface compatibility
+        yesterdayAssignments.forEach(item => {
+          onAddDispatch(item.projectId, {
+            id: `WA-COPY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            date: todayStr,
+            memberId: item.memberId,
+            memberName: item.memberName,
+            wagePerDay: item.wagePerDay,
+            days: item.days,
+            totalCost: item.totalCost,
+            isSpiderMan: item.isSpiderMan
+          } as WorkAssignment);
+        });
+      }
+      alert('✅ 成功複製昨天的紀錄到今天！');
+    }
+  };
 
 
 
@@ -501,6 +588,12 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
             className={`px-4 py-2 rounded-lg text-xs font-black flex items-center gap-2 transition-all ${activeMode === 'excel' ? 'bg-white text-emerald-600 shadow-sm' : 'text-stone-400'}`}
           >
             <FileSpreadsheet size={14} /> Excel 匯入
+          </button>
+          <button
+            onClick={handleCopyYesterday}
+            className="hidden lg:flex px-4 py-2 rounded-lg text-xs font-black items-center gap-2 text-stone-400 hover:text-blue-600 hover:bg-white transition-all ml-1 border-l border-stone-200/50"
+          >
+            <ClipboardSignature size={14} /> 套用昨天
           </button>
         </div>
       </div>
@@ -1124,10 +1217,39 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
       </div>
 
       <div className="bg-white rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden">
-        <div className="px-8 py-5 border-b border-stone-100 bg-stone-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
+        <div className="px-8 py-5 border-b border-stone-100 bg-stone-50/50 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <ClipboardSignature size={18} className="text-orange-600" />
             <h3 className="font-black text-stone-900 text-sm uppercase tracking-widest">累積派工紀錄明細</h3>
+
+            <div className="flex items-center ml-4 bg-white rounded-lg border border-stone-200 p-1 shadow-sm">
+              <button
+                className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors ${dateRangeFilter === 'all' ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-stone-50'}`}
+                onClick={() => setDateRangeFilter('all')}
+              >全部紀錄</button>
+              <div className="w-px h-3 bg-stone-200 mx-1"></div>
+              <button
+                className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors ${dateRangeFilter === 'this_week' ? 'bg-blue-600 text-white' : 'text-stone-500 hover:bg-stone-50'}`}
+                onClick={() => setDateRangeFilter('this_week')}
+              >本週</button>
+              <button
+                className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors ${dateRangeFilter === 'this_month' ? 'bg-emerald-600 text-white' : 'text-stone-500 hover:bg-stone-50'}`}
+                onClick={() => setDateRangeFilter('this_month')}
+              >本月</button>
+              <button
+                className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors ${dateRangeFilter === 'custom' ? 'bg-orange-500 text-white' : 'text-stone-500 hover:bg-stone-50'}`}
+                onClick={() => setDateRangeFilter('custom')}
+              >自訂範圍</button>
+            </div>
+
+            {dateRangeFilter === 'custom' && (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4">
+                <input type="date" className="text-xs border px-2 py-1 rounded-md" value={customStartDate} onChange={e => setCustomStartDate(e.target.value)} />
+                <span className="text-stone-400 text-xs">-</span>
+                <input type="date" className="text-xs border px-2 py-1 rounded-md" value={customEndDate} onChange={e => setCustomEndDate(e.target.value)} />
+              </div>
+            )}
+
             {selectedHistoryIds.size > 0 && (
               <button
                 onClick={handleBatchDeleteHistory}
@@ -1138,14 +1260,14 @@ const DispatchManager: React.FC<DispatchManagerProps> = ({ projects, teamMembers
               </button>
             )}
           </div>
-          <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-stone-200">
+          <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-stone-200 w-full xl:w-auto mt-2 xl:mt-0">
             <Briefcase size={14} className="text-stone-400" />
             <select
-              className="bg-transparent text-xs font-bold text-black outline-none cursor-pointer"
+              className="bg-transparent text-xs font-bold text-black outline-none cursor-pointer w-full text-ellipsis"
               value={filterProject}
               onChange={e => {
                 setFilterProject(e.target.value);
-                setSelectedHistoryIds(new Set()); // 切換篩選時清除選取
+                setSelectedHistoryIds(new Set());
               }}
             >
               <option value="all">所有案件紀錄</option>

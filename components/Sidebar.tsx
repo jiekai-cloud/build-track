@@ -97,11 +97,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
   }
 
   return (
-    <aside className="h-full w-full bg-stone-900 text-white flex flex-col shadow-2xl">
-      <div className="p-6 flex items-center justify-between shrink-0">
+    <aside className="h-full w-full bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 text-white flex flex-col shadow-2xl relative overflow-hidden">
+      {/* Decorative glow */}
+      <div className="absolute top-0 left-0 right-0 h-40 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_70%)] pointer-events-none"></div>
+
+      <div className="relative p-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3">
-            <img src="./pwa-icon.png" alt="Logo" className="w-10 h-10 object-contain" />
+            <div className="relative">
+              <img src="./pwa-icon.png" alt="Logo" className="w-10 h-10 object-contain relative z-10" />
+              <div className="absolute inset-0 bg-orange-500/20 rounded-xl blur-lg"></div>
+            </div>
             <div className="flex flex-col">
               <span className="text-[11px] font-black tracking-tight leading-none text-orange-400 uppercase">Quality of Life</span>
               <span className="text-[10px] font-bold text-stone-500">Development Corp.</span>
@@ -118,30 +124,33 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
         )}
       </div>
 
-      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar relative">
         {menuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${activeTab === item.id
-              ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40'
-              : 'text-stone-400 hover:bg-stone-800 hover:text-white'
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative ${activeTab === item.id
+              ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-lg shadow-orange-900/40'
+              : 'text-stone-400 hover:bg-stone-800/80 hover:text-white'
               }`}
           >
-            <item.icon size={18} />
+            {activeTab === item.id && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-300 rounded-r-full shadow-lg shadow-orange-400/50"></div>
+            )}
+            <item.icon size={18} className={`transition-transform duration-300 ${activeTab !== item.id ? 'group-hover:scale-110 group-hover:-rotate-6' : ''}`} />
             <span className="font-bold text-xs">{item.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className="px-4 py-4 border-t border-stone-800 shrink-0 bg-stone-900/50 backdrop-blur-sm">
+      <div className="px-4 py-4 border-t border-stone-800/50 shrink-0 bg-stone-950/50 backdrop-blur-sm relative">
         {bottomItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-stone-800 hover:text-white transition-colors ${activeTab === item.id ? 'text-white' : ''}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-stone-500 hover:bg-stone-800/50 hover:text-white transition-all duration-300 group ${activeTab === item.id ? 'text-white bg-stone-800/30' : ''}`}
           >
-            <item.icon size={18} />
+            <item.icon size={18} className="group-hover:scale-110 transition-transform duration-300" />
             <span className="font-bold text-xs">{item.label}</span>
           </button>
         ))}
@@ -169,17 +178,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
 
 
 
-        <div className="mt-4 px-4 py-3 bg-stone-800/50 border border-white/5 rounded-2xl flex items-center gap-3">
-          <img
-            src={user.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`}
-            alt="Avatar"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`;
-            }}
-            className="w-8 h-8 rounded-xl border border-white/10 object-cover"
-          />
+        <div className="mt-4 px-4 py-3 bg-gradient-to-r from-stone-800/50 to-stone-800/30 border border-white/5 rounded-2xl flex items-center gap-3 hover:border-orange-500/20 transition-all duration-500 group/profile">
+          <div className="relative">
+            <img
+              src={user.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`}
+              alt="Avatar"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`;
+              }}
+              className="w-9 h-9 rounded-xl border-2 border-orange-500/30 object-cover group-hover/profile:border-orange-500/60 transition-all duration-500"
+            />
+            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-stone-900"></div>
+          </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-xs font-black truncate">{user.name}</p>
+            <p className="text-xs font-black truncate group-hover/profile:text-orange-300 transition-colors duration-300">{user.name}</p>
             <div className="flex flex-col">
               <span className="text-[9px] text-stone-500 font-black uppercase tracking-widest truncate">{user.role}</span>
               <span className="text-[8px] text-stone-600 font-mono mt-0.5">

@@ -183,12 +183,13 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
                   return !isVirtualId && !isVirtualName;
                 })
                 .map((member) => (
-                  <div key={member.id} className="group hover:bg-slate-50/50 transition-colors">
-                    <div className="p-6 lg:px-8 lg:py-5 lg:grid lg:grid-cols-12 lg:items-center gap-4">
+                  <div key={member.id} className="group hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 bg-white border border-transparent lg:border-none relative overflow-hidden z-10">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-orange-500 transition-colors duration-300"></div>
+                    <div className="p-6 lg:px-8 lg:py-5 lg:grid lg:grid-cols-12 lg:items-center gap-4 relative">
                       {/* 基本資訊 */}
                       <div className="col-span-4 flex items-center gap-4 mb-4 lg:mb-0">
-                        <div className="relative shrink-0">
-                          <img src={member.avatar} alt={member.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-slate-50 shadow-sm" />
+                        <div className="relative shrink-0 transition-transform group-hover:scale-105 duration-300">
+                          <img src={member.avatar} alt={member.name} className="w-12 h-12 rounded-[1.25rem] object-cover border-2 border-slate-50 shadow-sm" />
                           <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white 
                           ${(member.currentWorkStatus === 'OnDuty' || member.status === 'Available') ? 'bg-emerald-500' :
                               member.status === 'Busy' ? 'bg-amber-500' :
@@ -223,15 +224,15 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
                       </div>
 
                       {/* 聯繫方式 */}
-                      <div className="col-span-3 space-y-1 mb-4 lg:mb-0">
+                      <div className="col-span-3 space-y-2 mb-4 lg:mb-0">
                         <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <Briefcase size={12} className="text-slate-400" />
-                          <a href={`tel:${member.phone}`} className="font-bold font-mono hover:text-orange-600 hover:underline transition-colors">{member.phone}</a>
+                          <Briefcase size={12} className="text-slate-400 shrink-0" />
+                          <span className="font-bold font-mono hover:bg-slate-50 hover:text-orange-600 px-1 py-0.5 rounded transition-colors cursor-pointer inline-flex items-center gap-1" onClick={() => { navigator.clipboard.writeText(member.phone); alert('已複製電話'); }}>{member.phone}</span>
                         </div>
                         {member.personalPhone && (
                           <div className="flex items-center gap-2 text-xs text-slate-600">
-                            <Phone size={12} className="text-slate-400" />
-                            <a href={`tel:${member.personalPhone}`} className="font-bold font-mono hover:text-orange-600 hover:underline transition-colors">{member.personalPhone}</a>
+                            <Phone size={12} className="text-slate-400 shrink-0" />
+                            <span className="font-bold font-mono hover:bg-slate-50 hover:text-orange-600 px-1 py-0.5 rounded transition-colors cursor-pointer inline-flex items-center gap-1" onClick={() => { navigator.clipboard.writeText(member.personalPhone!); alert('已複製電話'); }}>{member.personalPhone}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -261,21 +262,23 @@ const TeamList: React.FC<TeamListProps> = ({ members, departments, projects, onA
 
                       {/* 操作按鈕 */}
                       {canManage && (
-                        <div className="col-span-1 flex justify-end items-center gap-1">
-                          <button
-                            onClick={() => onEditClick(member)}
-                            className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
-                            title="編輯成員"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            onClick={() => onDeleteClick(member.id)}
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                            title="刪除成員"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                        <div className="col-span-1 flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="bg-white/90 backdrop-blur-sm shadow-sm border border-slate-100 rounded-lg p-1 flex items-center gap-1">
+                            <button
+                              onClick={() => onEditClick(member)}
+                              className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-all"
+                              title="編輯成員"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              onClick={() => onDeleteClick(member.id)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
+                              title="刪除成員"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

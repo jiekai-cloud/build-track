@@ -4,6 +4,7 @@ import { Project, ProjectFile } from '../../types';
 import { useProject } from '../../contexts/ProjectContext';
 import { refineSiteNotes, analyzeSitePhoto } from '../../services/geminiService';
 import { cloudFileService } from '../../services/cloudFileService';
+import ProjectDiscussionChecklist from './ProjectDiscussionChecklist';
 
 const ProjectLogs: React.FC = () => {
     const {
@@ -257,6 +258,9 @@ const ProjectLogs: React.FC = () => {
                         </form>
                     </div>
                 )}
+
+                {/* 預設待辦清單 (專案討論版) */}
+                <ProjectDiscussionChecklist />
             </div>
         </div>
     );

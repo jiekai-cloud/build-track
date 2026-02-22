@@ -32,7 +32,6 @@ interface SystemStartupDeps {
     setIsFirstTimeUser: (value: boolean) => void;
     setUser: (user: any) => void;
     setCurrentDept: (dept: SystemContext) => void;
-    setViewingDeptId: (id: string) => void;
 }
 
 /**
@@ -47,7 +46,7 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
         setPurchaseOrders, setAttendanceRecords, setPayrollRecords,
         setApprovalRequests, setApprovalTemplates, setQuotations, setCalendarEvents,
         setInitialSyncDone, setIsInitializing, setIsFirstTimeUser,
-        setUser, setCurrentDept, setViewingDeptId,
+        setUser, setCurrentDept,
     } = deps;
 
     const loadSystemData = useCallback(async (dept: SystemContext) => {
@@ -317,7 +316,6 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
                         const dept = parsedUser.department || 'FirstDept';
                         setCurrentDept(dept);
                         const fallbackDeptId = dept === 'ThirdDept' ? 'DEPT-8' : 'DEPT-4';
-                        setViewingDeptId(parsedUser.role === 'SuperAdmin' || parsedUser.role === 'Guest' ? 'all' : (parsedUser.departmentId || fallbackDeptId));
 
                         // Begin loading, but catch errors to prevent hanging
                         loadSystemData(dept).catch(err => {
@@ -343,7 +341,7 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
         return () => {
             if (safetyTimeout) clearTimeout(safetyTimeout);
         };
-    }, [loadSystemData, setUser, setCurrentDept, setViewingDeptId, setIsInitializing, setIsFirstTimeUser]);
+    }, [loadSystemData, setUser, setCurrentDept, setIsInitializing, setIsFirstTimeUser]);
 
     return { loadSystemData };
 };

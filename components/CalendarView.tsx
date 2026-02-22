@@ -382,14 +382,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                 const isHoliday = holidayInfo?.isHoliday;
 
                 return (
-                    <span
+                    <div
                         title={holidayInfo?.description || ''}
-                        className={`cursor-default font-bold ${isHoliday ? 'text-red-500' : 'text-stone-700'}`}
-                        style={{ padding: '2px 4px' }}
+                        className={`cursor-default font-bold flex justify-end items-center px-1 py-0.5 ${isHoliday ? 'text-rose-600' : 'text-stone-700'}`}
                     >
-                        {isHoliday && holidayInfo?.description ? <span className="text-[10px] mr-1 opacity-80">{holidayInfo.description}</span> : null}
-                        {label}
-                    </span>
+                        {isHoliday && holidayInfo?.description && (
+                            <span className="text-[9px] mr-1.5 px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-md font-black">
+                                {holidayInfo.description}
+                            </span>
+                        )}
+                        <span className={`text-sm ${isHoliday ? 'font-black' : ''}`}>{label}</span>
+                    </div>
                 );
             }
         }
@@ -442,311 +445,319 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, approvalRe
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-2xl shadow-sm border border-stone-200 shrink-0">
-                <Filter size={16} className="text-stone-400 ml-2 hidden lg:block" />
+            {/* Flex Container for Filters + Calendar */}
+            <div className="flex flex-col lg:flex-row gap-4 h-full min-h-0">
+                {/* Left Side Filters (Compact) */}
+                <div className="flex lg:flex-col lg:flex-none flex-nowrap lg:w-48 overflow-x-auto lg:overflow-y-auto items-start gap-2 bg-white p-4 rounded-2xl shadow-sm border border-stone-200 shrink-0 no-scrollbar">
+                    <div className="hidden lg:flex items-center gap-2 mb-2 text-stone-500 font-black text-xs uppercase tracking-widest px-2 w-full">
+                        <Filter size={14} /> 顯示篩選
+                    </div>
 
-                <label className="flex items-center gap-2 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer text-xs lg:text-sm transition-all text-stone-700">
-                    <input type="checkbox" checked={filter.projects} onChange={e => setFilter(prev => ({ ...prev, projects: e.target.checked }))} className="rounded text-emerald-500 focus:ring-emerald-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <span className="font-bold">工程期間</span>
-                </label>
+                    <label className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 cursor-pointer text-xs transition-all text-stone-700 shrink-0 lg:w-full">
+                        <input type="checkbox" checked={filter.projects} onChange={e => setFilter(prev => ({ ...prev, projects: e.target.checked }))} className="rounded text-emerald-500 focus:ring-emerald-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></div> <span className="font-bold whitespace-nowrap">工程期間</span>
+                    </label>
 
-                <label className="flex items-center gap-2 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer text-xs lg:text-sm transition-all text-stone-700">
-                    <input type="checkbox" checked={filter.dispatches} onChange={e => setFilter(prev => ({ ...prev, dispatches: e.target.checked }))} className="rounded text-indigo-500 focus:ring-indigo-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-500"></div> <span className="font-bold">派工派遣</span>
-                </label>
+                    <label className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 cursor-pointer text-xs transition-all text-stone-700 shrink-0 lg:w-full">
+                        <input type="checkbox" checked={filter.dispatches} onChange={e => setFilter(prev => ({ ...prev, dispatches: e.target.checked }))} className="rounded text-indigo-500 focus:ring-indigo-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></div> <span className="font-bold whitespace-nowrap">派工派遣</span>
+                    </label>
 
-                <label className="flex items-center gap-2 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer text-xs lg:text-sm transition-all text-stone-700">
-                    <input type="checkbox" checked={filter.payments} onChange={e => setFilter(prev => ({ ...prev, payments: e.target.checked }))} className="rounded text-red-500 focus:ring-red-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div> <span className="font-bold">請款提醒</span>
-                </label>
+                    <label className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 cursor-pointer text-xs transition-all text-stone-700 shrink-0 lg:w-full">
+                        <input type="checkbox" checked={filter.payments} onChange={e => setFilter(prev => ({ ...prev, payments: e.target.checked }))} className="rounded text-amber-400 focus:ring-amber-400" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></div> <span className="font-bold whitespace-nowrap">請款提醒</span>
+                    </label>
 
-                <label className="flex items-center gap-2 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer text-xs lg:text-sm transition-all text-stone-700">
-                    <input type="checkbox" checked={filter.leaves} onChange={e => setFilter(prev => ({ ...prev, leaves: e.target.checked }))} className="rounded text-amber-500 focus:ring-amber-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div> <span className="font-bold">團隊休假</span>
-                </label>
+                    <label className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 cursor-pointer text-xs transition-all text-stone-700 shrink-0 lg:w-full">
+                        <input type="checkbox" checked={filter.leaves} onChange={e => setFilter(prev => ({ ...prev, leaves: e.target.checked }))} className="rounded text-amber-600 focus:ring-amber-600" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></div> <span className="font-bold whitespace-nowrap">團隊休假</span>
+                    </label>
 
-                <label className="flex items-center gap-2 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer text-xs lg:text-sm transition-all text-stone-700">
-                    <input type="checkbox" checked={filter.visits} onChange={e => setFilter(prev => ({ ...prev, visits: e.target.checked }))} className="rounded text-purple-500 focus:ring-purple-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-purple-500"></div> <span className="font-bold">待確認會勘</span>
-                </label>
+                    <label className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 cursor-pointer text-xs transition-all text-stone-700 shrink-0 lg:w-full">
+                        <input type="checkbox" checked={filter.visits} onChange={e => setFilter(prev => ({ ...prev, visits: e.target.checked }))} className="rounded text-purple-500 focus:ring-purple-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></div> <span className="font-bold whitespace-nowrap">待確認會勘</span>
+                    </label>
 
-                <label className="flex items-center gap-2 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer text-xs lg:text-sm transition-all text-stone-700">
-                    <input type="checkbox" checked={filter.custom} onChange={e => setFilter(prev => ({ ...prev, custom: e.target.checked }))} className="rounded text-sky-500 focus:ring-sky-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-sky-500"></div> <span className="font-bold">自訂行程</span>
-                </label>
+                    <label className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 cursor-pointer text-xs transition-all text-stone-700 shrink-0 lg:w-full">
+                        <input type="checkbox" checked={filter.custom} onChange={e => setFilter(prev => ({ ...prev, custom: e.target.checked }))} className="rounded text-sky-500 focus:ring-sky-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></div> <span className="font-bold whitespace-nowrap">自訂行程</span>
+                    </label>
 
-                <div className="w-px h-6 bg-stone-200 mx-2 hidden lg:block"></div>
+                    <div className="w-px h-6 bg-stone-200 mx-1 lg:h-px lg:w-full lg:my-2 lg:mx-0 shrink-0"></div>
 
-                <label className="flex items-center gap-2 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-stone-50 cursor-pointer text-xs lg:text-sm transition-all text-stone-500">
-                    <input type="checkbox" checked={filter.hiddenProjects} onChange={e => setFilter(prev => ({ ...prev, hiddenProjects: e.target.checked }))} className="rounded text-stone-400 focus:ring-stone-400" />
-                    <span className="font-bold">顯示已隱藏的專案</span>
-                </label>
-            </div>
+                    <label className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 cursor-pointer text-xs transition-all text-stone-500 shrink-0 lg:w-full mb-1">
+                        <input type="checkbox" checked={filter.hiddenProjects} onChange={e => setFilter(prev => ({ ...prev, hiddenProjects: e.target.checked }))} className="rounded text-stone-400 focus:ring-stone-400" />
+                        <span className="font-bold whitespace-nowrap">顯示已隱藏</span>
+                    </label>
+                </div>
 
-            {/* Calendar Main Grid */}
-            <div className="flex-1 bg-white rounded-3xl shadow-xl shadow-stone-200/50 p-4 border border-stone-100 overflow-hidden min-h-[600px] flex flex-col"
-                style={{
-                    // Inline override for react-big-calendar to blend in seamlessly
-                    '--rbc-font': 'inherit',
-                } as any}>
-                <style>{`
+                {/* Calendar Main Grid */}
+                <div className="flex-1 bg-white rounded-3xl shadow-xl shadow-stone-200/50 p-4 border border-stone-100 overflow-hidden min-h-[600px] flex flex-col"
+                    style={{
+                        // Inline override for react-big-calendar to blend in seamlessly
+                        '--rbc-font': 'inherit',
+                    } as any}>
+                    <style>{`
                   .rbc-calendar { height: 100% !important; min-height: 500px; }
                   .rbc-month-view { flex: 1 1 0%; }
+                  .rbc-today { background-color: #fffbeb !important; } /* Tailwind amber-50 for high contrast today highlight */
+                  .rbc-event { padding: 3px 6px !important; }
                 `}</style>
-                <BigCalendar
-                    localizer={localizer}
-                    events={events}
-                    startAccessor="start"
-                    endAccessor="end"
-                    style={{ height: '100%', fontFamily: 'inherit' }}
-                    selectable
-                    onSelectSlot={handleSelectSlot}
-                    onSelectEvent={handleSelectEvent}
-                    eventPropGetter={eventStyleGetter}
-                    components={customComponents}
-                    view={view}
-                    onView={(newView) => setView(newView)}
-                    date={date}
-                    onNavigate={(newDate) => setDate(newDate)}
-                    views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-                    messages={{
-                        next: "下一個",
-                        previous: "上一個",
-                        today: "今天",
-                        month: "月曆",
-                        week: "週曆",
-                        day: "日曆",
-                        agenda: "清單",
-                        date: "日期",
-                        time: "時間",
-                        event: "行程事項",
-                        noEventsInRange: "這段時間內沒有任何行程"
-                    }}
-                />
-            </div>
+                    <BigCalendar
+                        localizer={localizer}
+                        events={events}
+                        startAccessor="start"
+                        endAccessor="end"
+                        style={{ height: '100%', fontFamily: 'inherit' }}
+                        selectable
+                        popup={true}
+                        onSelectSlot={handleSelectSlot}
+                        onSelectEvent={handleSelectEvent}
+                        eventPropGetter={eventStyleGetter}
+                        components={customComponents}
+                        view={view}
+                        onView={(newView) => setView(newView)}
+                        date={date}
+                        onNavigate={(newDate) => setDate(newDate)}
+                        views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+                        messages={{
+                            next: "下一個",
+                            previous: "上一個",
+                            today: "今天",
+                            month: "月曆",
+                            week: "週曆",
+                            day: "日曆",
+                            agenda: "清單",
+                            date: "日期",
+                            time: "時間",
+                            event: "行程事項",
+                            noEventsInRange: "這段時間內沒有任何行程"
+                        }}
+                    />
+                </div>
 
-            {/* Event Modal Overlay */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[200] flex justify-center items-center p-4">
-                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-                        {selectedEvent && selectedEvent.type !== 'custom' ? (
-                            // View Only Mode (for non-custom events)
-                            <div className="flex flex-col">
-                                <div className={`relative p-8 ${selectedEvent.color.replace('bg-', 'bg-').replace('-500', '-600')} text-white`}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                                            <Layers size={10} /> {selectedEvent.type === 'project' ? '專案行程詳情' : '行程詳情'}
-                                        </span>
-                                    </div>
-                                    <h3 className="text-2xl font-black leading-tight">{selectedEvent.title}</h3>
-                                    <div className="mt-4 flex items-center gap-4 text-white/80 text-xs font-bold">
-                                        <div className="flex items-center gap-1.5">
-                                            <CalendarIcon size={14} />
-                                            {selectedEvent.start.toLocaleDateString()}
+                {/* Event Modal Overlay */}
+                {isModalOpen && (
+                    <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[200] flex justify-center items-center p-4">
+                        <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+                            {selectedEvent && selectedEvent.type !== 'custom' ? (
+                                // View Only Mode (for non-custom events)
+                                <div className="flex flex-col">
+                                    <div className={`relative p-8 ${selectedEvent.color.replace('bg-', 'bg-').replace('-500', '-600')} text-white`}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                <Layers size={10} /> {selectedEvent.type === 'project' ? '專案行程詳情' : '行程詳情'}
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <RefreshCw size={14} className="animate-spin-slow" />
-                                            同步中
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-8 space-y-6">
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {/* Info Card 1: ID & Type */}
-                                        <div className="bg-stone-50 p-4 rounded-2xl flex items-center gap-4 border border-stone-100">
-                                            <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-stone-400">
-                                                <Database size={20} />
+                                        <h3 className="text-2xl font-black leading-tight">{selectedEvent.title}</h3>
+                                        <div className="mt-4 flex items-center gap-4 text-white/80 text-xs font-bold">
+                                            <div className="flex items-center gap-1.5">
+                                                <CalendarIcon size={14} />
+                                                {selectedEvent.start.toLocaleDateString()}
                                             </div>
-                                            <div>
-                                                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">資料識別碼 / 類型</p>
-                                                <p className="text-sm font-bold text-stone-700">{selectedEvent.id} · <span className="text-indigo-600">工程專案</span></p>
+                                            <div className="flex items-center gap-1.5">
+                                                <RefreshCw size={14} className="animate-spin-slow" />
+                                                同步中
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* Info Card 2: Client */}
-                                        {selectedEvent.type === 'project' && selectedEvent.raw?.client && (
+                                    <div className="p-8 space-y-6">
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {/* Info Card 1: ID & Type */}
                                             <div className="bg-stone-50 p-4 rounded-2xl flex items-center gap-4 border border-stone-100">
                                                 <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-stone-400">
-                                                    <User size={20} />
+                                                    <Database size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">業主客戶</p>
-                                                    <p className="text-sm font-bold text-stone-700">{selectedEvent.raw.client}</p>
+                                                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">資料識別碼 / 類型</p>
+                                                    <p className="text-sm font-bold text-stone-700">{selectedEvent.id} · <span className="text-indigo-600">工程專案</span></p>
                                                 </div>
                                             </div>
-                                        )}
 
-                                        {/* Description */}
-                                        {selectedEvent.raw?.description && (
-                                            <div className="p-4 bg-orange-50/30 rounded-2xl border border-orange-100/50">
-                                                <p className="text-[10px] font-black text-orange-600 mb-1 uppercase tracking-widest">行程備註</p>
-                                                <p className="text-xs font-bold text-stone-600 leading-relaxed">{selectedEvent.raw.description}</p>
+                                            {/* Info Card 2: Client */}
+                                            {selectedEvent.type === 'project' && selectedEvent.raw?.client && (
+                                                <div className="bg-stone-50 p-4 rounded-2xl flex items-center gap-4 border border-stone-100">
+                                                    <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-stone-400">
+                                                        <User size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">業主客戶</p>
+                                                        <p className="text-sm font-bold text-stone-700">{selectedEvent.raw.client}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Description */}
+                                            {selectedEvent.raw?.description && (
+                                                <div className="p-4 bg-orange-50/30 rounded-2xl border border-orange-100/50">
+                                                    <p className="text-[10px] font-black text-orange-600 mb-1 uppercase tracking-widest">行程備註</p>
+                                                    <p className="text-xs font-bold text-stone-600 leading-relaxed">{selectedEvent.raw.description}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 pt-6 border-t border-stone-100">
+                                            <div className="flex gap-2">
+                                                {selectedEvent.type === 'project' && onUpdateProject && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const p = selectedEvent.raw as Project;
+                                                            onUpdateProject(p.id, { hideInCalendar: !p.hideInCalendar });
+                                                            setIsModalOpen(false);
+                                                        }}
+                                                        className={`flex-1 py-3 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 ${selectedEvent.raw?.hideInCalendar ? 'bg-indigo-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+                                                    >
+                                                        <RefreshCw size={14} />
+                                                        {selectedEvent.raw?.hideInCalendar ? '恢復顯示' : '隱藏此行程'}
+                                                    </button>
+                                                )}
+                                                {selectedEvent.type === 'project' && onEditProjectClick && (
+                                                    <button
+                                                        onClick={() => {
+                                                            onEditProjectClick(selectedEvent.raw as Project);
+                                                            setIsModalOpen(false);
+                                                        }}
+                                                        className="flex-1 py-3 bg-blue-600 text-white hover:bg-blue-700 text-xs font-black rounded-xl transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-2"
+                                                    >
+                                                        <Pencil size={14} />
+                                                        編輯專案
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                {selectedEvent.type === 'project' && onDeleteProject && (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm('確定要刪除此專案嗎？這將會影響所有模組。')) {
+                                                                onDeleteProject(selectedEvent.raw.id);
+                                                                setIsModalOpen(false);
+                                                            }
+                                                        }}
+                                                        className="flex-1 py-3 bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        刪除專案
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => setIsModalOpen(false)}
+                                                    className="flex-1 py-3 bg-stone-900 text-white hover:bg-stone-800 font-black rounded-xl transition-all text-xs flex items-center justify-center gap-2"
+                                                >
+                                                    關閉視窗
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                // Edit/Create Mode (for Custom Events)
+                                <div className="flex flex-col">
+                                    <div className="p-6 bg-stone-900 text-white flex justify-between items-center">
+                                        <h3 className="text-xl font-black">{selectedEvent ? '查看自訂行程' : '新增自訂行程'}</h3>
+                                    </div>
+
+                                    <div className="p-6 overflow-y-auto space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-stone-500 uppercase">行程標題 <span className="text-red-500">*</span></label>
+                                            <input
+                                                value={selectedEvent ? selectedEvent.raw.title : newEvent.title}
+                                                onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
+                                                disabled={!!selectedEvent}
+                                                className="w-full border border-stone-200 rounded-xl px-4 py-3 font-bold focus:ring-2 disabled:bg-stone-50"
+                                                placeholder="請輸入行程主旨"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-black text-stone-500 uppercase">開始時間</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={selectedEvent ? new Date(selectedEvent.raw.startDate).toLocaleString('sv-SE').replace(' ', 'T') : newEvent.startDate}
+                                                    onChange={e => setNewEvent({ ...newEvent, startDate: e.target.value })}
+                                                    disabled={!!selectedEvent}
+                                                    className="w-full border border-stone-200 rounded-xl px-3 py-3 font-medium text-sm disabled:bg-stone-50"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-black text-stone-500 uppercase">結束時間</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={selectedEvent ? new Date(selectedEvent.raw.endDate).toLocaleString('sv-SE').replace(' ', 'T') : newEvent.endDate}
+                                                    onChange={e => setNewEvent({ ...newEvent, endDate: e.target.value })}
+                                                    disabled={!!selectedEvent}
+                                                    className="w-full border border-stone-200 rounded-xl px-3 py-3 font-medium text-sm disabled:bg-stone-50"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-stone-500 uppercase">行程分類</label>
+                                            <select
+                                                value={selectedEvent ? selectedEvent.raw.type : newEvent.type}
+                                                onChange={e => setNewEvent({ ...newEvent, type: e.target.value as any })}
+                                                disabled={!!selectedEvent}
+                                                className="w-full border border-stone-200 rounded-xl px-4 py-3 font-bold disabled:bg-stone-50"
+                                            >
+                                                <option value="meeting">內部會議</option>
+                                                <option value="visit">外出會勘</option>
+                                                <option value="inspection">查驗</option>
+                                                <option value="milestone">重要里程碑</option>
+                                                <option value="other">其他</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-stone-500 uppercase">關聯專案 (可選)</label>
+                                            <select
+                                                value={selectedEvent ? selectedEvent.raw.linkedProjectId || '' : newEvent.linkedProjectId || ''}
+                                                onChange={e => setNewEvent({ ...newEvent, linkedProjectId: e.target.value })}
+                                                disabled={!!selectedEvent}
+                                                className="w-full border border-stone-200 rounded-xl px-4 py-3 font-bold disabled:bg-stone-50"
+                                            >
+                                                <option value="">-- 無關聯專案 --</option>
+                                                {projects.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {isCloudConnected && !selectedEvent && (
+                                            <div className="bg-emerald-50 text-emerald-700 p-3 rounded-xl border border-emerald-100 flex items-center gap-3">
+                                                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-5 h-5" />
+                                                <span className="text-xs font-bold leading-tight">此行程儲存後，將會自動雙向同步至您的 Google 行事曆。</span>
                                             </div>
                                         )}
+
                                     </div>
 
-                                    <div className="flex flex-col gap-3 pt-6 border-t border-stone-100">
-                                        <div className="flex gap-2">
-                                            {selectedEvent.type === 'project' && onUpdateProject && (
-                                                <button
-                                                    onClick={() => {
-                                                        const p = selectedEvent.raw as Project;
-                                                        onUpdateProject(p.id, { hideInCalendar: !p.hideInCalendar });
-                                                        setIsModalOpen(false);
-                                                    }}
-                                                    className={`flex-1 py-3 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 ${selectedEvent.raw?.hideInCalendar ? 'bg-indigo-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
-                                                >
-                                                    <RefreshCw size={14} />
-                                                    {selectedEvent.raw?.hideInCalendar ? '恢復顯示' : '隱藏此行程'}
+                                    <div className="p-4 border-t border-stone-100 flex items-center justify-between gap-3 bg-stone-50">
+                                        {selectedEvent ? (
+                                            <>
+                                                {selectedEvent.raw.createdBy === user.id ? (
+                                                    <button disabled={isSaving} onClick={() => handleDeleteEvent(selectedEvent.raw.id, selectedEvent.raw.googleEventId)} className="text-sm font-bold text-red-500 hover:text-red-700 py-2.5 px-4 rounded-xl hover:bg-red-50 transition-colors">刪除</button>
+                                                ) : (
+                                                    <div></div>
+                                                )}
+                                                <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 bg-white border border-stone-200 hover:bg-stone-100 text-stone-700 font-bold rounded-xl transition-all shadow-sm">關閉</button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 bg-white border border-stone-200 hover:bg-stone-100 text-stone-700 font-bold rounded-xl transition-all shadow-sm">取消</button>
+                                                <button disabled={isSaving} onClick={handleSaveCustomEvent} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
+                                                    {isSaving && <Loader2 size={16} className="animate-spin" />} 儲存行程
                                                 </button>
-                                            )}
-                                            {selectedEvent.type === 'project' && onEditProjectClick && (
-                                                <button
-                                                    onClick={() => {
-                                                        onEditProjectClick(selectedEvent.raw as Project);
-                                                        setIsModalOpen(false);
-                                                    }}
-                                                    className="flex-1 py-3 bg-blue-600 text-white hover:bg-blue-700 text-xs font-black rounded-xl transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-2"
-                                                >
-                                                    <Pencil size={14} />
-                                                    編輯專案
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                            {selectedEvent.type === 'project' && onDeleteProject && (
-                                                <button
-                                                    onClick={() => {
-                                                        if (confirm('確定要刪除此專案嗎？這將會影響所有模組。')) {
-                                                            onDeleteProject(selectedEvent.raw.id);
-                                                            setIsModalOpen(false);
-                                                        }
-                                                    }}
-                                                    className="flex-1 py-3 bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <Trash2 size={14} />
-                                                    刪除專案
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => setIsModalOpen(false)}
-                                                className="flex-1 py-3 bg-stone-900 text-white hover:bg-stone-800 font-black rounded-xl transition-all text-xs flex items-center justify-center gap-2"
-                                            >
-                                                關閉視窗
-                                            </button>
-                                        </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            // Edit/Create Mode (for Custom Events)
-                            <div className="flex flex-col">
-                                <div className="p-6 bg-stone-900 text-white flex justify-between items-center">
-                                    <h3 className="text-xl font-black">{selectedEvent ? '查看自訂行程' : '新增自訂行程'}</h3>
-                                </div>
-
-                                <div className="p-6 overflow-y-auto space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-stone-500 uppercase">行程標題 <span className="text-red-500">*</span></label>
-                                        <input
-                                            value={selectedEvent ? selectedEvent.raw.title : newEvent.title}
-                                            onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
-                                            disabled={!!selectedEvent}
-                                            className="w-full border border-stone-200 rounded-xl px-4 py-3 font-bold focus:ring-2 disabled:bg-stone-50"
-                                            placeholder="請輸入行程主旨"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black text-stone-500 uppercase">開始時間</label>
-                                            <input
-                                                type="datetime-local"
-                                                value={selectedEvent ? new Date(selectedEvent.raw.startDate).toLocaleString('sv-SE').replace(' ', 'T') : newEvent.startDate}
-                                                onChange={e => setNewEvent({ ...newEvent, startDate: e.target.value })}
-                                                disabled={!!selectedEvent}
-                                                className="w-full border border-stone-200 rounded-xl px-3 py-3 font-medium text-sm disabled:bg-stone-50"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black text-stone-500 uppercase">結束時間</label>
-                                            <input
-                                                type="datetime-local"
-                                                value={selectedEvent ? new Date(selectedEvent.raw.endDate).toLocaleString('sv-SE').replace(' ', 'T') : newEvent.endDate}
-                                                onChange={e => setNewEvent({ ...newEvent, endDate: e.target.value })}
-                                                disabled={!!selectedEvent}
-                                                className="w-full border border-stone-200 rounded-xl px-3 py-3 font-medium text-sm disabled:bg-stone-50"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-stone-500 uppercase">行程分類</label>
-                                        <select
-                                            value={selectedEvent ? selectedEvent.raw.type : newEvent.type}
-                                            onChange={e => setNewEvent({ ...newEvent, type: e.target.value as any })}
-                                            disabled={!!selectedEvent}
-                                            className="w-full border border-stone-200 rounded-xl px-4 py-3 font-bold disabled:bg-stone-50"
-                                        >
-                                            <option value="meeting">內部會議</option>
-                                            <option value="visit">外出會勘</option>
-                                            <option value="inspection">查驗</option>
-                                            <option value="milestone">重要里程碑</option>
-                                            <option value="other">其他</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-stone-500 uppercase">關聯專案 (可選)</label>
-                                        <select
-                                            value={selectedEvent ? selectedEvent.raw.linkedProjectId || '' : newEvent.linkedProjectId || ''}
-                                            onChange={e => setNewEvent({ ...newEvent, linkedProjectId: e.target.value })}
-                                            disabled={!!selectedEvent}
-                                            className="w-full border border-stone-200 rounded-xl px-4 py-3 font-bold disabled:bg-stone-50"
-                                        >
-                                            <option value="">-- 無關聯專案 --</option>
-                                            {projects.map(p => (
-                                                <option key={p.id} value={p.id}>{p.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {isCloudConnected && !selectedEvent && (
-                                        <div className="bg-emerald-50 text-emerald-700 p-3 rounded-xl border border-emerald-100 flex items-center gap-3">
-                                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className="w-5 h-5" />
-                                            <span className="text-xs font-bold leading-tight">此行程儲存後，將會自動雙向同步至您的 Google 行事曆。</span>
-                                        </div>
-                                    )}
-
-                                </div>
-
-                                <div className="p-4 border-t border-stone-100 flex items-center justify-between gap-3 bg-stone-50">
-                                    {selectedEvent ? (
-                                        <>
-                                            {selectedEvent.raw.createdBy === user.id ? (
-                                                <button disabled={isSaving} onClick={() => handleDeleteEvent(selectedEvent.raw.id, selectedEvent.raw.googleEventId)} className="text-sm font-bold text-red-500 hover:text-red-700 py-2.5 px-4 rounded-xl hover:bg-red-50 transition-colors">刪除</button>
-                                            ) : (
-                                                <div></div>
-                                            )}
-                                            <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 bg-white border border-stone-200 hover:bg-stone-100 text-stone-700 font-bold rounded-xl transition-all shadow-sm">關閉</button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 bg-white border border-stone-200 hover:bg-stone-100 text-stone-700 font-bold rounded-xl transition-all shadow-sm">取消</button>
-                                            <button disabled={isSaving} onClick={handleSaveCustomEvent} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
-                                                {isSaving && <Loader2 size={16} className="animate-spin" />} 儲存行程
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

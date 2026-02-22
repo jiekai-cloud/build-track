@@ -92,9 +92,9 @@ const CardView = ({ projects, isReadOnly, onDetailClick, onEditClick, onDeleteCl
             </div>
             <div className="p-5 flex-1 flex flex-col gap-4">
               <div className="space-y-1.5">
-                <div className="flex justify-between items-end"><span className="text-[10px] uppercase font-black text-stone-400 tracking-widest">預算執行率</span><span className="text-xs font-bold text-stone-600">{project.budget ? Math.round((project.computedFinancials.totalCost / project.budget) * 100) : 0}%</span></div>
+                <div className="flex justify-between items-end"><span className="text-[10px] uppercase font-black text-stone-400 tracking-widest">預算執行率</span><span className="text-xs font-bold text-stone-600">{project.budget ? Math.round((project.computedFinancials.totalCost / project.budget) * 100) + '%' : <span className="text-[10px] text-stone-400 font-bold">尚未設定</span>}</span></div>
                 <div className="h-3 w-full bg-stone-100 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${project.computedFinancials.healthStatus === 'Critical' ? 'bg-rose-500' : project.computedFinancials.healthStatus === 'Warning' ? 'bg-amber-500' : 'bg-stone-800'}`} style={{ width: `${project.budget ? Math.min((project.computedFinancials.totalCost / project.budget) * 100, 100) : 0}%` }} /></div>
-                <div className="flex justify-between text-[10px] font-bold text-stone-400"><span>已用 ${project.computedFinancials.totalCost.toLocaleString()}</span><span>預算 ${project.budget?.toLocaleString() || 0}</span></div>
+                <div className="flex justify-between text-[10px] font-bold text-stone-400"><span>已用 ${project.computedFinancials.totalCost.toLocaleString()}</span><span>預算 {project.budget ? '$' + project.budget.toLocaleString() : <span className="text-stone-300">尚未報價</span>}</span></div>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-auto">
                 <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100"><span className="text-[9px] uppercase font-black text-emerald-600/60 block mb-0.5">預估毛利 Profit</span><span className={`text-lg font-black tracking-tight ${project.computedFinancials.profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>${project.computedFinancials.profit.toLocaleString()}</span></div>
@@ -259,9 +259,7 @@ const TableView = ({ projects, onDetailClick, onEditClick, onDeleteClick, showDe
       headerName: "預算",
       field: "budget",
       width: 120,
-      type: "numericColumn",
-      valueFormatter: (params: any) => params.value ? `$${params.value.toLocaleString()}` : '-',
-      cellClass: "font-mono font-bold text-stone-600 text-xs"
+      cellRenderer: (params: any) => params.value ? <span className="font-mono font-bold text-stone-600 text-xs">${params.value.toLocaleString()}</span> : <span className="text-[10px] font-bold text-stone-400">尚未設定</span>,
     },
     {
       headerName: "已支出",
@@ -834,18 +832,27 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
 
 
-        {/* Only show filters if NOT in Ag-Grid mode, as Ag-Grid has its own filters */}
-        {viewMode !== 'table' && (
-          <div className="flex flex-wrap gap-2 shrink-0 mb-6">
-            <div className="flex items-center bg-white rounded-xl border border-stone-200 px-4 py-2.5 shadow-sm flex-1 min-w-[200px]"><Search size={14} className="text-stone-400 mr-2" /><input className="bg-transparent text-xs font-bold outline-none w-full text-stone-900" placeholder="搜尋專案名稱..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
-            <select className="bg-white border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-bold outline-none shadow-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option value="all">所有狀態</option>{Object.values(ProjectStatus).map(s => <option key={s} value={s}>{s}</option>)}</select>
-            <button onClick={() => onToggleDeleted(!showDeleted)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border flex items-center gap-2 ${showDeleted ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-stone-200 text-stone-400 hover:text-stone-600'}`}><Trash2 size={14} /> {showDeleted ? '隱藏垃圾桶' : '檢視垃圾桶'}</button>
+        {/* Unified Search and Filter Bar */}
+        <div className="flex flex-wrap gap-2 shrink-0 mb-6">
+          <div className="flex items-center bg-white rounded-xl border border-stone-200 px-4 py-2.5 shadow-sm flex-1 min-w-[200px]">
+            <Search size={14} className="text-stone-400 mr-2" />
+            <input className="bg-transparent text-xs font-bold outline-none w-full text-stone-900" placeholder="搜尋專案名稱..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
-        )}
+          <select className="bg-white border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-bold outline-none shadow-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="all">所有狀態</option>
+            {Object.values(ProjectStatus).map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <button onClick={() => onToggleDeleted(!showDeleted)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border flex items-center gap-2 ${showDeleted ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-stone-200 text-stone-400 hover:text-stone-600'}`}>
+            <Trash2 size={14} /> {showDeleted ? '隱藏垃圾桶' : '檢視垃圾桶'}
+          </button>
+        </div>
+
         {viewMode === 'table' && (
-          <div className="mb-4 flex justify-between items-center">
-            <div className="text-xs font-bold text-stone-500">Ag-Grid 模式：點擊表頭排序，或使用表頭過濾器進行篩選</div>
-            <button onClick={() => onToggleDeleted(!showDeleted)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border flex items-center gap-2 ${showDeleted ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-stone-200 text-stone-400 hover:text-stone-600'}`}><Trash2 size={14} /> {showDeleted ? '隱藏垃圾桶' : '檢視垃圾桶'}</button>
+          <div className="mb-4 flex flex-col sm:flex-row justify-between items-center bg-stone-100 p-3 rounded-xl border border-stone-200/50">
+            <div className="text-xs font-bold text-stone-500 flex items-center gap-2">
+              <List size={14} className="text-stone-400" />
+              <span>Ag-Grid 模式：可點擊表頭排序，或點擊漏斗圖示進行進階篩選</span>
+            </div>
           </div>
         )}
 

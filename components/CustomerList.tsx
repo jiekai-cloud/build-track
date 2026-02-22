@@ -139,14 +139,15 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers, user, onAddClick
 
         <div className="divide-y divide-slate-100">
           {filteredCustomers.length > 0 ? filteredCustomers.map((customer) => (
-            <div key={customer.id} className="group hover:bg-slate-50/50 transition-colors">
-              <div className="p-6 lg:px-8 lg:py-5 lg:grid lg:grid-cols-12 lg:items-center gap-4">
+            <div key={customer.id} className="group hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 bg-white border border-transparent lg:border-none relative overflow-hidden z-10">
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-blue-500 transition-colors duration-300"></div>
+              <div className="p-6 lg:px-8 lg:py-5 lg:grid lg:grid-cols-12 lg:items-center gap-4 relative">
                 {/* Basic Info */}
                 <div className="col-span-4 flex items-center gap-4 mb-4 lg:mb-0">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-white shadow-sm shrink-0 ${customer.type === '企業' ? 'bg-indigo-100 text-indigo-600' :
-                    customer.type === '政府單位' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'
+                  <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center border-2 border-white shadow-sm shrink-0 transition-transform group-hover:scale-105 duration-300 ${customer.type === '企業' ? 'bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-700' :
+                    customer.type === '政府單位' ? 'bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700' : 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700'
                     }`}>
-                    {customer.type === '企業' ? <Building2 size={24} /> : <User size={24} />}
+                    {customer.type === '企業' ? <Building2 size={24} className="drop-shadow-sm" /> : <User size={24} className="drop-shadow-sm" />}
                   </div>
                   <div>
                     <h3 className="font-black text-slate-900 leading-tight group-hover:text-blue-600 transition-colors uppercase tracking-tight flex items-center gap-2">
@@ -158,7 +159,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers, user, onAddClick
                       )}
                     </h3>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border uppercase ${getTypeStyle(customer.type)}`}>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border uppercase shadow-sm ${getTypeStyle(customer.type)}`}>
                         {customer.type}
                       </span>
                       {customer.tags?.map(tag => (
@@ -178,8 +179,10 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers, user, onAddClick
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-slate-400 leading-none">主要窗口 / 電話</p>
-                      <p className="text-xs font-black text-slate-700 mt-1">
-                        {customer.contactPerson || '未填寫'} - <a href={`tel:${customer.phone}`} className="hover:text-blue-600 hover:underline transition-colors">{customer.phone}</a>
+                      <p className="text-xs font-black text-slate-700 mt-1 flex items-center gap-1">
+                        {customer.contactPerson || '未填寫'} - <span className="hover:bg-blue-50 text-blue-600 hover:text-blue-700 px-1 py-0.5 rounded transition-colors cursor-pointer inline-flex items-center gap-1" onClick={() => { navigator.clipboard.writeText(customer.phone); alert('已複製電話'); }}>
+                          {customer.phone}
+                        </span>
                       </p>
                       {customer.landline && (
                         <p className="text-[10px] font-bold text-slate-500 mt-0.5 flex items-center gap-1">
@@ -229,22 +232,22 @@ const CustomerList: React.FC<CustomerListProps> = ({ customers, user, onAddClick
                 </div>
 
                 {/* Actions */}
-                <div className="col-span-1 flex items-center justify-end gap-1">
+                <div className="col-span-1 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   {!isReadOnly ? (
-                    <>
+                    <div className="bg-white/90 backdrop-blur-sm shadow-sm border border-slate-100 rounded-lg p-1 flex items-center gap-1">
                       <button
                         onClick={() => onEditClick(customer)}
-                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-md hover:border-blue-100 border border-transparent rounded-xl transition-all"
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
                       >
-                        <Pencil size={18} />
+                        <Pencil size={16} />
                       </button>
                       <button
                         onClick={() => onDeleteClick(customer.id)}
-                        className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-white hover:shadow-md hover:border-rose-100 border border-transparent rounded-xl transition-all"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
-                    </>
+                    </div>
                   ) : (
                     <span className="text-[9px] font-black text-stone-200 uppercase italic tracking-widest">View Only</span>
                   )}

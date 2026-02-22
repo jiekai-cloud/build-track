@@ -422,48 +422,23 @@ const App: React.FC = () => {
   const [showDeleted, setShowDeleted] = useState(false);
 
   const filteredData = useMemo(() => {
-    const filterByDept = (item: any) => {
+    const filterData = (item: any) => {
       // 永久刪除的項目在所有視圖中完全隱藏
       if (item.isPurged) return false;
       // 過濾已被軟刪除的項目 (除非開啟查看垃圾桶)
       if (item.deletedAt && !showDeleted) return false;
 
-      if (viewingDeptId === 'all') return true;
-      // 支援多部門過濾
-      if (item.departmentIds && Array.isArray(item.departmentIds) && item.departmentIds.length > 0) {
-        return item.departmentIds.includes(viewingDeptId);
-      }
-      return item.departmentId === viewingDeptId;
-    };
-    const filterTeamMembers = (item: any) => {
-      if (item.isPurged) return false;
-      if (item.deletedAt && !showDeleted) return false;
-
-      if (viewingDeptId === 'all') return true;
-
-      const itemDepts = item.departmentIds && Array.isArray(item.departmentIds) && item.departmentIds.length > 0
-        ? item.departmentIds
-        : [item.departmentId];
-
-      // 1. 基本規則：部門相符
-      if (itemDepts.includes(viewingDeptId)) return true;
-
-      // 2. 特殊規則：戰略指揮部 (DEPT-1) 的成員可以在第一/第三/第四工程部出現
-      if (itemDepts.includes('DEPT-1') && (viewingDeptId === 'DEPT-4' || viewingDeptId === 'DEPT-8')) {
-        return true;
-      }
-
-      return false;
+      return true;
     };
 
     return {
-      projects: projects.filter(filterByDept),
-      customers: customers.filter(filterByDept),
-      teamMembers: teamMembers.filter(filterTeamMembers), // 使用特殊過濾邏輯
-      vendors: vendors.filter(filterByDept),
-      quotations: quotations.filter(filterByDept)
+      projects: projects.filter(filterData),
+      customers: customers.filter(filterData),
+      teamMembers: teamMembers.filter(filterData),
+      vendors: vendors.filter(filterData),
+      quotations: quotations.filter(filterData)
     };
-  }, [projects, customers, teamMembers, vendors, quotations, viewingDeptId, showDeleted]);
+  }, [projects, customers, teamMembers, vendors, quotations, showDeleted]);
 
   if (isInitializing) {
     return <LoadingScreen onSkip={() => setIsInitializing(false)} />;
@@ -555,8 +530,6 @@ const App: React.FC = () => {
           onNotificationClick={() => setIsNotificationOpen(true)}
           activityLogsLength={activityLogs.length}
           onAISettingsClick={() => setIsAISettingsOpen(true)}
-          viewingDeptId={viewingDeptId}
-          onViewingDeptChange={setViewingDeptId}
           onLogout={handleLogout}
         />
 
@@ -914,17 +887,20 @@ const App: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {vendors.map(v => (
-                      <div key={v.id} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm hover:shadow-md transition-all group">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="bg-stone-100 px-2 py-0.5 rounded text-[8px] font-black text-stone-500 uppercase">{v.id}</div>
+                      <div key={v.id} className="bg-white p-6 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                        {/* 側邊裝飾色條 */}
+                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${v.type === '防水' ? 'bg-gradient-to-b from-blue-400 to-blue-600' : 'bg-gradient-to-b from-stone-400 to-stone-600'}`}></div>
+
+                        <div className="flex justify-between items-start mb-5">
+                          <div className="bg-stone-50/80 backdrop-blur-sm border border-stone-100 px-2 py-1 rounded-md text-[9px] font-black text-stone-500 uppercase flex items-center gap-1"><Hash size={10} /> {v.id}</div>
                           {user?.role !== 'Guest' && (
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/80 backdrop-blur-sm shadow-sm border border-stone-100 rounded-lg p-1">
                               <button
                                 onClick={() => {
                                   setEditingVendor(v);
                                   setIsVendorModalOpen(true);
                                 }}
-                                className="text-stone-300 hover:text-blue-600 p-1"
+                                className="text-stone-400 hover:bg-blue-50 hover:text-blue-600 p-1.5 rounded-md transition-colors"
                               >
                                 <Pencil size={14} />
                               </button>
@@ -934,28 +910,28 @@ const App: React.FC = () => {
                                     setVendors(prev => prev.map(vend => vend.id === v.id ? { ...vend, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : vend));
                                   }
                                 }}
-                                className="text-stone-300 hover:text-rose-500 p-1"
+                                className="text-stone-400 hover:bg-rose-50 hover:text-rose-500 p-1.5 rounded-md transition-colors"
                               >
                                 <Trash2 size={14} />
                               </button>
                             </div>
                           )}
                         </div>
-                        <h3 className="text-lg font-black text-stone-900 mb-1">{v.name}</h3>
-                        <p className="text-[10px] font-black text-blue-600 uppercase mb-4 tracking-widest">{v.type}</p>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs font-medium text-stone-500">
-                            <LucideUser size={14} /> {v.contact}
+                        <h3 className="text-xl font-black text-stone-900 mb-1.5 tracking-tight group-hover:text-blue-600 transition-colors">{v.name}</h3>
+                        <p className={`text-[10px] font-black uppercase mb-5 tracking-widest px-2.5 py-1 rounded-lg w-fit border shadow-sm ${v.type === '防水' ? 'bg-blue-50/50 text-blue-700 border-blue-200/50' : 'bg-stone-50/50 text-stone-700 border-stone-200/50'}`}>{v.type}</p>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 text-xs font-bold text-stone-600 bg-stone-50 px-3 py-2 rounded-xl">
+                            <LucideUser size={14} className="text-stone-400 shrink-0" /> <span className="truncate">{v.contact}</span>
                           </div>
                           {v.phone && (
-                            <a href={`tel:${v.phone}`} className="flex items-center gap-2 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
-                              {/* @ts-ignore */}
-                              <Phone size={14} /> {v.phone}
-                            </a>
+                            <div className="flex items-center gap-3 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl group/phone cursor-pointer hover:bg-emerald-100 transition-colors" onClick={() => { navigator.clipboard.writeText(v.phone); alert('已複製電話'); }}>
+                              <Phone size={14} className="text-emerald-500 shrink-0 group-hover/phone:-rotate-12 transition-transform" />
+                              <a href={`tel:${v.phone}`} className="grow hover:underline" onClick={(e) => e.stopPropagation()}>{v.phone}</a>
+                            </div>
                           )}
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 pl-1 pt-1">
                             {[...Array(5)].map((_, i) => (
-                              <Sparkles key={i} size={10} className={i < v.rating ? 'text-amber-400' : 'text-stone-200'} />
+                              <Sparkles key={i} size={12} className={i < v.rating ? 'text-amber-400 drop-shadow-sm' : 'text-stone-200'} />
                             ))}
                           </div>
                         </div>

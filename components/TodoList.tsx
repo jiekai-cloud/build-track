@@ -233,10 +233,11 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
                                 </p>
                             </div>
                         ) : (
-                            filteredTodos.map(todo => (
+                            filteredTodos.map((todo, index) => (
                                 <div
                                     key={todo.id}
-                                    className={`flex items-center justify-between p-4 px-5 rounded-[1.25rem] border transition-all duration-300 group ${todo.completed
+                                    style={{ animationDelay: `${index * 30}ms` }}
+                                    className={`flex items-center justify-between p-4 px-5 rounded-[1.25rem] border transition-all duration-300 group animate-in slide-in-from-bottom-1 fade-in ${todo.completed
                                         ? 'bg-stone-50/50 border-stone-200/50 opacity-60 hover:opacity-100 shadow-none'
                                         : 'bg-white border-stone-200 hover:border-orange-300 hover:shadow-[0_8px_30px_rgb(249,115,22,0.1)] hover:-translate-y-0.5'
                                         }`}
@@ -272,11 +273,11 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
                                             >
                                                 <div className="shrink-0 relative w-6 h-6 flex items-center justify-center">
                                                     {todo.completed ? (
-                                                        <div className="absolute inset-0 bg-emerald-500 rounded-full animate-in zoom-in duration-200 flex items-center justify-center shadow-md shadow-emerald-500/20">
-                                                            <CheckCircle2 size={16} className="text-white" strokeWidth={3} />
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full animate-in zoom-in duration-200 flex items-center justify-center shadow-md shadow-emerald-500/30">
+                                                            <CheckCircle2 size={16} className="text-white drop-shadow-sm" strokeWidth={3} />
                                                         </div>
                                                     ) : (
-                                                        <Circle size={24} className="text-stone-300 group-hover:text-orange-500/50 transition-colors" strokeWidth={2} />
+                                                        <Circle size={24} className="text-stone-300 group-hover:text-orange-500/50 group-hover:scale-110 transition-all duration-300" strokeWidth={2} />
                                                     )}
                                                 </div>
                                                 <div
@@ -293,21 +294,23 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={(e) => startEditing(e, todo)}
-                                                    className="p-2.5 text-stone-400 hover:text-blue-500 hover:bg-blue-50 rounded-[1rem] transition-all shadow-sm border border-transparent hover:border-blue-100 mr-1"
-                                                    title="編輯"
-                                                >
-                                                    <Edit2 size={16} strokeWidth={2.5} />
-                                                </button>
-                                                <button
-                                                    onClick={() => deleteTodo(todo.id)}
-                                                    className="p-2.5 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-[1rem] transition-all shadow-sm border border-transparent hover:border-rose-100"
-                                                    title="刪除"
-                                                >
-                                                    <Trash2 size={16} strokeWidth={2.5} />
-                                                </button>
+                                            <div className="flex items-center shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                <div className="bg-white/90 backdrop-blur-sm shadow-sm border border-stone-100 rounded-lg p-0.5 flex items-center gap-0.5">
+                                                    <button
+                                                        onClick={(e) => startEditing(e, todo)}
+                                                        className="p-2 text-stone-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all"
+                                                        title="編輯"
+                                                    >
+                                                        <Edit2 size={14} strokeWidth={2.5} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteTodo(todo.id)}
+                                                        className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-all"
+                                                        title="刪除"
+                                                    >
+                                                        <Trash2 size={14} strokeWidth={2.5} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </>
                                     )}

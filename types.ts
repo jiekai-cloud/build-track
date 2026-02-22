@@ -121,6 +121,8 @@ export interface ActivityLog {
 export interface ChecklistTask {
   id: string;
   title: string;
+  group?: string;
+  groupOrder?: number;
   assigneeId?: string;
   assigneeName?: string;
   dueDate?: string;

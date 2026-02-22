@@ -169,9 +169,12 @@ const DefectImprovement: React.FC = () => {
         <>
             <div className="h-full flex flex-col bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden animate-in fade-in">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2">
-                        <AlertTriangle size={16} className="text-rose-600" />
+                <div className="px-6 py-4 border-b border-stone-100 bg-gradient-to-r from-stone-50/80 to-white flex items-center justify-between shrink-0 relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-500 to-rose-300"></div>
+                    <div className="flex items-center gap-2 pl-2">
+                        <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center border border-rose-100">
+                            <AlertTriangle size={14} className="text-rose-600" />
+                        </div>
                         <h3 className="font-black text-xs uppercase tracking-widest text-stone-900">缺失改善紀錄</h3>
                     </div>
                     {!isReadOnly && (
@@ -251,10 +254,12 @@ const DefectImprovement: React.FC = () => {
                             const completedCount = data.items.filter(i => i.status === 'Completed').length;
 
                             return (
-                                <div key={record.id} className={`border rounded-2xl transition-all ${isEditing ? 'border-blue-500 ring-2 ring-blue-500/10 bg-white' : 'border-stone-200 bg-stone-50 hover:border-stone-300'}`}>
+                                <div key={record.id} className={`border rounded-2xl transition-all duration-300 group/record ${isEditing ? 'border-blue-500 ring-2 ring-blue-500/10 bg-white shadow-lg' : `border-stone-200 bg-stone-50 hover:border-stone-300 hover:shadow-md hover:-translate-y-0.5 ${pendingCount > 0 ? 'hover:border-rose-200' : 'hover:border-emerald-200'}`} relative overflow-hidden`}>
+                                    {/* Status indicator bar */}
+                                    <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors duration-300 ${pendingCount > 0 ? 'bg-gradient-to-b from-rose-400 to-rose-600' : 'bg-gradient-to-b from-emerald-400 to-emerald-600'}`}></div>
                                     {/* Record Header */}
                                     <div
-                                        className="px-4 py-3 flex items-center justify-between cursor-pointer select-none"
+                                        className="px-4 py-3 flex items-center justify-between cursor-pointer select-none pl-5"
                                         onClick={() => !isEditing && toggleExpand(record.id)}
                                     >
                                         <div className="flex items-center gap-3">
@@ -312,22 +317,24 @@ const DefectImprovement: React.FC = () => {
                                                 </>
                                             ) : (
                                                 !isReadOnly && (
-                                                    <>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); startEdit(record); }}
-                                                            className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                                            title="編輯"
-                                                        >
-                                                            <Edit2 size={14} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); deleteRecord(record.id); }}
-                                                            className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                                                            title="刪除"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </>
+                                                    <div className="opacity-0 group-hover/record:opacity-100 transition-opacity duration-300">
+                                                        <div className="bg-white/90 backdrop-blur-sm shadow-sm border border-stone-100 rounded-lg p-0.5 flex items-center gap-0.5">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); startEdit(record); }}
+                                                                className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+                                                                title="編輯"
+                                                            >
+                                                                <Edit2 size={14} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); deleteRecord(record.id); }}
+                                                                className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
+                                                                title="刪除"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 )
                                             )}
                                         </div>
@@ -360,9 +367,9 @@ const DefectImprovement: React.FC = () => {
                                                                 <button
                                                                     disabled={!isEditing}
                                                                     onClick={() => updateItem(item.id, { status: item.status === 'Pending' ? 'Completed' : 'Pending' })}
-                                                                    className={`shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center border transition-all ${item.status === 'Completed'
-                                                                        ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                                        : 'bg-white border-stone-300 text-transparent hover:border-emerald-400'
+                                                                    className={`shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-300 ${item.status === 'Completed'
+                                                                        ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 border-emerald-500 text-white shadow-sm shadow-emerald-500/30'
+                                                                        : 'bg-white border-stone-300 text-transparent hover:border-emerald-400 hover:scale-110'
                                                                         }`}
                                                                 >
                                                                     <Check size={12} strokeWidth={4} />

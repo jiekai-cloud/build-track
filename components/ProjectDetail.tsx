@@ -302,11 +302,11 @@ const ProjectDetail: React.FC<ProjectDetailProps> = (props) => {
         <div className="mt-0 border-b border-stone-200 bg-white sticky top-0 z-20 shadow-sm relative group">
           <div className="flex gap-6 lg:gap-8 overflow-x-auto pb-px px-4 lg:px-8 no-scrollbar relative z-10 scroll-smooth" id="project-tabs">
             {[
+              { id: 'logs', label: '專案討論', icon: Activity },
               { id: 'quotations', label: '報價單', icon: Receipt },
               { id: 'prep', label: '施工前準備', icon: Construction },
               { id: 'schedule', label: '施工排程', icon: CalendarDays },
               { id: 'calendar', label: '行事曆', icon: Calendar },
-              { id: 'logs', label: '施工日誌', icon: ClipboardList },
               { id: 'tasks', label: '待辦任務', icon: CheckCircle2 },
               { id: 'photos', label: '照片庫', icon: FileImage },
               { id: 'defects', label: '缺失改善', icon: ShieldAlert },
