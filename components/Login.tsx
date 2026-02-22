@@ -126,8 +126,17 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     if (member) {
       const expectedPassword = member.password || '1234';
       if (cleanPassword === expectedPassword) {
-        const finalRole = member.systemRole || (member.role === '工務主管' || member.role === '專案經理' ? 'DeptAdmin' : 'Staff');
-        console.log('[Login Trace] Authentication successful, calling onLoginSuccess');
+        // 根據職稱給予預設權限
+        let fallbackRole = 'Staff';
+        const roleStr = member.role || '';
+        if (/總經理|老闆|店長|主理人|總監|財務長|管理長/.test(roleStr)) {
+          fallbackRole = 'Admin';
+        } else if (/經理|副理|工務主管|主任|專案經理/.test(roleStr)) {
+          fallbackRole = 'DeptAdmin';
+        }
+
+        const finalRole = member.systemRole || fallbackRole;
+        console.log('[Login Trace] Authentication successful, calling onLoginSuccess. Role:', finalRole);
         onLoginSuccess({
           id: member.id,
           name: member.name,

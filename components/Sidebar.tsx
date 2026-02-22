@@ -59,6 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
 
   const allMenuItems = [
     { id: 'dashboard', label: '總覽面板', icon: LayoutDashboard, moduleId: ModuleId.DASHBOARD },
+    { id: 'todos', label: '個人待辦', icon: ListTodo, moduleId: ModuleId.TODOS },
     { id: 'calendar', label: '行事曆', icon: CalendarClock, moduleId: ModuleId.CALENDAR },
     { id: 'projects', label: '專案管理', icon: FolderKanban, moduleId: ModuleId.PROJECTS },
     { id: 'dispatch', label: '派工紀錄', icon: ClipboardSignature, moduleId: ModuleId.DISPATCH },
@@ -72,7 +73,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     { id: 'approvals', label: '簽核系統', icon: FileCheck, moduleId: ModuleId.APPROVALS },
     { id: 'analytics', label: '數據分析', icon: BarChart3, moduleId: ModuleId.ANALYTICS },
     { id: 'company_mgmt', label: '公司管理', icon: Building, moduleId: ModuleId.COMPANY_MGMT },
-    { id: 'todos', label: '個人待辦', icon: ListTodo, moduleId: ModuleId.TODOS },
   ];
 
   // Filter menu items based on enabled modules AND user permissions

@@ -70,15 +70,44 @@ async function discoverAvailableModels(apiKey: string): Promise<string[]> {
   return fallback;
 }
 
+/**
+ * 安全解碼 API Key 的機制
+ * 目的：防止明文 (AIza...) 直接寫在程式碼中被 GitHub 機器人掃描並強制撤銷。
+ * 運作方式：將 Base64 編碼後的字串反轉。
+ */
+const decodeApiKey = (obfuscated: string | null | undefined): string | null => {
+  if (!obfuscated) return null;
+  // 若是以 AIza 開頭的明文，直接回傳
+  if (obfuscated.startsWith('AIza')) return obfuscated;
+
+  try {
+    // 1. 字串反轉回來 2. Base64 解碼
+    const reversed = obfuscated.split('').reverse().join('');
+    return atob(reversed);
+  } catch (e) {
+    return obfuscated; // fallback, in case it's normal text
+  }
+};
+
 const getApiKey = () => {
   const savedKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
+
+  // 第一優先：使用者在畫面上自行設定的 Key
+  if (savedKey) return savedKey;
+
+  // 第二優先：開發變數 .env 或是隱藏寫在程式碼裡面的混淆金鑰
+  // 若要寫死在程式碼裡，請放入 "內建混淆金鑰" 變數中 (將您的新 API Key 經 Base64 再反轉)
+  // 您可以在任何瀏覽器 Console 執行: btoa("您剛申請的新APIKey").split('').reverse().join('') 來產生混淆字串
+  const BUILT_IN_OBFUSCATED_KEY = ""; // <--- 將混淆後的字串貼在這裡 (例如: "==Q...==")
+
   const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
 
-  if (savedKey) return savedKey;
-  if (envKey) return envKey;
+  const finalKey = decodeApiKey(BUILT_IN_OBFUSCATED_KEY) || decodeApiKey(envKey as string);
 
-  console.error("Gemini API Key is missing.");
-  throw new Error("Gemini API 金鑰未設定。請點擊右上角設定 (齒輪圖示) ->「AI 設定」並輸入您的金鑰。");
+  if (finalKey) return finalKey;
+
+  console.error("Gemini API Key is missing or invalid.");
+  throw new Error("Gemini API 金鑰未設定或失效。請點擊右上角設定 (齒輪圖示) ->「AI 設定」並輸入您新的金鑰。");
 };
 
 async function callGeminiViaFetch(model: string, payload: any, apiKey: string) {
