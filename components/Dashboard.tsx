@@ -9,7 +9,8 @@ import {
   AlertCircle, Clock, CheckCircle2, DollarSign, ArrowUpRight,
   ArrowDownRight, Activity, ShieldAlert, Zap, ExternalLink,
   Sparkles, Phone, MapPin, FileWarning, CalendarDays, AlertTriangle,
-  Layers, Target, ArrowRight, Briefcase, Loader2, Download, X, RefreshCw, Bell
+  Layers, Target, ArrowRight, Briefcase, Loader2, Download, X, RefreshCw, Bell,
+  Plus, ListTodo, History
 } from 'lucide-react';
 import { Project, ProjectStatus, Lead, SystemContext } from '../types';
 import DefectExportModal from './DefectExportModal';
@@ -192,6 +193,42 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
     };
   }, [filteredProjects, projects]);
 
+  // 本月新增 vs 完工統計 (#8)
+  const monthlyTrend = useMemo(() => {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+
+    const newThisMonth = projects.filter(p => p.createdDate?.startsWith(thisMonth) || p.startDate?.startsWith(thisMonth)).length;
+    const newLastMonth = projects.filter(p => p.createdDate?.startsWith(lastMonthStr) || p.startDate?.startsWith(lastMonthStr)).length;
+    const completedThisMonth = projects.filter(p =>
+      (p.status === ProjectStatus.COMPLETED || p.status === ProjectStatus.CLOSED) &&
+      p.endDate?.startsWith(thisMonth)
+    ).length;
+    const constructingCount = projects.filter(p => p.status === ProjectStatus.CONSTRUCTING).length;
+
+    return { newThisMonth, newLastMonth, completedThisMonth, constructingCount, diff: newThisMonth - newLastMonth };
+  }, [projects]);
+
+  // 今日焦點：近期待處理 (#4)
+  const todayFocus = useMemo(() => {
+    const now = new Date();
+    // 逾期報價
+    const overdueQuotes = riskProjects.filter(r => r.riskType === 'delay').slice(0, 3);
+    // 進度滯後
+    const behindSchedule = riskProjects.filter(r => r.riskType === 'schedule').slice(0, 3);
+    // 近期新增案件 (3天內)
+    const recentProjects = projects
+      .filter(p => {
+        if (!p.createdDate && !p.startDate) return false;
+        const d = new Date(p.createdDate || p.startDate!);
+        return (now.getTime() - d.getTime()) < 3 * 24 * 60 * 60 * 1000;
+      })
+      .slice(0, 3);
+    return { overdueQuotes, behindSchedule, recentProjects };
+  }, [riskProjects, projects]);
+
   const overdueByManager = useMemo(() => {
     const overdueOnes = riskProjects.filter(r => r.riskType === 'delay');
     const counts: Record<string, number> = {};
@@ -220,22 +257,23 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
         name: p.name.length > 6 ? p.name.substring(0, 6) + '...' : p.name,
         budget: p.budget,
         spent: p.spent,
+        progress: p.progress,
         full_name: p.name
       }));
   }, [filteredProjects]);
 
   const STATUS_COLORS: Record<string, string> = {
-    [ProjectStatus.NEGOTIATING]: '#64748b', // Slate-500
-    [ProjectStatus.QUOTING]: '#3b82f6', // Blue-500
-    [ProjectStatus.QUOTED]: '#6366f1', // Indigo-500
-    [ProjectStatus.WAITING_SIGN]: '#8b5cf6', // Violet-500
-    [ProjectStatus.SIGNED_WAITING_WORK]: '#a855f7', // Purple-500
-    [ProjectStatus.CONSTRUCTING]: '#f97316', // Orange-500
-    [ProjectStatus.COMPLETED]: '#10b981', // Emerald-500
-    [ProjectStatus.INSPECTION]: '#06b6d4', // Cyan-500
-    [ProjectStatus.CLOSED]: '#059669', // Emerald-600
-    [ProjectStatus.CANCELLED]: '#94a3b8', // Slate-400
-    [ProjectStatus.LOST]: '#cbd5e1', // Slate-300
+    [ProjectStatus.NEGOTIATING]: '#64748b',
+    [ProjectStatus.QUOTING]: '#3b82f6',
+    [ProjectStatus.QUOTED]: '#6366f1',
+    [ProjectStatus.WAITING_SIGN]: '#8b5cf6',
+    [ProjectStatus.SIGNED_WAITING_WORK]: '#a855f7',
+    [ProjectStatus.CONSTRUCTING]: '#f97316',
+    [ProjectStatus.COMPLETED]: '#10b981',
+    [ProjectStatus.INSPECTION]: '#06b6d4',
+    [ProjectStatus.CLOSED]: '#059669',
+    [ProjectStatus.CANCELLED]: '#94a3b8',
+    [ProjectStatus.LOST]: '#cbd5e1',
   };
 
   const formatMoney = (val: number) => {
@@ -245,7 +283,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
   };
 
   const statsCards = [
-    { label: '案件總量', value: filteredProjects.length, icon: Layers, color: 'text-slate-600', bg: 'bg-slate-50' },
+    { label: '案件總量', value: filteredProjects.length, icon: Layers, color: 'text-slate-600', bg: 'bg-slate-50', trend: monthlyTrend.diff, trendLabel: '較上月' },
     { label: '總合約金額', value: `$${formatMoney(stats.totalBudget)}`, icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' },
     {
       label: '目前預估毛利',
@@ -262,7 +300,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
       color: 'text-rose-600',
       bg: 'bg-rose-50'
     },
-    { label: '施工進行中', value: stats.counts[ProjectStatus.CONSTRUCTING] || 0, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: '施工進行中', value: stats.counts[ProjectStatus.CONSTRUCTING] || 0, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', trend: monthlyTrend.completedThisMonth, trendLabel: '本月完工' },
   ];
 
   return (
@@ -382,32 +420,92 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                 {(stat as any).subValue && (
                   <p className="text-xs font-bold text-emerald-600 mt-1">{(stat as any).subValue}</p>
                 )}
+                {(stat as any).trend !== undefined && (
+                  <p className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${(stat as any).trend > 0 ? 'text-emerald-500' : (stat as any).trend < 0 ? 'text-rose-500' : 'text-stone-400'}`}>
+                    {(stat as any).trend > 0 ? <ArrowUpRight size={10} /> : (stat as any).trend < 0 ? <ArrowDownRight size={10} /> : null}
+                    {(stat as any).trend > 0 ? '+' : ''}{(stat as any).trend} {(stat as any).trendLabel}
+                  </p>
+                )}
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Defect Summary Section */}
-      <div className="bg-white rounded-[2rem] border border-stone-100 shadow-sm p-6 lg:p-8 animate-in slide-in-from-bottom-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest flex items-center gap-2 border-l-4 border-rose-500 pl-3">
-            <AlertTriangle size={18} className="text-rose-500" /> 缺失改善紀錄彙整 (未完成)
-          </h3>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsExportModalOpen(true)}
-              className="flex items-center gap-2 bg-white border border-stone-200 text-stone-600 px-3 py-1.5 rounded-full text-[10px] font-black hover:bg-stone-50 transition-all shadow-sm active:scale-95"
-            >
-              <Download size={12} /> 批量匯出報告
-            </button>
-            <span className="text-[10px] bg-rose-50 text-rose-600 px-3 py-1 rounded-full font-black uppercase tracking-wider self-start sm:self-auto border border-rose-100">
-              共有 {projectsWithDefects.length} 案有待改進項目
-            </span>
+      {/* Today's Focus Section (#4) */}
+      {(todayFocus.overdueQuotes.length > 0 || todayFocus.behindSchedule.length > 0 || todayFocus.recentProjects.length > 0) && (
+        <div className="bg-gradient-to-r from-stone-900 to-stone-800 rounded-[2rem] p-6 lg:p-8 text-white animate-in slide-in-from-bottom-2">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+              <ListTodo size={18} className="text-amber-400" /> 今日焦點
+            </h3>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
+              <History size={12} /> 本月新增 {monthlyTrend.newThisMonth} 案 · 完工 {monthlyTrend.completedThisMonth} 案
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {todayFocus.overdueQuotes.length > 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-3">⚠️ 待跟進報價</p>
+                <div className="space-y-2">
+                  {todayFocus.overdueQuotes.map(p => (
+                    <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
+                      <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
+                      <span className="text-[9px] text-rose-400 font-black shrink-0 ml-2">逾期{p.riskValue}天</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {todayFocus.behindSchedule.length > 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest mb-3">🏗️ 進度滯後</p>
+                <div className="space-y-2">
+                  {todayFocus.behindSchedule.map(p => (
+                    <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
+                      <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
+                      <span className="text-[9px] text-amber-400 font-black shrink-0 ml-2">滯後{p.riskValue}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {todayFocus.recentProjects.length > 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-3">🆕 近期新增</p>
+                <div className="space-y-2">
+                  {todayFocus.recentProjects.map(p => (
+                    <div key={p.id} onClick={() => onProjectClick(p.id)} className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-2 py-1.5 transition-colors">
+                      <span className="text-[11px] font-bold truncate flex-1">{p.name}</span>
+                      <span className="text-[9px] text-stone-500 font-bold shrink-0 ml-2">{p.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
+      )}
 
-        {projectsWithDefects.length > 0 ? (
+      {/* Defect Summary Section (#2 - compact when empty) */}
+      {projectsWithDefects.length > 0 ? (
+        <div className="bg-white rounded-[2rem] border border-stone-100 shadow-sm p-6 lg:p-8 animate-in slide-in-from-bottom-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest flex items-center gap-2 border-l-4 border-rose-500 pl-3">
+              <AlertTriangle size={18} className="text-rose-500" /> 缺失改善紀錄彙整 (未完成)
+            </h3>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="flex items-center gap-2 bg-white border border-stone-200 text-stone-600 px-3 py-1.5 rounded-full text-[10px] font-black hover:bg-stone-50 transition-all shadow-sm active:scale-95"
+              >
+                <Download size={12} /> 批量匯出報告
+              </button>
+              <span className="text-[10px] bg-rose-50 text-rose-600 px-3 py-1 rounded-full font-black uppercase tracking-wider self-start sm:self-auto border border-rose-100">
+                共有 {projectsWithDefects.length} 案有待改進項目
+              </span>
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {projectsWithDefects.slice(0, 8).map(p => {
               const totalPending = p.defectRecords?.reduce((acc, r) => acc + r.items.filter(i => i.status === 'Pending').length, 0) || 0;
@@ -426,19 +524,19 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                 </div>
               )
             })}
-            {projectsWithDefects.length > 8 && (
-              <div onClick={() => { /* Consider filtering projects list */ }} className="flex items-center justify-center p-12 border border-dashed border-stone-200 rounded-2xl text-stone-400 hover:text-stone-600 hover:bg-stone-50 cursor-pointer transition-all">
-                <span className="text-xs font-black uppercase tracking-widest">查看更多 ({projectsWithDefects.length - 8})...</span>
-              </div>
-            )}
           </div>
-        ) : (
-          <div className="flex items-center justify-center p-12 text-stone-300 gap-3 bg-stone-50/50 rounded-3xl border border-dashed border-stone-200">
-            <CheckCircle2 size={32} className="text-emerald-400" />
-            <span className="font-bold text-xs uppercase tracking-widest text-emerald-600/50">所有案件皆無待改善缺失，品質良好！</span>
+        </div>
+      ) : (
+        <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 size={18} className="text-emerald-500" />
+            <span className="font-bold text-xs text-emerald-600">所有案件皆無待改善缺失，品質良好！</span>
           </div>
-        )}
-      </div>
+          <button onClick={() => setIsExportModalOpen(true)} className="text-[10px] font-bold text-emerald-500 hover:text-emerald-700 transition-colors">
+            匯出報告
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Status Distribution Chart */}
@@ -493,7 +591,11 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, leads = [], cloudError,
                   cursor={{ fill: '#fafaf9' }}
                   contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                   labelStyle={{ fontSize: '12px', fontWeight: '900', color: '#1c1917', marginBottom: '8px' }}
-                  formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
+                  formatter={(value: number, name: string, props: any) => {
+                    const progress = props?.payload?.progress;
+                    const suffix = progress !== undefined ? ` (進度 ${progress}%)` : '';
+                    return [`$${value.toLocaleString()}${suffix}`, ''];
+                  }}
                 />
                 <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '20px' }} />
                 <Bar dataKey="budget" name="預算金額" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
