@@ -3,11 +3,33 @@ import { supabase } from './supabaseClient';
 import { Project, Customer, TeamMember, Vendor, Lead, InventoryItem, InventoryLocation, PurchaseOrder, AttendanceRecord, PayrollRecord, ApprovalRequest, ApprovalTemplate, ActivityLog, Quotation, SystemCalendarEvent } from '../types';
 
 export const supabaseSyncService = {
+    pingCloud: async (): Promise<boolean> => {
+        try {
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('ping timeout')), 2000)
+            );
+            const supabasePromise = supabase.from('app_data').select('collection').limit(1);
+            const result = await Promise.race([supabasePromise, timeoutPromise]) as any;
+            if (result.error) return false;
+            return true;
+        } catch (e) {
+            return false;
+        }
+    },
+
     /**
      * 從 Supabase 載入所有資料集合，並組合成跟舊版一樣的巨型物件
      */
     loadFromCloud: async (onProgress?: (msg: string, current: number, total: number) => void): Promise<any> => {
         try {
+            if (onProgress) onProgress('正在測試雲端連線...', 0, 15);
+            console.log('[Supabase] Pinging cloud...');
+            const isOnline = await supabaseSyncService.pingCloud();
+            if (!isOnline) {
+                console.warn('[Supabase] Cloud is offline, aborting loadFromCloud');
+                throw new Error('Supabase offline or CORS blocked');
+            }
+
             console.log('[Supabase] Pulling all collections from cloud...');
             const total = 15;
             let current = 0;
@@ -56,6 +78,14 @@ export const supabaseSyncService = {
      */
     saveToCloud: async (data: any, throwError: boolean = false, onProgress?: (msg: string, current: number, total: number) => void): Promise<boolean> => {
         try {
+            if (onProgress) onProgress('正在測試雲端連線...', 0, 15);
+            const isOnline = await supabaseSyncService.pingCloud();
+            if (!isOnline) {
+                console.warn('[Supabase] Cloud is offline, aborting saveToCloud');
+                if (throwError) throw new Error('Supabase offline or CORS blocked');
+                return false;
+            }
+
             console.log('[Supabase] Pushing all collections to cloud...');
             const total = 15;
             let current = 0;
