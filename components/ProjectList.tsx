@@ -683,80 +683,152 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const isReadOnly = user.role === 'Guest';
 
   return (
-    <div className="flex flex-col h-full bg-stone-50/50">
-      <div className="flex-1 flex flex-col p-4 lg:p-8 overflow-hidden">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-4 shrink-0 mb-6">
-          <div><h1 className="text-3xl font-black text-stone-900 tracking-tight mb-2">專案財務戰情室</h1><p className="text-stone-500 font-bold flex items-center gap-2 text-xs uppercase tracking-wider"><TrendingUp size={16} className="text-emerald-500" /> Project Costing Dashboard</p></div>
-          <div className="flex flex-wrap gap-2">
-            {!isReadOnly && (<button onClick={onAddClick} className="bg-stone-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-stone-800 active:scale-95 transition-all shadow-xl shadow-stone-200 text-sm"><Plus size={18} /> 建立新專案</button>)}
+    <div className="flex flex-col h-full bg-stone-50/50 relative overflow-hidden">
+      {/* Background ambient lighting */}
+      <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-emerald-400/10 blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-amber-400/10 blur-[100px] pointer-events-none"></div>
 
-            <div className="flex gap-1 bg-white border border-stone-200 rounded-xl p-1 shadow-sm">
-              <button onClick={() => setViewMode('card')} className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${viewMode === 'card' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'}`}><LayoutGrid size={16} /> 卡片</button>
-              <button onClick={() => setViewMode('table')} className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${viewMode === 'table' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'}`}><List size={16} /> AgGrid (Beta)</button>
-              <button onClick={() => setViewMode('kanban')} className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${viewMode === 'kanban' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'}`}><Briefcase size={16} /> 看板</button>
+      <div className="flex-1 flex flex-col p-4 lg:p-8 overflow-hidden relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6 shrink-0 mb-8">
+          <div className="flex items-center gap-5">
+            <div className="p-4 rounded-[1.75rem] bg-gradient-to-br from-stone-900 to-stone-800 text-white shadow-xl shadow-stone-900/20 border border-stone-700/50 relative overflow-hidden group">
+              <TrendingUp size={32} className="relative z-10 text-emerald-400" strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-stone-900 to-stone-600 mb-1">
+                專案財務戰情室
+              </h1>
+              <p className="text-stone-500 font-black flex items-center gap-2 text-[11px] lg:text-xs uppercase tracking-[0.2em]">
+                Project Costing Dashboard
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {!isReadOnly && (
+              <button onClick={onAddClick} className="bg-gradient-to-r from-stone-900 to-stone-800 text-white px-7 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.1em] flex items-center gap-2.5 hover:-translate-y-0.5 active:scale-95 transition-all shadow-lg shadow-stone-900/25 border border-stone-700">
+                <Plus size={16} strokeWidth={3} className="text-emerald-400" /> 建立新專案
+              </button>
+            )}
+
+            <div className="flex gap-1.5 bg-white/70 backdrop-blur-md border border-stone-200/80 rounded-[1.25rem] p-1.5 shadow-sm">
+              <button onClick={() => setViewMode('card')} className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'card' ? 'bg-stone-900 text-white shadow-sm' : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100/50'}`}><LayoutGrid size={16} /> 卡片</button>
+              <button onClick={() => setViewMode('table')} className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'table' ? 'bg-stone-900 text-white shadow-sm' : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100/50'}`}><List size={16} /> AgGrid (Beta)</button>
+              <button onClick={() => setViewMode('kanban')} className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'kanban' ? 'bg-stone-900 text-white shadow-sm' : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100/50'}`}><Briefcase size={16} /> 看板</button>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0 mb-8">
-          <div className="bg-stone-900 text-white p-6 rounded-[2rem] shadow-xl"><div className="flex items-center gap-3 mb-2 opacity-80"><Briefcase size={18} /><span className="text-[10px] font-black uppercase tracking-widest">總進行中專案</span></div><div className="text-4xl font-black">{projects.filter(p => !p.deletedAt && p.status === 'Active').length}</div></div>
-          <div className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm"><div className="flex items-center gap-3 mb-2 text-stone-400"><Wallet size={18} /><span className="text-[10px] font-black uppercase tracking-widest">總預期營收 Revenue</span></div>
-            <div className="text-2xl xl:text-3xl font-black text-stone-800 tabular-nums tracking-tight truncate" title={projectsWithFinancials.reduce((acc, p) => acc + (p.computedFinancials.revenue || 0), 0).toLocaleString()}>${projectsWithFinancials.reduce((acc, p) => acc + (p.computedFinancials.revenue || 0), 0).toLocaleString()}</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6 shrink-0 mb-8">
+          {/* Active Projects Card */}
+          <div className="bg-gradient-to-br from-stone-900 to-stone-800 text-white p-6 lg:p-7 rounded-[2.5rem] shadow-xl border border-stone-700/50 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-stone-700/30 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2"></div>
+            <div className="flex items-center gap-3 mb-4 opacity-80 relative z-10">
+              <div className="p-2 bg-stone-800 rounded-xl border border-stone-700">
+                <Briefcase size={18} strokeWidth={2.5} className="text-stone-300" />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-300">總進行中專案</span>
+            </div>
+            <div className="text-5xl font-black relative z-10 tracking-tighter">
+              {projects.filter(p => !p.deletedAt && p.status === 'Active').length}
+            </div>
           </div>
-          <div className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm"><div className="flex items-center gap-3 mb-2 text-stone-400"><DollarSign size={18} /><span className="text-[10px] font-black uppercase tracking-widest">實際總支出 Cost</span></div>
-            <div className="text-2xl xl:text-3xl font-black text-rose-600 tabular-nums tracking-tight truncate">${projectsWithFinancials.reduce((acc, p) => acc + p.computedFinancials.totalCost, 0).toLocaleString()}</div>
+
+          {/* Revenue Card */}
+          <div className="bg-white/80 backdrop-blur-xl p-6 lg:p-7 rounded-[2.5rem] border border-stone-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:border-blue-200 transition-colors">
+            <div className="flex items-center gap-3 mb-4 text-stone-400 relative z-10">
+              <div className="p-2 bg-blue-50/50 rounded-xl border border-blue-100 text-blue-500 group-hover:scale-110 transition-transform">
+                <Wallet size={18} strokeWidth={2.5} />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500">總預期營收 <span className="opacity-50">REVENUE</span></span>
+            </div>
+            <div className="text-3xl lg:text-4xl font-black text-stone-800 tracking-tight truncate relative z-10" title={projectsWithFinancials.reduce((acc, p) => acc + (p.computedFinancials.revenue || 0), 0).toLocaleString()}>
+              <span className="text-xl text-stone-400 mr-1">$</span>
+              {projectsWithFinancials.reduce((acc, p) => acc + (p.computedFinancials.revenue || 0), 0).toLocaleString()}
+            </div>
           </div>
-          <div className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm"><div className="flex items-center gap-3 mb-2 text-stone-400"><TrendingUp size={18} /><span className="text-[10px] font-black uppercase tracking-widest">預估總毛利 Profit</span></div>
-            <div className="text-2xl xl:text-3xl font-black text-emerald-600 tabular-nums tracking-tight truncate">${projectsWithFinancials.reduce((acc, p) => acc + p.computedFinancials.profit, 0).toLocaleString()}</div>
+
+          {/* Cost Card */}
+          <div className="bg-white/80 backdrop-blur-xl p-6 lg:p-7 rounded-[2.5rem] border border-stone-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:border-rose-200 transition-colors">
+            <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-400/5 rounded-full blur-[40px] translate-y-1/2 translate-x-1/2"></div>
+            <div className="flex items-center gap-3 mb-4 text-stone-400 relative z-10">
+              <div className="p-2 bg-rose-50/50 rounded-xl border border-rose-100 text-rose-500 group-hover:scale-110 transition-transform">
+                <DollarSign size={18} strokeWidth={2.5} />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500">實際總支出 <span className="opacity-50">COST</span></span>
+            </div>
+            <div className="text-3xl lg:text-4xl font-black text-rose-600 tracking-tight truncate relative z-10">
+              <span className="text-xl text-rose-400/50 mr-1">$</span>
+              {projectsWithFinancials.reduce((acc, p) => acc + p.computedFinancials.totalCost, 0).toLocaleString()}
+            </div>
+          </div>
+
+          {/* Profit Card */}
+          <div className="bg-emerald-50/30 backdrop-blur-xl p-6 lg:p-7 rounded-[2.5rem] border border-emerald-100 shadow-[0_8px_30px_rgb(16,185,129,0.08)] relative overflow-hidden group hover:border-emerald-300 transition-colors">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2"></div>
+            <div className="flex items-center gap-3 mb-4 text-stone-400 relative z-10">
+              <div className="p-2 bg-emerald-100/50 rounded-xl border border-emerald-200 text-emerald-600 group-hover:scale-110 transition-transform">
+                <TrendingUp size={18} strokeWidth={2.5} />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-700/70">預估總毛利 <span className="opacity-50">PROFIT</span></span>
+            </div>
+            <div className="text-3xl lg:text-4xl font-black text-emerald-600 tracking-tight truncate relative z-10">
+              <span className="text-xl text-emerald-400/50 mr-1">$</span>
+              {projectsWithFinancials.reduce((acc, p) => acc + p.computedFinancials.profit, 0).toLocaleString()}
+            </div>
           </div>
         </div>
 
-        {/* Year Filter - Prominent and Easy to Use */}
-        <div className="shrink-0 mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <Calendar size={20} className="text-orange-600" />
-            <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest">篩選年度 YEAR FILTER</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setYearFilter('2026')}
-              className={`px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-sm border-2 ${yearFilter === '2026'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg scale-105'
-                : 'bg-white text-stone-400 border-stone-200 hover:border-emerald-300 hover:text-emerald-600'
-                }`}
-            >
-              🎯 2026 年度
-            </button>
-            <button
-              onClick={() => setYearFilter('2025')}
-              className={`px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-sm border-2 ${yearFilter === '2025'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-lg scale-105'
-                : 'bg-white text-stone-400 border-stone-200 hover:border-blue-300 hover:text-blue-600'
-                }`}
-            >
-              📅 2025 年度
-            </button>
-            <button
-              onClick={() => setYearFilter('2024')}
-              className={`px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-sm border-2 ${yearFilter === '2024'
-                ? 'bg-amber-600 text-white border-amber-600 shadow-lg scale-105'
-                : 'bg-white text-stone-400 border-stone-200 hover:border-amber-300 hover:text-amber-600'
-                }`}
-            >
-              📆 2024 年度
-            </button>
-            <button
-              onClick={() => setYearFilter('all')}
-              className={`px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-sm border-2 ${yearFilter === 'all'
-                ? 'bg-stone-900 text-white border-stone-900 shadow-lg scale-105'
-                : 'bg-white text-stone-400 border-stone-200 hover:border-stone-400 hover:text-stone-600'
-                }`}
-            >
-              📊 全部年份
-            </button>
-          </div>
-          <div className="mt-2 text-xs font-bold text-stone-400">
-            目前顯示: {yearFilter === 'all' ? '全部年份' : `${yearFilter} 年度`} | 共 {projectsWithFinancials.length} 個專案
+        {/* Year Filter - Sleek Re-design */}
+        <div className="shrink-0 mb-6 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-stone-100 rounded-xl border border-stone-200 text-stone-500">
+                <Calendar size={18} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-[11px] font-black text-stone-900 uppercase tracking-[0.2em]">篩選年度 <span className="text-stone-400 ml-1">YEAR FILTER</span></h3>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setYearFilter('2026')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${yearFilter === '2026'
+                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20 ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-stone-50'
+                  : 'bg-white text-stone-500 border border-stone-200 hover:border-emerald-300 hover:text-emerald-600'
+                  }`}
+              >
+                🎯 2026 年度
+              </button>
+              <button
+                onClick={() => setYearFilter('2025')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${yearFilter === '2025'
+                  ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20 ring-2 ring-blue-500/50 ring-offset-2 ring-offset-stone-50'
+                  : 'bg-white text-stone-500 border border-stone-200 hover:border-blue-300 hover:text-blue-600'
+                  }`}
+              >
+                📅 2025 年度
+              </button>
+              <button
+                onClick={() => setYearFilter('2024')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${yearFilter === '2024'
+                  ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 ring-2 ring-amber-500/50 ring-offset-2 ring-offset-stone-50'
+                  : 'bg-white text-stone-500 border border-stone-200 hover:border-amber-300 hover:text-amber-600'
+                  }`}
+              >
+                📆 2024 年度
+              </button>
+              <button
+                onClick={() => setYearFilter('all')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${yearFilter === 'all'
+                  ? 'bg-stone-800 text-white shadow-md shadow-stone-800/20 ring-2 ring-stone-800/50 ring-offset-2 ring-offset-stone-50'
+                  : 'bg-white text-stone-500 border border-stone-200 hover:border-stone-400 hover:text-stone-700'
+                  }`}
+              >
+                📊 全部年份
+              </button>
+            </div>
+
+            <div className="ml-auto text-[11px] font-bold text-stone-400 uppercase tracking-widest bg-white/50 px-3 py-1.5 rounded-lg border border-stone-200/50 backdrop-blur-sm">
+              顯示: {yearFilter === 'all' ? '全部年份' : `${yearFilter} 年度`} | 共 <span className="text-stone-800 font-black">{projectsWithFinancials.length}</span> 案
+            </div>
           </div>
         </div>
 
