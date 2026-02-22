@@ -4,7 +4,7 @@
  * 此檔案定義系統中所有可用的功能模組及其配置
  */
 
-import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet, FileCheck, FileText, Building } from 'lucide-react';
+import { Users, LayoutDashboard, FolderKanban, UserCircle, Building2, CalendarClock, BarChart3, Sparkles, Cloud, ClipboardList, Settings, ShoppingBag, Clock, Wallet, FileCheck, FileText, Building, ListTodo } from 'lucide-react';
 
 // ... (omitted enum and interface changes which are already correct) ...
 
@@ -35,7 +35,8 @@ export enum ModuleId {
     APPROVALS = 'approvals',          // 簽核系統
     QUOTATIONS = 'quotations',        // 報價系統
     CALENDAR = 'calendar',             // 行事曆系統
-    COMPANY_MGMT = 'company_mgmt'     // 公司管理
+    COMPANY_MGMT = 'company_mgmt',    // 公司管理
+    TODOS = 'todos'                   // 個人待辦事項
 }
 
 /**
@@ -252,6 +253,16 @@ export const ALL_MODULES: ModuleConfig[] = [
         dependencies: [],
         enabled: true,
         category: 'management'
+    },
+    {
+        id: ModuleId.TODOS,
+        name: '個人待辦',
+        description: '個人專屬待辦事項記錄',
+        icon: ListTodo,
+        isCore: false,
+        dependencies: [],
+        enabled: true,
+        category: 'management'
     }
 ];
 
@@ -280,7 +291,8 @@ export const MODULE_PRESETS = {
             ModuleId.TEAM,
             ModuleId.CLOUD_SYNC,
             ModuleId.INVENTORY,
-            ModuleId.COMPANY_MGMT
+            ModuleId.COMPANY_MGMT,
+            ModuleId.TODOS
         ]
     },
 
@@ -311,7 +323,8 @@ export const MODULE_PRESETS = {
             ModuleId.ANALYTICS,
             ModuleId.CLOUD_SYNC,
             ModuleId.INVENTORY,
-            ModuleId.COMPANY_MGMT
+            ModuleId.COMPANY_MGMT,
+            ModuleId.TODOS
         ]
     }
 };

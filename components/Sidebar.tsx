@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag, Sparkles, Clock, Wallet, FileCheck, FileText, CalendarClock, Building } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, BarChart3, Settings, HelpCircle, HardHat, Contact2, ClipboardSignature, X, ShoppingBag, Sparkles, Clock, Wallet, FileCheck, FileText, CalendarClock, Building, ListTodo } from 'lucide-react';
 import { moduleService } from '../services/moduleService';
 import { ModuleId, DEFAULT_ENABLED_MODULES } from '../moduleConfig';
 
@@ -54,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     'approvals': ModuleId.APPROVALS,
     'analytics': ModuleId.ANALYTICS,
     'company_mgmt': ModuleId.COMPANY_MGMT,
+    'todos': ModuleId.TODOS,
   };
 
   const allMenuItems = [
@@ -71,6 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
     { id: 'approvals', label: '簽核系統', icon: FileCheck, moduleId: ModuleId.APPROVALS },
     { id: 'analytics', label: '數據分析', icon: BarChart3, moduleId: ModuleId.ANALYTICS },
     { id: 'company_mgmt', label: '公司管理', icon: Building, moduleId: ModuleId.COMPANY_MGMT },
+    { id: 'todos', label: '個人待辦', icon: ListTodo, moduleId: ModuleId.TODOS },
   ];
 
   // Filter menu items based on enabled modules AND user permissions

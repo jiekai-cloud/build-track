@@ -32,6 +32,7 @@ import CompanyManagement from './components/CompanyManagement';
 import ModuleManager from './components/ModuleManager';
 import OnboardingTour from './components/OnboardingTour';
 import { CalendarView } from './components/CalendarView';
+import TodoList from './components/TodoList';
 
 
 
@@ -246,9 +247,10 @@ const App: React.FC = () => {
   // Sync User Session with Team Data (Auto-update role/info if changed in TeamModal)
   useEffect(() => {
     if (user && teamMembers.length > 0) {
-      // Robust matching: ID or Email
+      // Robust matching: ID, EmployeeID, Email or Name
       const me = teamMembers.find(m =>
-        m.employeeId.toLowerCase() === user.id.toLowerCase() ||
+        m.id === user.id ||
+        (m.employeeId && m.employeeId.toLowerCase() === user.id.toLowerCase()) ||
         (m.email && user.email && m.email.toLowerCase() === user.email.toLowerCase()) ||
         m.name === user.name
       );
@@ -260,17 +262,32 @@ const App: React.FC = () => {
         // Compare modules array equality simply by joining sorted strings
         const modulesChanged = [...userModules].sort().join(',') !== [...memberModules].sort().join(',');
 
-        const needsUpdate = me.systemRole !== user.role || me.name !== user.name || me.avatar !== user.picture || modulesChanged;
+        // Only use team member avatar if it exists
+        const targetAvatar = me.avatar || user.picture;
+
+        const needsUpdate = me.systemRole !== user.role || me.name !== user.name || targetAvatar !== user.picture || modulesChanged;
 
         if (needsUpdate) {
           console.log('[Session] Auto-updating user session from team data...');
-          setUser(prev => prev ? ({
-            ...prev,
-            role: me.systemRole,
-            name: me.name,
-            picture: me.avatar,
-            accessibleModules: me.accessibleModules // Critical: Sync modules
-          }) : null);
+          setUser(prev => {
+            if (!prev) return null;
+            const updatedUser = {
+              ...prev,
+              role: me.systemRole,
+              name: me.name,
+              picture: targetAvatar, // Critical: Sync avatar
+              accessibleModules: me.accessibleModules // Critical: Sync modules
+            };
+
+            // Persist the updated user state back to localStorage to prevent fallback to stale avatars on refresh
+            try {
+              localStorage.setItem('bt_user', JSON.stringify(updatedUser));
+            } catch (e) {
+              console.warn('[Session] Could not persist updated user info:', e);
+            }
+
+            return updatedUser;
+          });
         }
       }
     }
@@ -494,6 +511,23 @@ const App: React.FC = () => {
       <div className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static transition-transform duration-500 z-[101] w-64 h-full shrink-0 print:hidden`}>
         <Sidebar activeTab={activeTab} setActiveTab={(t) => { setActiveTab(t); setSelectedProjectId(null); setIsSidebarOpen(false); }} user={{ ...user, accessibleModules: currentUserPermissions }} onMenuClose={() => setIsSidebarOpen(false)} isSyncing={isSyncing} />
       </div>
+
+      {/* Center Sync Notification Overlay */}
+      {isSyncing && !isInitializing && (
+        <div className="fixed inset-0 z-[150] bg-stone-900/40 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300">
+          <div className="bg-stone-900/95 border border-stone-800 p-8 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] flex flex-col items-center gap-6 max-w-[280px] w-full mx-4 text-center">
+            <div className="relative mt-2">
+              <div className="absolute inset-[-6px] border-[3px] border-orange-500/30 rounded-full animate-ping"></div>
+              <div className="w-[64px] h-[64px] border-[4px] border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+              <Cloud className="absolute inset-0 m-auto text-orange-400 animate-pulse" size={24} />
+            </div>
+            <div className="mb-2">
+              <h3 className="text-[15px] font-black text-white mb-2 tracking-widest leading-none">正在與雲端同步</h3>
+              <p className="text-stone-400 text-[11px] font-bold">Please wait while data is syncing...</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 flex flex-col h-full w-full min-0 relative print:h-auto print:overflow-visible print:block">
         <Header
@@ -826,7 +860,9 @@ const App: React.FC = () => {
               {activeTab === 'company_mgmt' && moduleService.isModuleEnabled(ModuleId.COMPANY_MGMT) && (
                 <CompanyManagement projects={filteredData.projects} />
               )}
-
+              {activeTab === 'todos' && moduleService.isModuleEnabled(ModuleId.TODOS) && (
+                <TodoList userId={user.id} />
+              )}
               {activeTab === 'inventory' && moduleService.isModuleEnabled(ModuleId.INVENTORY) && <InventoryList
                 items={inventoryItems}
                 locations={inventoryLocations}
