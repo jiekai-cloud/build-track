@@ -69,6 +69,21 @@ const ProjectFinancials: React.FC = () => {
         }
     };
 
+    const handleDeleteAllDuplicates = () => {
+        if (duplicateGroups.length === 0) return;
+        const totalDups = duplicateGroups.reduce((sum, g) => sum + g.assignments.length - 1, 0);
+        if (!window.confirm(`即將刪除 ${totalDups} 筆重複派工紀錄，每組僅保留第一筆。\n確定要執行嗎？`)) return;
+
+        // Collect IDs to remove: for each group, keep first, remove rest
+        const idsToRemove = new Set<string>();
+        duplicateGroups.forEach(group => {
+            group.assignments.slice(1).forEach(a => idsToRemove.add(a.id));
+        });
+
+        const newAssignments = assignments.filter(a => !idsToRemove.has(a.id));
+        onUpdateWorkAssignments(newAssignments);
+    };
+
     const handleSaveAssignment = (updated: WorkAssignment) => {
         const newAssignments = assignments.map(a =>
             a.id === updated.id ? { ...updated, totalCost: Number(updated.wagePerDay) * Number(updated.days) } : a
@@ -204,8 +219,17 @@ const ProjectFinancials: React.FC = () => {
                                                     <h4 className="text-xs font-black">偵測到重複派工</h4>
                                                 </div>
                                                 <p className="text-[10px] text-stone-600 mb-3 leading-relaxed font-medium">
-                                                    系統發現以下人員在同一天有多筆派工紀錄，有可能導致成本重複計算。請確認是否要刪除多餘的紀錄，或是確認保留。
+                                                    系統發現以下人員在同一天有多筆派工紀錄，有可能導致成本重複計算。
                                                 </p>
+                                                {!isReadOnly && (
+                                                    <button
+                                                        onClick={handleDeleteAllDuplicates}
+                                                        className="w-full mb-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black rounded-xl transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        一鍵刪除所有重複 (保留每組第 1 筆，刪除 {duplicateGroups.reduce((sum, g) => sum + g.assignments.length - 1, 0)} 筆)
+                                                    </button>
+                                                )}
                                                 <div className="space-y-2">
                                                     {duplicateGroups.map(group => (
                                                         <div key={group.key} className="p-2 bg-white rounded-lg border border-rose-100 flex flex-col gap-2">
