@@ -98,7 +98,7 @@ const getApiKey = () => {
   // 第二優先：開發變數 .env 或是隱藏寫在程式碼裡面的混淆金鑰
   // 若要寫死在程式碼裡，請放入 "內建混淆金鑰" 變數中 (將您的新 API Key 經 Base64 再反轉)
   // 您可以在任何瀏覽器 Console 執行: btoa("您剛申請的新APIKey").split('').reverse().join('') 來產生混淆字串
-  const BUILT_IN_OBFUSCATED_KEY = ""; // <--- 將混淆後的字串貼在這裡 (例如: "==Q...==")
+  const BUILT_IN_OBFUSCATED_KEY = "4E2Q6ZkQaVWZKF2c0BXcupXSU5EO0JXUXF0Q5FjeCRzQ5NVY6lUQ"; // <--- 將混淆後的字串貼在這裡 (例如: "==Q...==")
 
   const envKey = (import.meta.env?.VITE_GEMINI_API_KEY) || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
 
