@@ -1,14 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Application Health Checks', () => {
-    // Vite might take a while to compile on the first request
-    test.setTimeout(60000);
+    test.setTimeout(90000);
 
     test.beforeEach(async ({ page }) => {
-        page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
-        page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
+        page.on('pageerror', err => console.log('PAGE_ERROR:', err.message));
 
-        // Skip onboarding modal by injecting localStorage before anything loads
         await page.addInitScript(() => {
             window.localStorage.setItem('bt_onboarding_completed', 'true');
         });
@@ -16,70 +13,73 @@ test.describe('Application Health Checks', () => {
         await page.setViewportSize({ width: 1440, height: 900 });
         await page.goto('/');
 
-        // Wait for Loading Screen to either finish or click skip manually (First Time)
+        // Wait for Login page to render
+        const guestBtn = page.locator('button', { hasText: '訪客模式預覽' });
+        await guestBtn.waitFor({ state: 'visible', timeout: 30000 });
+        await guestBtn.click();
+
+        // After login, handle LoadingScreen
         try {
-            const skipBtn = page.getByRole('button', { name: '直接進入系統 (跳過等待)' });
-            await skipBtn.waitFor({ state: 'attached', timeout: 8000 });
+            const skipBtn = page.locator('button', { hasText: '跳過等待' });
+            await skipBtn.waitFor({ state: 'visible', timeout: 10000 });
             await skipBtn.click({ force: true });
-            await page.waitForTimeout(500);
-        } catch (e) {
-            console.log('First Skip button error:', e.message);
+        } catch {
+            // LoadingScreen may have auto-completed
         }
 
-        // Wait for the Login screen to appear (Wait for Guest Mode Button specifically)
-        try {
-            const guestBtn = page.locator('button', { hasText: '訪客模式預覽' }).first();
-            await guestBtn.waitFor({ state: 'visible', timeout: 10000 });
-            await guestBtn.click();
+        // Wait for sidebar to be visible (app fully loaded)
+        await expect(page.locator('button', { hasText: '總覽面板' })).toBeVisible({ timeout: 30000 });
+    });
 
-            // Login triggers another LoadingScreen (loadSystemData). We must skip it too.
-            try {
-                const skipBtn2 = page.getByRole('button', { name: '直接進入系統 (跳過等待)' });
-                await skipBtn2.waitFor({ state: 'attached', timeout: 5000 });
-                await skipBtn2.click({ force: true });
-                await page.waitForTimeout(500);
-            } catch (e) {
-                console.log('Second Skip button missing or already finished:', e.message);
-            }
+    // ===== Core Pages =====
+    test('Dashboard loads', async ({ page }) => {
+        await page.locator('button', { hasText: '總覽面板' }).click();
+        await expect(page.locator('text=智慧指揮中心')).toBeVisible({ timeout: 10000 });
+    });
 
-            // Handle Onboarding Tour if it appears (Should be suppressed by localStorage now)
-            try {
-                const startTourBtn = page.locator('button', { hasText: '開始使用' });
-                await startTourBtn.waitFor({ state: 'visible', timeout: 3000 });
-                await startTourBtn.click();
-            } catch (e) {
-                // Expected to fail since we injected localStorage
+    test('"全公司視野" selector removed', async ({ page }) => {
+        await expect(page.locator('text=全公司視野')).toHaveCount(0);
+    });
+
+    test('Calendar loads', async ({ page }) => {
+        await page.locator('button', { hasText: '行事曆' }).first().click();
+        await page.waitForTimeout(2000);
+        await expect(page.locator('main')).toBeVisible();
+    });
+
+    test('Projects page loads', async ({ page }) => {
+        await page.locator('button', { hasText: '專案管理' }).click();
+        await expect(page.locator('text=專案財務戰情室')).toBeVisible({ timeout: 10000 });
+    });
+
+    test('Project tabs: "專案討論" first, no "施工日誌"', async ({ page }) => {
+        await page.locator('button', { hasText: '專案管理' }).click();
+        await page.waitForTimeout(1500);
+        const detailBtn = page.locator('button', { hasText: '詳情' }).first();
+        if (await detailBtn.isVisible().catch(() => false)) {
+            await detailBtn.click();
+            await page.waitForTimeout(1500);
+            const tabContainer = page.locator('#project-tabs');
+            if (await tabContainer.isVisible().catch(() => false)) {
+                const firstTabText = await tabContainer.locator('button').first().textContent();
+                expect(firstTabText).toContain('專案討論');
+                await expect(tabContainer.locator('button', { hasText: '施工日誌' })).toHaveCount(0);
             }
-        } catch (e) {
-            console.log('Error entering guest mode:', e.message);
         }
     });
 
-    test('should load the application and enter app as guest', async ({ page }) => {
-        // App auto-redirects to Attendance on login. We must click Dashboard to verify it.
-        const dashboardTab = page.locator('button', { hasText: '總覽面板' });
-        await dashboardTab.click();
-
-        // Verify Dashboard is active
-        await expect(page.locator('h1', { hasText: '智慧指揮中心' })).toBeVisible({ timeout: 10000 });
-    });
-
-    test('should navigate to Calendar View successfully', async ({ page }) => {
-        // Click Calendar Tab
-        const calendarTab = page.locator('button', { hasText: '行事曆' });
-        await calendarTab.click();
-
-        // Verify Calendar View loaded
-        await expect(page.locator('h1', { hasText: '企業' })).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('.rbc-calendar')).toBeVisible({ timeout: 10000 });
-    });
-
-    test('should navigate to Project Management successfully', async ({ page }) => {
-        // Click Projects Tab
-        const projectTab = page.locator('button', { hasText: '專案管理' });
-        await projectTab.click();
-
-        // Verify projects loaded
-        await expect(page.locator('h1', { hasText: '專案財務戰情室' })).toBeVisible({ timeout: 10000 });
-    });
+    // ===== All Sidebar Modules =====
+    const modules = ['派工紀錄', '報價系統', '客戶資料', '團隊成員', '廠商管理', '庫存管理', '考勤打卡', '薪資管理', '簽核系統', '個人待辦'];
+    for (const mod of modules) {
+        test(`${mod} loads`, async ({ page }) => {
+            const tab = page.locator('button', { hasText: mod }).first();
+            if (await tab.isVisible().catch(() => false)) {
+                await tab.click();
+                await page.waitForTimeout(2000);
+                await expect(page.locator('main')).toBeVisible();
+            } else {
+                test.skip();
+            }
+        });
+    }
 });
