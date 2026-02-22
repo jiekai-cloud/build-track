@@ -6,7 +6,7 @@ import {
   Heart, CreditCard, Sparkles, AlertCircle, Eye, EyeOff
 } from 'lucide-react';
 import { TeamMember, User as UserType } from '../types';
-import { MOCK_DEPARTMENTS } from '../constants';
+import { MOCK_DEPARTMENTS, JOB_LEVEL_RULES } from '../constants';
 import { ALL_MODULES, DEFAULT_ENABLED_MODULES } from '../moduleConfig';
 
 interface TeamModalProps {
@@ -25,12 +25,12 @@ const TeamModal: React.FC<TeamModalProps> = ({ onClose, onConfirm, initialData, 
 
   const JOB_LEVELS = [
     { level: '不指定', dailyRate: 0, lunchBonus: 0, monthlySalary: 0 },
-    { level: '一等 (無經驗/建教實習)', dailyRate: 1500, lunchBonus: 60, monthlySalary: 30000 },
-    { level: '二等 (半技師/專員)', dailyRate: 1800, lunchBonus: 80, monthlySalary: 35000 },
-    { level: '三等 (技師/資深專員)', dailyRate: 2000, lunchBonus: 100, monthlySalary: 40000 },
-    { level: '四等 (領班/副組長)', dailyRate: 2500, lunchBonus: 120, monthlySalary: 50000 },
-    { level: '五等 (主任/組長)', dailyRate: 3000, lunchBonus: 150, monthlySalary: 60000 },
-    { level: '六等 (中高階主管)', dailyRate: 3500, lunchBonus: 200, monthlySalary: 80000 },
+    ...JOB_LEVEL_RULES.map(rule => ({
+      level: `${rule.level}等 (${rule.title})`,
+      dailyRate: rule.type === 'daily' ? rule.minPay : 0,
+      lunchBonus: rule.lunchBonus,
+      monthlySalary: rule.type === 'monthly' ? rule.minPay : 0,
+    }))
   ];
 
   const handleJobLevelChange = (levelString: string) => {

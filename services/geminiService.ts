@@ -32,10 +32,16 @@ async function callGeminiViaFetch(model: string, payload: any, apiKey: string) {
 
   console.log(`[AI Debug] 嘗試完整路徑: ${url}`);
 
-  const body = {
+  const body: any = {
     contents: payload.contents,
     generationConfig: payload.generationConfig || { temperature: 0.7 }
   };
+
+  if (payload.tools) body.tools = payload.tools;
+  else if (payload.config?.tools) body.tools = payload.config.tools;
+
+  if (payload.toolConfig) body.tool_config = payload.toolConfig;
+  else if (payload.config?.toolConfig) body.tool_config = payload.config.toolConfig;
 
   const response = await fetch(url, {
     method: 'POST',

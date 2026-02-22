@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
-    Activity, DollarSign, HardHat, ChevronDown, Pencil, Trash2, Building2, ShoppingBag, Wallet, Users, Receipt, Loader2, FileText, Camera, Sparkles, X, Check
+    Activity, DollarSign, HardHat, ChevronDown, Pencil, Trash2, Building2, ShoppingBag, Wallet, Users, Receipt, Loader2, FileText, Camera, Sparkles, X, Check, AlertTriangle
 } from 'lucide-react';
 import { Expense, WorkAssignment, PaymentStage } from '../../types';
 import { analyzeProjectFinancials, analyzeQuotationItems, scanReceipt } from '../../services/geminiService';
@@ -34,6 +34,22 @@ const ProjectFinancials: React.FC = () => {
     const totalLaborCost = assignments.reduce((acc, curr) => acc + curr.totalCost, 0);
     const totalExpenseCost = expenses.reduce((acc, curr) => acc + curr.amount, 0);
     const currentSpent = totalLaborCost + totalExpenseCost;
+
+    const duplicateGroups = useMemo(() => {
+        const counts = new Map<string, WorkAssignment[]>();
+        assignments.forEach(a => {
+            const key = `${a.date} - ${a.memberName}`;
+            if (!counts.has(key)) counts.set(key, []);
+            counts.get(key)!.push(a);
+        });
+        const dups: { key: string, assignments: WorkAssignment[] }[] = [];
+        counts.forEach((list, key) => {
+            if (list.length > 1) {
+                dups.push({ key, assignments: list });
+            }
+        });
+        return dups;
+    }, [assignments]);
 
     const profit = useMemo(() => {
         const introducerFee = (project.introducerFeeRequired && project.introducerFeeAmount) ? project.introducerFeeAmount : 0;
@@ -161,9 +177,16 @@ const ProjectFinancials: React.FC = () => {
                                     onClick={() => setIsLaborDetailsExpanded(!isLaborDetailsExpanded)}
                                     className="w-full mt-4 pt-4 border-t border-stone-100 flex items-center justify-between hover:bg-stone-50 -mx-2 px-2 py-2 rounded-xl transition-colors"
                                 >
-                                    <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest">
-                                        派工明細 ({(project.workAssignments || []).length} 筆)
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest">
+                                            派工明細 ({(project.workAssignments || []).length} 筆)
+                                        </p>
+                                        {duplicateGroups.length > 0 && (
+                                            <span className="flex items-center gap-1 bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded text-[8px] font-black tracking-wider border border-rose-100 animate-pulse">
+                                                <AlertTriangle size={8} /> 發現重複 (!要刪除或保留?)
+                                            </span>
+                                        )}
+                                    </div>
                                     <ChevronDown
                                         size={16}
                                         className={`text-stone-400 transition-transform ${isLaborDetailsExpanded ? 'rotate-180' : ''}`}
@@ -171,40 +194,78 @@ const ProjectFinancials: React.FC = () => {
                                 </button>
 
                                 {isLaborDetailsExpanded && (
-                                    <div className="space-y-2 max-h-64 overflow-y-auto no-scrollbar mt-3 animate-in slide-in-from-top-2 duration-200">
-                                        {(project.workAssignments || []).map((assignment, idx) => (
-                                            <div key={assignment.id || idx} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-xs font-black text-stone-900 truncate">{assignment.memberName}</p>
-                                                        {assignment.isSpiderMan && (
-                                                            <span className="text-[7px] font-black text-blue-600 bg-blue-50 px-1 py-0.5 rounded border border-blue-100 flex-shrink-0">🕷️</span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-[9px] text-stone-400 font-medium">{assignment.date}</p>
+                                    <div className="space-y-4 max-h-[400px] overflow-y-auto no-scrollbar mt-3 animate-in slide-in-from-top-2 duration-200 p-1">
+
+                                        {/* 警示：重複派工 */}
+                                        {duplicateGroups.length > 0 && (
+                                            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 shrink-0 shadow-sm">
+                                                <div className="flex items-center gap-2 text-rose-600 mb-2">
+                                                    <AlertTriangle size={16} />
+                                                    <h4 className="text-xs font-black">偵測到重複派工</h4>
                                                 </div>
-                                                <div className="text-right flex-shrink-0 ml-2">
-                                                    <p className="text-xs font-black text-stone-900">NT$ {(assignment.totalCost || 0).toLocaleString()}</p>
-                                                    <p className="text-[8px] text-stone-400 font-medium">{assignment.wagePerDay}元 × {assignment.days}天</p>
-                                                </div>
-                                                <div className="flex items-center gap-1 ml-2 pl-2 border-l border-stone-100">
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setEditingAssignment(assignment); }}
-                                                        className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="編輯"
-                                                    >
-                                                        <Pencil size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleDeleteAssignment(assignment.id); }}
-                                                        className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="刪除"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
+                                                <p className="text-[10px] text-stone-600 mb-3 leading-relaxed font-medium">
+                                                    系統發現以下人員在同一天有多筆派工紀錄，有可能導致成本重複計算。請確認是否要刪除多餘的紀錄，或是確認保留。
+                                                </p>
+                                                <div className="space-y-2">
+                                                    {duplicateGroups.map(group => (
+                                                        <div key={group.key} className="p-2 bg-white rounded-lg border border-rose-100 flex flex-col gap-2">
+                                                            <p className="text-[10px] font-bold text-rose-700">📌 {group.key} (共 {group.assignments.length} 筆)</p>
+                                                            {group.assignments.map((a, i) => (
+                                                                <div key={a.id} className="flex justify-between items-center text-[10px] bg-stone-50 p-1.5 rounded border border-stone-100">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-stone-400 bg-white px-1 py-0.5 rounded border border-stone-200 text-[8px] font-mono">#{i + 1}</span>
+                                                                        <span className="text-stone-600 font-bold">NT$ {a.totalCost.toLocaleString()}</span>
+                                                                        <span className="text-stone-400">({a.wagePerDay}元 × {a.days}天)</span>
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <button onClick={() => handleDeleteAssignment(a.id)} className="text-rose-500 hover:text-white hover:bg-rose-500 border border-rose-200 font-bold bg-white px-2 py-1 rounded transition-colors shadow-sm">刪除</button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                        ))}
+                                        )}
+
+                                        <div className="space-y-2">
+                                            {(project.workAssignments || []).map((assignment, idx) => {
+                                                const isDuplicated = duplicateGroups.some(g => g.assignments.some(a => a.id === assignment.id));
+                                                return (
+                                                    <div key={assignment.id || idx} className={`flex items-center justify-between p-3 rounded-xl border ${isDuplicated ? 'bg-rose-50/50 border-rose-200/50' : 'bg-stone-50 border-stone-100'}`}>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-xs font-black text-stone-900 truncate">{assignment.memberName}</p>
+                                                                {assignment.isSpiderMan && (
+                                                                    <span className="text-[7px] font-black text-blue-600 bg-blue-50 px-1 py-0.5 rounded border border-blue-100 flex-shrink-0">🕷️</span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[9px] text-stone-400 font-medium">{assignment.date}</p>
+                                                        </div>
+                                                        <div className="text-right flex-shrink-0 ml-2">
+                                                            <p className="text-xs font-black text-stone-900">NT$ {(assignment.totalCost || 0).toLocaleString()}</p>
+                                                            <p className="text-[8px] text-stone-400 font-medium">{assignment.wagePerDay}元 × {assignment.days}天</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 ml-2 pl-2 border-l border-stone-100">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); setEditingAssignment(assignment); }}
+                                                                className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="編輯"
+                                                            >
+                                                                <Pencil size={12} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDeleteAssignment(assignment.id); }}
+                                                                className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="刪除"
+                                                            >
+                                                                <Trash2 size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 )}
                             </>

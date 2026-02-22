@@ -172,14 +172,14 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
             let processedTeamData = [...initialTeamData];
 
             // 1. Purge Virtual/Fictional Members
-            const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬', '李小龍', '王四天', 'Test User', '測試人員'];
-            const PURGE_PREFIXES = ['T-', 'CEO', 'MOCK-'];
+            const PURGE_NAMES = ['林志豪', '陳建宏', '黃國華', '李美玲', '李大維', '張家銘', '陳小美', '王雪芬', '李小龍', '王四天', 'Test User', '測試人員', '陳信寬'];
+            const PURGE_PREFIXES = ['T-', 'MOCK-'];
 
             const originalCount = processedTeamData.length;
             processedTeamData = processedTeamData.filter((m: any) => {
                 const isPurgeName = PURGE_NAMES.includes(m.name);
                 const isPurgeId = typeof m.id === 'string' && PURGE_PREFIXES.some(prefix => m.id.startsWith(prefix));
-                const isPlaceholder = m.name?.includes('測試') || m.email?.includes('example.com') && m.name !== '陳信寬'; // 除非是保留的種子帳號
+                const isPlaceholder = m.name?.includes('測試') || m.email?.includes('example.com');
                 return !isPurgeName && !isPurgeId && !isPlaceholder;
             });
 
@@ -222,34 +222,7 @@ export const useSystemStartup = (deps: SystemStartupDeps) => {
                 if (m.lunchBonus === undefined) m.lunchBonus = 0;
             });
 
-            // Emergency Restore for JK001 (If missing)
-            if (!processedTeamData.some((m: any) => m.name === '陳信寬' || m.employeeId === 'JK001')) {
-                processedTeamData.push({
-                    id: 'JK001',
-                    employeeId: 'JK001',
-                    name: '陳信寬',
-                    role: '工務主管',
-                    systemRole: 'DeptAdmin',
-                    departmentId: 'DEPT-4',
-                    departmentIds: ['DEPT-4'],
-                    phone: '',
-                    email: '',
-                    status: 'Available',
-                    activeProjectsCount: 0,
-                    avatar: '',
-                    specialty: [],
-                    certifications: [],
-                    joinDate: new Date().toISOString().split('T')[0],
-                    salaryType: 'monthly',
-                    monthlySalary: 80000,
-                    dailyRate: 0,
-                    workStartTime: '09:00',
-                    workEndTime: '18:00'
-                });
-                console.log('[Migration] Emergency restored JK001 陳信寬');
-                const storageKey = dept === 'FirstDept' ? 'bt_team' : (dept === 'ThirdDept' ? 'dept3_bt_team' : 'bt_team');
-                storageService.setItem(storageKey, processedTeamData);
-            }
+            // Removed Emergency Restore for JK001 based on user instruction
 
             setTeamMembers(processedTeamData.map((m: any) => ({
                 ...m,

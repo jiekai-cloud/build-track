@@ -153,29 +153,4 @@ export const MOCK_PROJECTS: Project[] = [
   }
 ];
 
-export const MOCK_TEAM_MEMBERS: TeamMember[] = [
-  {
-    id: 'JK001',
-    employeeId: 'JK001',
-    name: '陳信寬',
-    role: '工務主管',
-    systemRole: 'DeptAdmin',
-    departmentId: 'DEPT-4',
-    email: 'k@example.com',
-    phone: '0900000001',
-    status: 'Available',
-    activeProjectsCount: 3,
-    avatar: 'https://ui-avatars.com/api/?name=陳信寬&background=0D8ABC&color=fff',
-    specialty: ['防水', '結構補強'],
-    salaryType: 'monthly',
-    monthlySalary: 80000,
-    workDaysPerWeek: 5,
-    lunchBonus: 2400,
-    insuranceBurdenRate: 0,
-    joinDate: '2020-01-01',
-    workStartTime: '09:00',
-    workEndTime: '18:00',
-    laborFee: 1000,
-    healthFee: 500
-  }
-];
+export const MOCK_TEAM_MEMBERS: TeamMember[] = [];

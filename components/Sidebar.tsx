@@ -169,8 +169,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onMenu
 
         <div className="mt-4 px-4 py-3 bg-stone-800/50 border border-white/5 rounded-2xl flex items-center gap-3">
           <img
-            src={user.picture}
+            src={user.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`}
             alt="Avatar"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`;
+            }}
             className="w-8 h-8 rounded-xl border border-white/10 object-cover"
           />
           <div className="flex-1 overflow-hidden">
