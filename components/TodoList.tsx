@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Search, CheckCircle2, Circle, AlertCircle, Edit2, X, Check } from 'lucide-react';
 
 interface Todo {
     id: string;
@@ -16,6 +16,8 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [inputText, setInputText] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editText, setEditText] = useState('');
 
     const storageKey = `bt_personal_todos_${userId}`;
 
@@ -64,6 +66,35 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
         saveTodos(todos.filter(t => t.id !== id));
     };
 
+    const startEditing = (e: React.MouseEvent, todo: Todo) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setEditingId(todo.id);
+        setEditText(todo.text);
+    };
+
+    const saveEdit = () => {
+        if (editingId && editText.trim()) {
+            saveTodos(todos.map(t =>
+                t.id === editingId ? { ...t, text: editText.trim() } : t
+            ));
+        }
+        setEditingId(null);
+        setEditText('');
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setEditText('');
+    };
+
+    const clearCompleted = () => {
+        if (todos.filter(t => t.completed).length === 0) return;
+        if (window.confirm('確定要清除所有已完成的項目嗎？')) {
+            saveTodos(todos.filter(t => !t.completed));
+        }
+    };
+
     const filteredTodos = todos.filter(t =>
         t.text.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -89,10 +120,15 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
                     </p>
                 </div>
                 <div className="bg-white/60 backdrop-blur-md px-4 py-2.5 border border-stone-200/60 rounded-2xl shadow-sm self-start sm:self-auto flex items-center gap-4">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <button
+                        onClick={clearCompleted}
+                        disabled={todos.filter(t => t.completed).length === 0}
+                        className="flex items-center gap-2.5 disabled:opacity-50 hover:bg-stone-100/80 p-1.5 -m-1.5 rounded-xl transition-colors group cursor-pointer disabled:cursor-auto"
+                        title="清除已完成項目"
+                    >
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 group-hover:animate-ping disabled:animate-none"></div>
                         <span className="text-[11px] font-black tracking-widest text-stone-600 uppercase">已完成 {todos.filter(t => t.completed).length}</span>
-                    </div>
+                    </button>
                     <div className="w-px h-4 bg-stone-300"></div>
                     <div className="flex items-center gap-2.5">
                         <div className="w-2 h-2 rounded-full bg-orange-500"></div>
@@ -155,42 +191,80 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
                                 <div
                                     key={todo.id}
                                     className={`flex items-center justify-between p-4 px-5 rounded-[1.25rem] border transition-all duration-300 group ${todo.completed
-                                            ? 'bg-stone-50/50 border-stone-200/50 opacity-60 hover:opacity-100 shadow-none'
-                                            : 'bg-white border-stone-200 hover:border-orange-300 hover:shadow-[0_8px_30px_rgb(249,115,22,0.1)] hover:-translate-y-0.5'
+                                        ? 'bg-stone-50/50 border-stone-200/50 opacity-60 hover:opacity-100 shadow-none'
+                                        : 'bg-white border-stone-200 hover:border-orange-300 hover:shadow-[0_8px_30px_rgb(249,115,22,0.1)] hover:-translate-y-0.5'
                                         }`}
                                 >
-                                    <label className="flex items-center gap-4 cursor-pointer flex-1 min-w-0 py-1">
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleTodo(todo.id)}
-                                            className="shrink-0 focus:outline-none relative w-6 h-6 flex items-center justify-center"
-                                        >
-                                            {todo.completed ? (
-                                                <div className="absolute inset-0 bg-emerald-500 rounded-full animate-in zoom-in duration-200 flex items-center justify-center shadow-md shadow-emerald-500/20">
-                                                    <CheckCircle2 size={16} className="text-white" strokeWidth={3} />
-                                                </div>
-                                            ) : (
-                                                <Circle size={24} className="text-stone-300 group-hover:text-orange-500/50 transition-colors" strokeWidth={2} />
-                                            )}
-                                        </button>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className={`text-[15px] font-bold truncate transition-all duration-300 ${todo.completed ? 'text-stone-400 line-through decoration-stone-300 decoration-2' : 'text-stone-800'
-                                                }`}>
-                                                {todo.text}
-                                            </span>
-                                            <span className="text-[10px] font-black text-stone-400/80 uppercase tracking-widest mt-1">
-                                                新增於 {formatTime(todo.createdAt)}
-                                            </span>
+                                    {editingId === todo.id ? (
+                                        <div className="flex-1 flex items-center gap-3 w-full animate-in fade-in zoom-in-95 duration-200">
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                value={editText}
+                                                onChange={(e) => setEditText(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') saveEdit();
+                                                    if (e.key === 'Escape') cancelEdit();
+                                                }}
+                                                onBlur={saveEdit}
+                                                className="flex-1 bg-stone-50 border border-orange-300 rounded-xl px-4 py-2.5 text-[15px] font-bold text-stone-800 focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all"
+                                            />
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <button onMouseDown={(e) => { e.preventDefault(); saveEdit(); }} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors">
+                                                    <Check size={18} strokeWidth={3} />
+                                                </button>
+                                                <button onMouseDown={(e) => { e.preventDefault(); cancelEdit(); }} className="p-2 text-stone-400 hover:bg-stone-100 rounded-lg transition-colors">
+                                                    <X size={18} strokeWidth={3} />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </label>
+                                    ) : (
+                                        <>
+                                            <div
+                                                className="flex items-center gap-4 cursor-pointer flex-1 min-w-0 py-1"
+                                                onClick={() => toggleTodo(todo.id)}
+                                            >
+                                                <div className="shrink-0 relative w-6 h-6 flex items-center justify-center">
+                                                    {todo.completed ? (
+                                                        <div className="absolute inset-0 bg-emerald-500 rounded-full animate-in zoom-in duration-200 flex items-center justify-center shadow-md shadow-emerald-500/20">
+                                                            <CheckCircle2 size={16} className="text-white" strokeWidth={3} />
+                                                        </div>
+                                                    ) : (
+                                                        <Circle size={24} className="text-stone-300 group-hover:text-orange-500/50 transition-colors" strokeWidth={2} />
+                                                    )}
+                                                </div>
+                                                <div
+                                                    className="flex flex-col min-w-0 flex-1 group/text"
+                                                    onDoubleClick={(e) => { e.stopPropagation(); startEditing(e, todo); }}
+                                                >
+                                                    <span className={`text-[15px] font-bold truncate transition-all duration-300 select-none ${todo.completed ? 'text-stone-400 line-through decoration-stone-300 decoration-2' : 'text-stone-800'
+                                                        }`}>
+                                                        {todo.text}
+                                                    </span>
+                                                    <span className="text-[10px] font-black text-stone-400/80 uppercase tracking-widest mt-1 select-none">
+                                                        新增於 {formatTime(todo.createdAt)}
+                                                    </span>
+                                                </div>
+                                            </div>
 
-                                    <button
-                                        onClick={() => deleteTodo(todo.id)}
-                                        className="shrink-0 p-2.5 text-stone-300 hover:text-rose-500 hover:bg-rose-50 rounded-[1rem] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 ml-2 shadow-sm border border-transparent hover:border-rose-100"
-                                        title="刪除"
-                                    >
-                                        <Trash2 size={16} strokeWidth={2.5} />
-                                    </button>
+                                            <div className="flex items-center shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => startEditing(e, todo)}
+                                                    className="p-2.5 text-stone-400 hover:text-blue-500 hover:bg-blue-50 rounded-[1rem] transition-all shadow-sm border border-transparent hover:border-blue-100 mr-1"
+                                                    title="編輯"
+                                                >
+                                                    <Edit2 size={16} strokeWidth={2.5} />
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteTodo(todo.id)}
+                                                    className="p-2.5 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-[1rem] transition-all shadow-sm border border-transparent hover:border-rose-100"
+                                                    title="刪除"
+                                                >
+                                                    <Trash2 size={16} strokeWidth={2.5} />
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             ))
                         )}
