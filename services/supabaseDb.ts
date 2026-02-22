@@ -11,7 +11,7 @@ export const supabaseDb = {
     getCollection: async <T>(collection: string): Promise<T[]> => {
         try {
             const timeoutPromise = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('Supabase request timeout')), 5000)
+                setTimeout(() => reject(new Error('Supabase request timeout')), 2500)
             );
 
             const supabasePromise = supabase
@@ -50,7 +50,7 @@ export const supabaseDb = {
             }));
 
             const timeoutPromise = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('Supabase request timeout')), 5000)
+                setTimeout(() => reject(new Error('Supabase request timeout')), 2500)
             );
 
             const supabasePromise = supabase
