@@ -330,6 +330,7 @@ const App: React.FC = () => {
   const {
     isCloudConnected, setIsCloudConnected,
     isSyncing, setIsSyncing,
+    syncProgress, syncMessage,
     cloudError, setCloudError,
     lastCloudSync, setLastCloudSync,
     lastRemoteModifiedTime, isSyncingRef,
@@ -523,7 +524,20 @@ const App: React.FC = () => {
             </div>
             <div className="mb-2">
               <h3 className="text-[15px] font-black text-white mb-2 tracking-widest leading-none">正在與雲端同步</h3>
-              <p className="text-stone-400 text-[11px] font-bold">Please wait while data is syncing...</p>
+              <p className="text-stone-400 text-[11px] font-bold">
+                {syncMessage ? syncMessage : 'Please wait while data is syncing...'}
+              </p>
+
+              {/* Progress Bar Container */}
+              <div className="mt-4 w-full h-1.5 bg-stone-800 rounded-full overflow-hidden relative">
+                <div
+                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${syncProgress}%` }}
+                />
+              </div>
+              <div className="text-right text-[10px] text-stone-500 font-bold mt-1 tracking-wider">
+                {syncProgress}%
+              </div>
             </div>
           </div>
         </div>

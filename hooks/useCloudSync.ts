@@ -36,6 +36,8 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
 
     const [isCloudConnected, setIsCloudConnected] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [syncProgress, setSyncProgress] = useState(0);
+    const [syncMessage, setSyncMessage] = useState('準備同步...');
     const [cloudError, setCloudError] = useState<string | null>(null);
     const [lastCloudSync, setLastCloudSync] = useState<string | null>(null);
 
@@ -49,6 +51,8 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
 
         isSyncingRef.current = true;
         setIsSyncing(true);
+        setSyncProgress(0);
+        setSyncMessage('開始檢查雲端版本...');
 
         try {
             const modifiedTime = await supabaseSyncService.getLatestModifiedTime();
@@ -56,7 +60,10 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
             // Check if remote is newer
             if (modifiedTime && lastRemoteModifiedTime.current && modifiedTime !== lastRemoteModifiedTime.current) {
                 console.log('[Sync] Detected newer Supabase version...');
-                const cloudData = await supabaseSyncService.loadFromCloud();
+                const cloudData = await supabaseSyncService.loadFromCloud((msg, curr, total) => {
+                    setSyncMessage(msg);
+                    setSyncProgress(Math.round((curr / total) * 100));
+                });
 
                 if (cloudData) {
                     console.log('[Sync] Merging Supabase data...');
@@ -117,6 +124,9 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
                 activityLogs: localData.activityLogs,
                 quotations: localData.quotations,
                 calendarEvents: localData.calendarEvents,
+            }, false, (msg, curr, total) => {
+                setSyncMessage(msg);
+                setSyncProgress(Math.round((curr / total) * 100));
             });
 
             if (success) {
@@ -153,8 +163,13 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
             console.log('[Sync] Initializing auto-connect and force fetch...');
             setIsCloudConnected(true);
             setCloudError(null);
+            setSyncProgress(0);
+            setSyncMessage('首次連線載入...');
 
-            const cloudData = await supabaseSyncService.loadFromCloud();
+            const cloudData = await supabaseSyncService.loadFromCloud((msg, curr, total) => {
+                setSyncMessage(msg);
+                setSyncProgress(Math.round((curr / total) * 100));
+            });
             if (cloudData) {
                 updateStateWithMerge(cloudData);
                 const modifiedTime = await supabaseSyncService.getLatestModifiedTime();
@@ -170,9 +185,14 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
         if (user?.role === 'Guest') return;
         try {
             setIsSyncing(true);
+            setSyncProgress(0);
+            setSyncMessage('準備下載雲端資料...');
             setCloudError(null);
             setIsCloudConnected(true);
-            const cloudData = await supabaseSyncService.loadFromCloud();
+            const cloudData = await supabaseSyncService.loadFromCloud((msg, curr, total) => {
+                setSyncMessage(msg);
+                setSyncProgress(Math.round((curr / total) * 100));
+            });
 
             if (cloudData && (user?.role === 'SyncOnly' || (cloudData.projects && confirm('Supabase 中發現現有數據，是否要切換為雲端版本？')))) {
                 setProjects(normalizeProjects(cloudData.projects || []));
@@ -227,7 +247,12 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
     const handleCloudRestore = useCallback(async () => {
         try {
             setIsSyncing(true);
-            const cloudData = await supabaseSyncService.loadFromCloud();
+            setSyncProgress(0);
+            setSyncMessage('準備強制還原...');
+            const cloudData = await supabaseSyncService.loadFromCloud((msg, curr, total) => {
+                setSyncMessage(msg);
+                setSyncProgress(Math.round((curr / total) * 100));
+            });
             if (cloudData) {
                 updateStateWithMerge(cloudData);
                 const modifiedTime = await supabaseSyncService.getLatestModifiedTime();
@@ -255,6 +280,7 @@ export const useCloudSync = (deps: CloudSyncDeps) => {
     return {
         isCloudConnected, setIsCloudConnected,
         isSyncing, setIsSyncing,
+        syncProgress, syncMessage,
         cloudError, setCloudError,
         lastCloudSync, setLastCloudSync,
         lastRemoteModifiedTime,

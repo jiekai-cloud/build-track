@@ -49,13 +49,18 @@ export const supabaseDb = {
                 data: item
             }));
 
-            // 使用 upsert，如果 collection + item_id 存在則覆蓋，不存在則新增
-            const { error } = await supabase
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Supabase request timeout')), 5000)
+            );
+
+            const supabasePromise = supabase
                 .from('app_data')
                 .upsert(rows, { onConflict: 'collection,item_id' });
 
-            if (error) {
-                console.error(`[Supabase] Error upserting ${collection}:`, error);
+            const result = await Promise.race([supabasePromise, timeoutPromise]) as any;
+
+            if (result.error) {
+                console.error(`[Supabase] Error upserting ${collection}:`, result.error);
                 // 雲端失敗的話，退回寫本地
                 await storageService.setItem(collection, items);
                 return false;
