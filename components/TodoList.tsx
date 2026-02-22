@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, CheckCircle2, Circle, AlertCircle, Edit2, X, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Search, CheckCircle2, Circle, AlertCircle, Edit2, X, Check, Cloud, CloudOff } from 'lucide-react';
+import { db } from '../services/firebaseClient';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface Todo {
     id: string;
@@ -18,27 +20,71 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
+    const [isSynced, setIsSynced] = useState(false);
 
     const storageKey = `bt_personal_todos_${userId}`;
+    const saveTimerRef = useRef<any>(null);
 
+    // Load: localStorage first (instant), then Firebase (merge newer)
     useEffect(() => {
+        // 1. Load local instantly
         try {
             const saved = localStorage.getItem(storageKey);
-            if (saved) {
-                setTodos(JSON.parse(saved));
-            }
+            if (saved) setTodos(JSON.parse(saved));
         } catch (e) {
-            console.error('Failed to load personal todos', e);
+            console.error('Failed to load personal todos from local', e);
         }
+
+        // 2. Load from Firebase (per-user document)
+        const loadFromCloud = async () => {
+            try {
+                const docRef = doc(db, 'user_todos', userId);
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                    const cloudTodos = snap.data().todos as Todo[] || [];
+                    if (cloudTodos.length > 0) {
+                        setTodos(prev => {
+                            // Merge: use cloud if it has more or same items
+                            if (cloudTodos.length >= prev.length) return cloudTodos;
+                            return prev;
+                        });
+                    }
+                    setIsSynced(true);
+                } else {
+                    setIsSynced(true); // No cloud data yet, but connection works
+                }
+            } catch (e) {
+                console.warn('[Todos] Firebase load failed, using local only', e);
+            }
+        };
+        loadFromCloud();
     }, [userId]);
 
     const saveTodos = (newTodos: Todo[]) => {
         setTodos(newTodos);
+        // 1. Save to localStorage immediately (fast)
         try {
             localStorage.setItem(storageKey, JSON.stringify(newTodos));
         } catch (e) {
-            console.error('Failed to save personal todos', e);
+            console.error('Failed to save personal todos locally', e);
         }
+
+        // 2. Debounced save to Firebase (1 second)
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(async () => {
+            try {
+                const docRef = doc(db, 'user_todos', userId);
+                await setDoc(docRef, {
+                    todos: JSON.parse(JSON.stringify(newTodos)),
+                    userId,
+                    updatedAt: new Date().toISOString()
+                });
+                setIsSynced(true);
+            } catch (e) {
+                console.error('[Todos] Firebase save failed', e);
+                setIsSynced(false);
+            }
+        }, 1000);
     };
 
     const handleAdd = (e: React.FormEvent) => {
@@ -116,7 +162,7 @@ const TodoList: React.FC<TodoListProps> = ({ userId }) => {
                         個人待辦事項
                     </h1>
                     <p className="text-stone-500 text-[11px] font-black tracking-widest uppercase">
-                        記錄您的個人任務，這些資料僅儲存於本機。
+                        記錄您的個人任務，跨裝置雲端同步。{isSynced ? <Cloud size={14} className="inline ml-1 text-green-500" /> : <CloudOff size={14} className="inline ml-1 text-stone-400" />}
                     </p>
                 </div>
                 <div className="bg-white/60 backdrop-blur-md px-4 py-2.5 border border-stone-200/60 rounded-2xl shadow-sm self-start sm:self-auto flex items-center gap-4">
