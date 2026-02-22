@@ -729,7 +729,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
               <span className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-300">總進行中專案</span>
             </div>
             <div className="text-5xl font-black relative z-10 tracking-tighter">
-              {projects.filter(p => !p.deletedAt && p.status === 'Active').length}
+              {projects.filter(p => !p.deletedAt && !p.isPurged && !['已完工', '結案', '撤案', '未成交', 'Completed'].includes(p.status)).length}
             </div>
           </div>
 
